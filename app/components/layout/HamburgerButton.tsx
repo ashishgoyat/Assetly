@@ -9,8 +9,19 @@
 import { useState } from "react";
 import Icon from "@/app/components/ui/Icon";
 import MobileDrawer from "@/app/components/layout/MobileDrawer";
+import type { Account } from "@/contracts/api-contracts";
 
-export default function HamburgerButton() {
+interface HamburgerButtonProps {
+  userName: string;
+  userInitials: string;
+  accounts: Account[];
+}
+
+export default function HamburgerButton({
+  userName,
+  userInitials,
+  accounts,
+}: HamburgerButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -24,7 +35,14 @@ export default function HamburgerButton() {
       >
         <Icon name="list" size={18} />
       </button>
-      {open && <MobileDrawer onClose={() => setOpen(false)} />}
+      {open && (
+        <MobileDrawer
+          onClose={() => setOpen(false)}
+          userName={userName}
+          userInitials={userInitials}
+          accounts={accounts}
+        />
+      )}
     </>
   );
 }

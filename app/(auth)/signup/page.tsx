@@ -1,0 +1,129 @@
+'use client'
+
+/**
+ * Signup page — Client Component (needs useActionState for error display)
+ */
+
+import { useActionState } from 'react'
+import Link from 'next/link'
+import { signup } from './actions'
+import type { ActionResult } from './actions'
+
+const initialState: ActionResult = undefined
+
+export default function SignupPage() {
+  const [state, formAction, isPending] = useActionState(signup, initialState)
+
+  return (
+    <>
+      <div className="mb-6">
+        <h1
+          className="text-2xl font-semibold tracking-tight mb-1"
+          style={{ color: 'var(--ink)' }}
+        >
+          Create your account
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--ink-3)' }}>
+          Track your finances, your way
+        </p>
+      </div>
+
+      <form action={formAction} noValidate>
+        <div className="flex flex-col gap-4">
+          {/* Full name field */}
+          <div className="field">
+            <label htmlFor="name">Full name</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              required
+              placeholder="Maya Jensen"
+              className="field-input"
+            />
+          </div>
+
+          {/* Email field */}
+          <div className="field">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="you@example.com"
+              className="field-input"
+            />
+          </div>
+
+          {/* Password field */}
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              placeholder="Min. 8 characters"
+              className="field-input"
+            />
+          </div>
+
+          {/* Confirm password field */}
+          <div className="field">
+            <label htmlFor="confirmPassword">Confirm password</label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              placeholder="••••••••"
+              className="field-input"
+            />
+          </div>
+
+          {/* Error message */}
+          {state?.error && (
+            <p
+              role="alert"
+              className="text-sm font-medium"
+              style={{ color: 'var(--neg)' }}
+            >
+              {state.error}
+            </p>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isPending}
+            className="w-full rounded-xl py-2.5 px-4 text-sm font-semibold text-white transition-opacity mt-2"
+            style={{ background: 'var(--accent)' }}
+            aria-disabled={isPending}
+          >
+            {isPending ? 'Creating account…' : 'Create account'}
+          </button>
+        </div>
+      </form>
+
+      {/* Footer link */}
+      <p
+        className="mt-6 text-center text-sm"
+        style={{ color: 'var(--ink-3)' }}
+      >
+        Already have an account?{' '}
+        <Link
+          href="/login"
+          className="font-semibold"
+          style={{ color: 'var(--accent)' }}
+        >
+          Sign in →
+        </Link>
+      </p>
+    </>
+  )
+}

@@ -7,7 +7,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { goals } from '@/lib/data/store'
+import { insertGoal } from '@/lib/data/store'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -110,7 +110,7 @@ export async function createGoal(formData: FormData): Promise<ActionResult> {
     const id = crypto.randomUUID()
     const eta = computeEta(targetInCents, monthlyContributionInCents)
 
-    goals.push({
+    await insertGoal({
       id,
       name,
       currentInCents: 0,

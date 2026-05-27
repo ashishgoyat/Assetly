@@ -7,12 +7,23 @@
 import Icon from "@/app/components/ui/Icon";
 import DarkModeToggle from "@/app/components/ui/DarkModeToggle";
 import HamburgerButton from "@/app/components/layout/HamburgerButton";
+import type { Account } from "@/contracts/api-contracts";
 
-export default function Topbar() {
+interface TopbarProps {
+  userName: string;
+  userInitials: string;
+  accounts: Account[];
+}
+
+export default function Topbar({ userName, userInitials, accounts }: TopbarProps) {
   return (
     <header className="topbar" role="banner">
       {/* Hamburger — only visible on mobile via .hamburger CSS class */}
-      <HamburgerButton />
+      <HamburgerButton
+        userName={userName}
+        userInitials={userInitials}
+        accounts={accounts}
+      />
       <div className="search" role="search">
         <Icon name="search" size={15} color="var(--ink-3)" />
         <input

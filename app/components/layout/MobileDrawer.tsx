@@ -10,27 +10,40 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Icon from "@/app/components/ui/Icon";
+import { SignOutButton } from "@/app/components/layout/SignOutButton";
+import type { Account } from "@/contracts/api-contracts";
 
 const NAV_ITEMS = [
-  { href: "/dashboard",              label: "Home",         icon: "home"    as const },
-  { href: "/dashboard/transactions", label: "Transactions", icon: "list"    as const, badge: 3 },
-  { href: "/dashboard/budgets",      label: "Budgets",      icon: "pie"     as const },
-  { href: "/dashboard/goals",        label: "Goals",        icon: "goal"    as const },
-  { href: "/dashboard/bills",        label: "Bills",        icon: "bill"    as const },
-  { href: "/dashboard/insights",     label: "Insights",     icon: "sparkle" as const },
+  { href: "/dashboard",              label: "Home",         icon: "home"     as const },
+  { href: "/dashboard/transactions", label: "Transactions", icon: "list"     as const, badge: 3 },
+  { href: "/dashboard/budgets",      label: "Budgets",      icon: "pie"      as const },
+  { href: "/dashboard/goals",        label: "Goals",        icon: "goal"     as const },
+  { href: "/dashboard/bills",        label: "Bills",        icon: "bill"     as const },
+  { href: "/dashboard/insights",     label: "Insights",     icon: "sparkle"  as const },
+  { href: "/dashboard/settings",     label: "Settings",     icon: "settings" as const },
 ];
 
-const ACCOUNT_ITEMS = [
-  { href: "/dashboard/accounts/chase",  label: "Chase Checking", sub: "$3,247", color: "var(--cat-6)" },
-  { href: "/dashboard/accounts/ally",   label: "Ally Savings",   sub: "$5,173", color: "var(--cat-2)" },
-  { href: "/dashboard/accounts/broker", label: "Brokerage",      sub: "$14.2k", color: "var(--cat-4)" },
-];
+function formatBalance(cents: number): string {
+  if (Math.abs(cents) >= 10_000_000)
+    return `$${(cents / 10_000_000).toFixed(1)}Cr`
+  if (Math.abs(cents) >= 100_000)
+    return `$${(cents / 100_000).toFixed(1)}k`
+  return `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`
+}
 
 interface MobileDrawerProps {
   onClose: () => void;
+  userName: string;
+  userInitials: string;
+  accounts: Account[];
 }
 
-export default function MobileDrawer({ onClose }: MobileDrawerProps) {
+export default function MobileDrawer({
+  onClose,
+  userName,
+  userInitials,
+  accounts,
+}: MobileDrawerProps) {
   const pathname = usePathname();
 
   // Close on route change
@@ -112,21 +125,21 @@ export default function MobileDrawer({ onClose }: MobileDrawerProps) {
         {/* Accounts section */}
         <div className="nav-section-label">Accounts</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {ACCOUNT_ITEMS.map((a) => (
+          {accounts.map((account) => (
             <Link
-              key={a.href}
-              href={a.href}
-              className={`nav-item${isActive(a.href) ? " active" : ""}`}
-              aria-current={isActive(a.href) ? "page" : undefined}
+              key={account.id}
+              href={`/dashboard/accounts/${account.id}`}
+              className={`nav-item${isActive(`/dashboard/accounts/${account.id}`) ? " active" : ""}`}
+              aria-current={isActive(`/dashboard/accounts/${account.id}`) ? "page" : undefined}
             >
               <span
                 className="dot"
-                style={{ background: a.color, marginLeft: 4 }}
+                style={{ background: account.color, marginLeft: 4 }}
                 aria-hidden="true"
               />
-              <span style={{ flex: 1 }}>{a.label}</span>
+              <span style={{ flex: 1 }}>{account.name}</span>
               <span className="num" style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                {a.sub}
+                {formatBalance(account.balanceInCents)}
               </span>
             </Link>
           ))}
@@ -141,7 +154,7 @@ export default function MobileDrawer({ onClose }: MobileDrawerProps) {
         {/* User */}
         <button
           className="nav-item"
-          aria-label="Maya Jensen — account settings"
+          aria-label={`${userName} — account settings`}
           type="button"
         >
           <div
@@ -149,11 +162,14 @@ export default function MobileDrawer({ onClose }: MobileDrawerProps) {
             style={{ width: 26, height: 26, fontSize: 11 }}
             aria-hidden="true"
           >
-            MJ
+            {userInitials}
           </div>
-          <span style={{ flex: 1, textAlign: "left" }}>Maya Jensen</span>
+          <span style={{ flex: 1, textAlign: "left" }}>{userName}</span>
           <Icon name="chev" size={14} color="var(--ink-4)" />
         </button>
+
+        {/* Sign out */}
+        <SignOutButton />
       </nav>
     </>
   );

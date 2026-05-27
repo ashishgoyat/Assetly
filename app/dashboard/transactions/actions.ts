@@ -7,7 +7,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { transactions } from '@/lib/data/store'
+import { insertTransaction } from '@/lib/data/store'
 import type { TransactionCategory, TransactionType } from '@/contracts/api-contracts'
 
 // ---------------------------------------------------------------------------
@@ -102,8 +102,8 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
     const date = now.toISOString().slice(0, 10)
     const time = formatTime(now)
 
-    // Unshift so the new transaction appears first (most recent first ordering)
-    transactions.unshift({
+    // DB query orders by date DESC, time DESC — insert without unshift
+    await insertTransaction({
       id,
       date,
       time,

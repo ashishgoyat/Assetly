@@ -43,3 +43,8 @@ next-env.d.ts
 CLAUDE.md
 .claude
 contracts
+
+# SQLite database (local data — not committed)
+assetly.db
+assetly.db-shm
+assetly.db-wal

@@ -7,7 +7,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { bills } from '@/lib/data/store'
+import { insertBill } from '@/lib/data/store'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -92,7 +92,7 @@ export async function createBill(formData: FormData): Promise<ActionResult> {
     const id = crypto.randomUUID()
     const isUrgent = dueInDays <= 3
 
-    bills.push({
+    await insertBill({
       id,
       name,
       amountInCents: amountDollars,

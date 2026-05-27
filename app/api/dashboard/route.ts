@@ -8,9 +8,19 @@ import {
 } from '@/lib/data/store'
 import { computeNetWorth, computeCategoryPercentages } from '@/lib/calculations'
 import type { DashboardSummary } from '@/contracts/api-contracts'
+import { auth } from '@/auth'
 
 export async function GET() {
   try {
+    const session = await auth()
+    const userName = session?.user?.name ?? 'You'
+    const userInitials = userName
+      .split(' ')
+      .map((w: string) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+
     const [txList, acctList, billList, goalList] = await Promise.all([
       getTransactions(),
       getAccounts(),
@@ -95,8 +105,8 @@ export async function GET() {
 
     const summary: DashboardSummary = {
       user: {
-        name: 'Maya',
-        initials: 'M',
+        name: userName,
+        initials: userInitials,
         lastSync: '2 min ago',
       },
       today: {
