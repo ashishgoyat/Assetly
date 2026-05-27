@@ -42,7 +42,7 @@ next-env.d.ts
 
 CLAUDE.md
 .claude
-contracts
+contracts/project-state.md
 
 # SQLite database (local data — not committed)
 assetly.db
