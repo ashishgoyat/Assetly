@@ -192,6 +192,17 @@ input, textarea {
   grid-template-columns: 232px 1fr;
   height: 100vh;
   background: var(--bg);
+  transition: grid-template-columns 250ms ease;
+}
+
+@media (min-width: 1280px) {
+  .app[data-sidebar-collapsed="true"] {
+    grid-template-columns: 0px 1fr;
+  }
+  .app[data-sidebar-collapsed="true"] .sidebar-desktop {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 /* ─── Responsive app shell ──────────────────────────────────────────────────── */
@@ -199,6 +210,7 @@ input, textarea {
 /* sidebar-desktop wrapper: fills the full grid track, passes height to child sidebar */
 .sidebar-desktop {
   overflow: hidden;
+  transition: opacity 200ms ease;
 }
 .sidebar-desktop .sidebar {
   height: 100%;
@@ -310,6 +322,17 @@ input, textarea {
 @media (min-width: 768px) {
   .hamburger {
     display: none;
+  }
+}
+
+/* ─── Desktop sidebar toggle button ─────────────────────────────────────────── */
+
+.sidebar-toggle {
+  display: none;
+}
+@media (min-width: 1280px) {
+  .sidebar-toggle {
+    display: inline-flex;
   }
 }
 

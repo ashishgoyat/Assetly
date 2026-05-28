@@ -43,7 +43,8 @@ export type IconName =
   | "lock"
   | "heart"
   | "sun"
-  | "moon";
+  | "moon"
+  | "sidebar";
 
 interface IconProps {
   name: IconName;
@@ -251,6 +252,12 @@ export default function Icon({
     ),
     moon: (
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    ),
+    sidebar: (
+      <>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M9 3v18" />
+      </>
     ),
   };
 
