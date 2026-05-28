@@ -266,3 +266,37 @@ export interface TransactionsSummary {
 //
 // GET /api/accounts/[id]
 //   → ApiResponse<AccountDetail>
+//
+// GET /api/settings
+//   → ApiResponse<UserSettings>
+//
+// PATCH /api/settings
+//   → ApiResponse<UserSettings>
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+export interface NotificationPreferences {
+  billsDue: boolean           // Alert when a bill is due in 3 days
+  budgetExceeded: boolean     // Alert when a budget category is exceeded
+  largeTransactions: boolean  // Alert for transactions above threshold
+  weeklyDigest: boolean       // Weekly summary email
+  goalMilestones: boolean     // Alert when a savings goal hits a milestone
+}
+
+export interface UserSettings {
+  profile: {
+    name: string
+    email: string
+    initials: string
+    currency: 'USD' | 'INR'
+    timezone: string
+  }
+  notifications: NotificationPreferences
+  security: {
+    twoFactorEnabled: boolean
+    lastPasswordChange: string  // ISO date
+    activeSessions: number
+  }
+}
