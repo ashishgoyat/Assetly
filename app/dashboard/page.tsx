@@ -4,10 +4,11 @@
 
 import Link from "next/link";
 import Icon from "@/app/components/ui/Icon";
-import MerchantIcon from "@/app/components/ui/MerchantIcon";
-import AreaChart from "@/app/components/charts/AreaChart";
 import DonutChart from "@/app/components/charts/DonutChart";
-import PeriodSelector from "@/app/components/ui/PeriodSelector";
+import CashOnHandCard from "@/app/components/dashboard/CashOnHandCard";
+import BillRow from "@/app/components/dashboard/BillRow";
+import TransactionRow from "@/app/components/dashboard/TransactionRow";
+import GoalCard from "@/app/components/dashboard/GoalCard";
 import type { DashboardSummary } from "@/contracts/api-contracts";
 import { MOCK_DASHBOARD } from "@/lib/mock-data";
 import { formatCurrency, formatCompact } from "@/lib/format";
@@ -133,59 +134,11 @@ export default async function DashboardPage() {
         </div>
 
         {/* Cash flow */}
-        <div className="card" style={{ padding: 22, position: "relative" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-            }}
-          >
-            <div>
-              <div className="sec-label">Cash on hand</div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: 10,
-                  marginTop: 6,
-                }}
-              >
-                <span
-                  className="serif num"
-                  style={{ fontSize: 44, lineHeight: 1 }}
-                >
-                  {formatCompact(cashOnHand.totalInCents)}
-                </span>
-                <span className="pill pill-pos">
-                  <Icon name="arrowUp" size={11} />
-                  {formatCompact(cashOnHand.weekDeltaInCents)} this week
-                </span>
-              </div>
-            </div>
-            <PeriodSelector periods={["1W", "1M", "3M", "1Y"]} defaultIndex={1} />
-          </div>
-          <div style={{ marginTop: 14 }}>
-            <AreaChart data={cashOnHand.cashFlowData} h={150} color="var(--accent)" />
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontFamily: "var(--f-mono)",
-              fontSize: 10.5,
-              color: "var(--ink-4)",
-              marginTop: 4,
-              padding: "0 4px",
-            }}
-          >
-            <span>Apr 1</span>
-            <span>Apr 8</span>
-            <span>Apr 15</span>
-            <span>Apr 22</span>
-            <span>Today</span>
-          </div>
-        </div>
+        <CashOnHandCard
+          totalInCents={cashOnHand.totalInCents}
+          weekDeltaInCents={cashOnHand.weekDeltaInCents}
+          cashFlowDataByPeriod={cashOnHand.cashFlowDataByPeriod}
+        />
       </div>
 
       {/* Row 2: Upcoming bills + Recent activity */}
@@ -212,75 +165,7 @@ export default async function DashboardPage() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {upcomingBills.map((b) => (
-              <div
-                key={b.id}
-                className="tx-row"
-                style={{ gridTemplateColumns: "44px 1fr auto" }}
-              >
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 10,
-                    background: b.isUrgent ? "var(--accent)" : "var(--bg-soft)",
-                    color: b.isUrgent ? "white" : "var(--ink-2)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                  aria-label={b.dueDate}
-                >
-                  <span
-                    style={{
-                      fontSize: 9,
-                      letterSpacing: "0.05em",
-                      textTransform: "uppercase",
-                      opacity: 0.85,
-                    }}
-                  >
-                    {b.dueDate.split(" ")[0]}
-                  </span>
-                  <span
-                    className="num"
-                    style={{ fontSize: 15, fontWeight: 700, lineHeight: 1 }}
-                  >
-                    {b.dueDate.split(" ")[1]}
-                  </span>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 500 }}>{b.name}</div>
-                  <div
-                    style={{
-                      fontSize: 11.5,
-                      color: "var(--ink-3)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      marginTop: 2,
-                    }}
-                  >
-                    {b.isAutoPay ? (
-                      <>
-                        <Icon name="check" size={10} color="var(--pos)" />
-                        Auto-pay
-                      </>
-                    ) : (
-                      <span style={{ color: "var(--accent-2)" }}>
-                        Needs scheduling
-                      </span>
-                    )}
-                    <span className="dim">·</span>
-                    <span>
-                      in {b.dueInDays} {b.dueInDays === 1 ? "day" : "days"}
-                    </span>
-                  </div>
-                </div>
-                <div className="num" style={{ fontSize: 15, fontWeight: 600 }}>
-                  {formatCurrency(b.amountInCents)}
-                </div>
-              </div>
+              <BillRow key={b.id} bill={b} />
             ))}
           </div>
         </div>
@@ -307,37 +192,7 @@ export default async function DashboardPage() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {recentTransactions.slice(0, 6).map((r) => (
-              <Link
-                key={r.id}
-                href="/dashboard/transactions"
-                className="tx-row"
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <MerchantIcon name={r.merchant} />
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 500 }}>
-                    {r.merchant}
-                  </div>
-                  <div
-                    style={{ fontSize: 11.5, color: "var(--ink-3)" }}
-                  >
-                    {r.category} · {r.date}, {r.time}
-                  </div>
-                </div>
-                <div
-                  className="num"
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color:
-                      r.type === "income" ? "var(--pos)" : "var(--ink)",
-                  }}
-                >
-                  {r.type === "income" ? "+" : "−"}
-                  {formatCurrency(r.amountInCents)}
-                </div>
-                <Icon name="chev" size={14} color="var(--ink-4)" />
-              </Link>
+              <TransactionRow key={r.id} tx={r} />
             ))}
           </div>
         </div>
@@ -372,52 +227,7 @@ export default async function DashboardPage() {
           </div>
           <div className="grid-3col" style={{ gap: 12 }}>
             {savingGoals.map((g) => (
-              <div key={g.id} className="card-flat" style={{ padding: 14 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6 }}>
-                  {g.name}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: 4,
-                    marginBottom: 8,
-                  }}
-                >
-                  <span
-                    className="num serif"
-                    style={{ fontSize: 22, lineHeight: 1 }}
-                  >
-                    {formatCompact(g.currentInCents)}
-                  </span>
-                  <span
-                    className="num"
-                    style={{ fontSize: 11, color: "var(--ink-3)" }}
-                  >
-                    / {formatCompact(g.targetInCents)}
-                  </span>
-                </div>
-                <div className="bar">
-                  <i
-                    style={{
-                      transform: `scaleX(${g.percentageComplete / 100})`,
-                    }}
-                  />
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginTop: 8,
-                    fontSize: 11,
-                  }}
-                >
-                  <span style={{ color: "var(--accent-2)", fontWeight: 600 }}>
-                    {g.percentageComplete}%
-                  </span>
-                  <span style={{ color: "var(--ink-3)" }}>ETA {g.eta}</span>
-                </div>
-              </div>
+              <GoalCard key={g.id} goal={g} />
             ))}
           </div>
         </div>
@@ -435,12 +245,8 @@ export default async function DashboardPage() {
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
               Where it went
             </h2>
-            <Link
-              href="/dashboard/insights"
-              className="btn btn-icon btn-ghost"
-              aria-label="View insights"
-            >
-              <Icon name="dots" size={14} />
+            <Link href="/dashboard/insights" className="btn btn-sm btn-ghost">
+              View insights <Icon name="chev" size={11} />
             </Link>
           </div>
           <div style={{ display: "flex", gap: 18, alignItems: "center" }}>

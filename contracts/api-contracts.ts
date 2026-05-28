@@ -156,7 +156,8 @@ export interface DashboardSummary {
   cashOnHand: {
     totalInCents: number
     weekDeltaInCents: number
-    cashFlowData: number[]           // 30 data points in cents for area chart
+    cashFlowData: number[]           // 30 data points in cents for area chart (1M, kept for compat)
+    cashFlowDataByPeriod: Record<'1W' | '1M' | '3M' | '1Y', number[]>
   }
   netWorth: {
     totalInCents: number             // totalAssetsInCents - totalLiabilitiesInCents

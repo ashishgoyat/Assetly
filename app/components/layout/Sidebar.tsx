@@ -1,13 +1,10 @@
 "use client";
 
-/**
- * Sidebar — Client Component (needs usePathname for active state)
- */
-
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Icon from "@/app/components/ui/Icon";
-import { SignOutButton } from "@/app/components/layout/SignOutButton";
+import { signOutAction } from "@/app/components/layout/sign-out-action";
 import type { Account } from "@/contracts/api-contracts";
 
 interface SidebarProps {
@@ -36,6 +33,18 @@ function formatBalance(cents: number): string {
 
 export default function Sidebar({ userName, userInitials, accounts }: SidebarProps) {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   // Exact match for /dashboard, prefix match for sub-routes
   function isActive(href: string): boolean {
@@ -111,27 +120,58 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
       {/* Divider */}
       <div className="div" style={{ margin: "8px 4px" }} />
 
-      {/* User */}
-      <button
-        className="nav-item"
-        aria-label={`${userName} — account settings`}
-        type="button"
-      >
-        <div
-          className="avatar"
-          style={{ width: 26, height: 26, fontSize: 11 }}
-          aria-hidden
+      {/* User row with 3-dots menu */}
+      <div ref={menuRef} style={{ position: "relative" }}>
+        {menuOpen && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "calc(100% + 4px)",
+              left: 0,
+              right: 0,
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 10,
+              padding: 4,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+              zIndex: 50,
+            }}
+          >
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="nav-item"
+                style={{ width: "100%", color: "#e53935" }}
+                aria-label="Sign out of Assetly"
+              >
+                <span className="nav-icon">
+                  <Icon name="arrowR" size={14} color="#e53935" />
+                </span>
+                <span>Sign out</span>
+              </button>
+            </form>
+          </div>
+        )}
+        <button
+          className="nav-item"
+          aria-label={`${userName} — open menu`}
+          aria-expanded={menuOpen}
+          type="button"
+          onClick={() => setMenuOpen((o) => !o)}
         >
-          {userInitials}
-        </div>
-        <span style={{ flex: 1, textAlign: "left" }} className="user-name">
-          {userName}
-        </span>
-        <Icon name="chev" size={14} color="var(--ink-4)" />
-      </button>
-
-      {/* Sign out */}
-      <SignOutButton />
+          <div
+            className="avatar"
+            style={{ width: 26, height: 26, fontSize: 11 }}
+            aria-hidden
+          >
+            {userInitials}
+          </div>
+          <span style={{ flex: 1, textAlign: "left" }} className="user-name">
+            {userName}
+          </span>
+          <Icon name="dots" size={14} color="var(--ink-4)" />
+        </button>
+      </div>
     </aside>
   );
 }
