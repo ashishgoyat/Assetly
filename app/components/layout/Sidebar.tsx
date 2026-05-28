@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Icon from "@/app/components/ui/Icon";
 import { signOutAction } from "@/app/components/layout/sign-out-action";
+import Modal from "@/app/components/ui/Modal";
+import AddAccountForm from "@/app/components/forms/AddAccountForm";
 import type { Account } from "@/contracts/api-contracts";
 
 interface SidebarProps {
@@ -34,6 +36,7 @@ function formatBalance(cents: number): string {
 export default function Sidebar({ userName, userInitials, accounts }: SidebarProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [addAccountOpen, setAddAccountOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -106,13 +109,24 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
             </span>
           </Link>
         ))}
-        <button className="nav-item" aria-label="Add account" type="button">
+        <button
+          className="nav-item"
+          aria-label="Add account"
+          type="button"
+          onClick={() => setAddAccountOpen(true)}
+        >
           <span className="nav-icon">
             <Icon name="plus" size={14} />
           </span>
           <span style={{ color: "var(--ink-3)" }}>Add account</span>
         </button>
       </div>
+
+      {addAccountOpen && (
+        <Modal title="Add account" onClose={() => setAddAccountOpen(false)}>
+          <AddAccountForm onClose={() => setAddAccountOpen(false)} />
+        </Modal>
+      )}
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
