@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DarkModeToggle from "@/app/components/ui/DarkModeToggle";
 
 // ── Inline SVG icons (20×20) ─────────────────────────────────────────────────
 
@@ -153,6 +154,7 @@ export default function LandingPage() {
 
           {/* Nav actions */}
           <div className="flex items-center gap-2">
+            <DarkModeToggle />
             <Link href="/login" className="btn">
               Log in
             </Link>

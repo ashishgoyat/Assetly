@@ -260,6 +260,24 @@ export async function insertBill(bill: Bill): Promise<void> {
   })
 }
 
+export async function insertAccount(account: Account): Promise<void> {
+  await ensureDb()
+  await db.insert(accountsTable).values({
+    id: account.id,
+    name: account.name,
+    number: account.number,
+    balanceInCents: account.balanceInCents,
+    weekDeltaInCents: account.weekDeltaInCents,
+    type: account.type,
+    color: account.color,
+    apyBps: account.apyBps ?? null,
+    routingNumber: account.routingNumber ?? null,
+    linkedSince: account.linkedSince,
+    lastSync: account.lastSync,
+    balanceHistory: JSON.stringify(account.balanceHistory),
+  })
+}
+
 // ---------------------------------------------------------------------------
 // User functions
 // ---------------------------------------------------------------------------
