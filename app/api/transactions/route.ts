@@ -2,6 +2,7 @@ import { type NextRequest } from 'next/server'
 import { ok, err } from '@/lib/api-response'
 import { getTransactions } from '@/lib/data/store'
 import { parseTransactionsQuery } from '@/lib/validations/query-params'
+import { daysInMonth as daysInMonthFn } from '@/lib/calculations'
 import type { TransactionsSummary } from '@/contracts/api-contracts'
 
 export async function GET(req: NextRequest) {
@@ -40,9 +41,15 @@ export async function GET(req: NextRequest) {
 
     const netInCents = moneyInInCents - moneyOutInCents
 
-    // Daily average out = moneyOut / days in month (April = 30 days)
-    const daysInMonth = 30
-    const dailyAvgOutInCents = Math.round(moneyOutInCents / daysInMonth)
+    // Daily average out = moneyOut / actual days in the month of the earliest filtered transaction
+    const daysInMonthVal =
+      filtered.length > 0
+        ? (() => {
+            const parts = filtered[0].date.split('-')
+            return daysInMonthFn(Number(parts[0]), Number(parts[1]))
+          })()
+        : 30
+    const dailyAvgOutInCents = Math.round(moneyOutInCents / daysInMonthVal)
 
     const summary: TransactionsSummary = {
       moneyInInCents,

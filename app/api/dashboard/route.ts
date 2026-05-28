@@ -4,9 +4,19 @@ import {
   getAccounts,
   getBills,
   getGoals,
+  getBudgets,
   cashFlowData,
 } from '@/lib/data/store'
-import { computeNetWorth, computeCategoryPercentages } from '@/lib/calculations'
+import {
+  computeNetWorth,
+  computeCategoryPercentages,
+  getLatestTransactionDate,
+  parseDate,
+  daysInMonth,
+  daysRemainingInMonth,
+  formatDateLong,
+  computeNetMonthlyInCents,
+} from '@/lib/calculations'
 import type { DashboardSummary } from '@/contracts/api-contracts'
 import { auth } from '@/auth'
 
@@ -21,12 +31,18 @@ export async function GET() {
       .toUpperCase()
       .slice(0, 2)
 
-    const [txList, acctList, billList, goalList] = await Promise.all([
+    const [txList, acctList, billList, goalList, budgetList] = await Promise.all([
       getTransactions(),
       getAccounts(),
       getBills(),
       getGoals(),
+      getBudgets(),
     ])
+
+    // --- Reference date: latest transaction date (fall back to today) ---
+    const latestDate =
+      getLatestTransactionDate(txList) || new Date().toISOString().slice(0, 10)
+    const { year, month, day } = parseDate(latestDate)
 
     // --- Net worth (server-side) ---
     const netWorthCalc = computeNetWorth(acctList)
@@ -42,13 +58,27 @@ export async function GET() {
       0,
     )
 
-    // --- Today stats (seeded values in cents) ---
-    const safeToSpendInCents = 7200 // $72
-    const dailyAllowanceInCents = 9500 // $95
-    const spentTodayInCents = 2300 // $23
-    const percentSpentToday = Math.round(
-      (spentTodayInCents / dailyAllowanceInCents) * 100,
+    // --- Today stats (computed from DB) ---
+    const spentTodayInCents = txList
+      .filter((tx) => tx.date === latestDate && tx.type === 'expense')
+      .reduce((sum, tx) => sum + tx.amountInCents, 0)
+
+    const totalBudgetLimitInCents = budgetList.reduce(
+      (sum, b) => sum + b.limitInCents,
+      0,
     )
+    const daysInCurrentMonth = daysInMonth(year, month)
+    const dailyAllowanceInCents = Math.round(
+      totalBudgetLimitInCents / daysInCurrentMonth,
+    )
+    const safeToSpendInCents = Math.max(
+      0,
+      dailyAllowanceInCents - spentTodayInCents,
+    )
+    const percentSpentToday =
+      dailyAllowanceInCents > 0
+        ? Math.round((spentTodayInCents / dailyAllowanceInCents) * 100)
+        : 0
 
     // --- Recent transactions: last 7 ---
     const recentTransactions = txList.slice(0, 7)
@@ -61,47 +91,68 @@ export async function GET() {
     // --- Saving goals: first 3 ---
     const savingGoals = goalList.slice(0, 3)
 
-    // --- Spending categories with server-side percentages ---
-    const rawCategories = [
-      { name: 'Rent & utilities', amountInCents: 52000, color: 'var(--cat-1)' },
-      { name: 'Groceries', amountInCents: 28000, color: 'var(--cat-2)' },
-      { name: 'Dining', amountInCents: 22000, color: 'var(--cat-3)' },
-      { name: 'Transport', amountInCents: 14000, color: 'var(--cat-4)' },
-      { name: 'Other', amountInCents: 8700, color: 'var(--cat-5)' },
-    ]
+    // --- Net worth month delta from transactions ---
+    const monthDeltaInCents = computeNetMonthlyInCents(txList, year, month)
+
+    // --- Spending categories: built from budget spentInCents (full-month, consistent with budget page) ---
+    const rawCategories = budgetList
+      .filter((b) => b.spentInCents > 0)
+      .map((b) => ({ name: b.name, amountInCents: b.spentInCents, color: b.color }))
     const spendingCategories = computeCategoryPercentages(rawCategories)
     const totalSpentThisMonthInCents = rawCategories.reduce(
       (sum, c) => sum + c.amountInCents,
       0,
     )
 
-    // --- Actions (static, derived from seeded data) ---
-    const actions: DashboardSummary['actions'] = [
-      {
+    // --- Actions (dynamically derived) ---
+    const actions: DashboardSummary['actions'] = []
+
+    // 1. Most urgent bill (smallest dueInDays)
+    const urgentBill = [...billList].sort((a, b) => a.dueInDays - b.dueInDays)[0]
+    if (urgentBill) {
+      const dollars = (urgentBill.amountInCents / 100).toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      })
+      actions.push({
         type: 'bill',
-        title: 'Rent — $1,400',
-        sub: 'Due in 2 days · Auto-pay from Chase ✓',
+        title: `${urgentBill.name} — ${dollars}`,
+        sub: `Due in ${urgentBill.dueInDays} day${urgentBill.dueInDays === 1 ? '' : 's'}${urgentBill.isAutoPay ? ' · Auto-pay ✓' : ''}`,
         cta: 'Review',
-        tone: 'accent',
-        route: '/bills',
-      },
-      {
+        tone: urgentBill.isUrgent ? 'warn' : 'accent',
+        route: '/dashboard/bills',
+      })
+    }
+
+    // 2. Most over-budget category (highest percentageUsed)
+    const topBudget = [...budgetList].sort(
+      (a, b) => b.percentageUsed - a.percentageUsed,
+    )[0]
+    if (topBudget && topBudget.percentageUsed >= 50) {
+      const daysLeft = daysRemainingInMonth(year, month, day)
+      actions.push({
         type: 'insight',
-        title: '82% of dining used',
-        sub: '15 days left in the month',
+        title: `${topBudget.percentageUsed}% of ${topBudget.name} used`,
+        sub: `${daysLeft} day${daysLeft === 1 ? '' : 's'} left in the month`,
         cta: 'See spending',
-        tone: 'warn',
-        route: '/budgets',
-      },
-      {
+        tone: topBudget.isOver ? 'warn' : 'primary',
+        route: '/dashboard/budgets',
+      })
+    }
+
+    // 3. Pending transactions (if any)
+    const pendingCount = txList.filter((tx) => tx.status === 'pending').length
+    if (pendingCount > 0) {
+      actions.push({
         type: 'todo',
-        title: '3 to categorize',
-        sub: 'Amazon, Uber, Spotify',
-        cta: 'Categorize',
+        title: `${pendingCount} pending transaction${pendingCount === 1 ? '' : 's'}`,
+        sub: 'Tap to review',
+        cta: 'Review',
         tone: 'primary',
-        route: '/transactions',
-      },
-    ]
+        route: '/dashboard/transactions',
+      })
+    }
 
     const summary: DashboardSummary = {
       user: {
@@ -110,7 +161,7 @@ export async function GET() {
         lastSync: '2 min ago',
       },
       today: {
-        date: 'Tuesday, April 23',
+        date: formatDateLong(latestDate),
         safeToSpendInCents,
         dailyAllowanceInCents,
         spentTodayInCents,
@@ -123,7 +174,7 @@ export async function GET() {
       },
       netWorth: {
         totalInCents: netWorthCalc.totalInCents,
-        monthDeltaInCents: 124000, // $1,240 seed value
+        monthDeltaInCents,
         totalAssetsInCents: netWorthCalc.totalAssetsInCents,
         totalLiabilitiesInCents: netWorthCalc.totalLiabilitiesInCents,
       },

@@ -1,11 +1,22 @@
 import { ok, err } from '@/lib/api-response'
-import { getGoals } from '@/lib/data/store'
-import { computeGoalPercentage } from '@/lib/calculations'
+import { getGoals, getTransactions } from '@/lib/data/store'
+import {
+  computeGoalPercentage,
+  getLatestTransactionDate,
+  parseDate,
+  computeSavingsRate,
+  computeSavingsRateDelta,
+} from '@/lib/calculations'
 import type { GoalSummary } from '@/contracts/api-contracts'
 
 export async function GET() {
   try {
-    const goalList = await getGoals()
+    const [goalList, txList] = await Promise.all([getGoals(), getTransactions()])
+
+    // --- Reference date: latest transaction date (fall back to today) ---
+    const latestDate =
+      getLatestTransactionDate(txList) || new Date().toISOString().slice(0, 10)
+    const { year, month } = parseDate(latestDate)
 
     // --- Aggregate totals (integer math only) ---
     const totalSavedInCents = goalList.reduce(
@@ -21,12 +32,11 @@ export async function GET() {
       0,
     )
 
-    // Savings rate and delta are computed from income/expense data.
-    // For this seed iteration, values match the design (23%, +5pts from March).
-    const savingsRatePercent = 23
-    const savingsRateDeltaPoints = 5
+    // Savings rate computed from actual transaction data
+    const savingsRatePercent = computeSavingsRate(txList, year, month)
+    const savingsRateDeltaPoints = computeSavingsRateDelta(txList, year, month)
 
-    // 4 active auto-transfer goals
+    // Active auto-transfer goals
     const activeTransfers = goalList.length
 
     // --- Enrich each goal with computed percentage ---

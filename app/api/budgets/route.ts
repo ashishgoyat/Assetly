@@ -1,14 +1,23 @@
 import { ok, err } from '@/lib/api-response'
-import { getBudgets } from '@/lib/data/store'
+import { getBudgets, getTransactions } from '@/lib/data/store'
 import {
   computeBudgetPercentage,
-  generateDailySpendHistory,
+  getLatestTransactionDate,
+  parseDate,
+  daysRemainingInMonth,
+  formatMonthLabel,
+  computeDailySpendTotals,
 } from '@/lib/calculations'
 import type { BudgetSummary } from '@/contracts/api-contracts'
 
 export async function GET() {
   try {
-    const budgetList = await getBudgets()
+    const [budgetList, txList] = await Promise.all([getBudgets(), getTransactions()])
+
+    // --- Reference date: latest transaction date (fall back to today) ---
+    const latestDate =
+      getLatestTransactionDate(txList) || new Date().toISOString().slice(0, 10)
+    const { year, month, day } = parseDate(latestDate)
 
     // --- Aggregate totals (integer math only) ---
     const totalSpentInCents = budgetList.reduce(
@@ -25,9 +34,10 @@ export async function GET() {
       totalLimitInCents,
     )
 
-    // April 2026: 7 days left in the month
-    const daysLeft = 7
-    // Daily limit going forward: remaining / days left (integer division, round)
+    const daysLeft = daysRemainingInMonth(year, month, day)
+    const monthLabel = formatMonthLabel(latestDate)
+
+    // Daily limit going forward: remaining / days left (integer, rounded)
     const dailyLimitGoingForwardInCents =
       daysLeft > 0 ? Math.round(remainingInCents / daysLeft) : 0
 
@@ -38,20 +48,14 @@ export async function GET() {
       isOver: b.spentInCents > b.limitInCents,
     }))
 
-    // --- Deterministic daily spend heatmap (30 values in cents) ---
-    const dailySpendHistory = generateDailySpendHistory()
+    // --- Real daily spend heatmap (30 values in cents, one per day) ---
+    const dailySpendHistory = computeDailySpendTotals(txList, latestDate, 30)
 
-    // --- vs last month deltas (in cents) ---
-    // Negative = spent less (good), positive = spent more (bad)
-    const vsLastMonth: BudgetSummary['vsLastMonth'] = [
-      { category: 'Groceries', deltaInCents: -2000, tone: 'pos' }, // -$20
-      { category: 'Dining', deltaInCents: 4500, tone: 'neg' }, // +$45
-      { category: 'Transport', deltaInCents: -1000, tone: 'pos' }, // -$10
-      { category: 'Shopping', deltaInCents: -3800, tone: 'pos' }, // -$38
-    ]
+    // --- vs last month: no prior-month transactions in DB, return empty ---
+    const vsLastMonth: BudgetSummary['vsLastMonth'] = []
 
     const summary: BudgetSummary = {
-      month: 'April 2026',
+      month: monthLabel,
       daysLeft,
       totalSpentInCents,
       totalLimitInCents,
