@@ -101,7 +101,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full rounded-xl py-2.5 px-4 text-sm font-semibold text-white transition-opacity mt-2"
+            className="w-full rounded-xl py-3.5 px-4 text-sm font-semibold text-white transition-opacity mt-2"
             style={{ background: 'var(--accent)' }}
             aria-disabled={isPending}
           >
