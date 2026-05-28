@@ -9,6 +9,7 @@ import { auth } from "@/auth";
 import { getAccounts } from "@/lib/data/store";
 import Sidebar from "@/app/components/layout/Sidebar";
 import Topbar from "@/app/components/layout/Topbar";
+import { SidebarProvider } from "@/app/components/layout/SidebarContext";
 
 export default async function DashboardLayout({
   children,
@@ -29,7 +30,7 @@ export default async function DashboardLayout({
     .slice(0, 2);
 
   return (
-    <div className="app">
+    <SidebarProvider>
       {/* sidebar-desktop is hidden on mobile via CSS; tablet gets icon-only width */}
       <div className="sidebar-desktop">
         <Sidebar
@@ -46,6 +47,6 @@ export default async function DashboardLayout({
         />
         <main className="page">{children}</main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
