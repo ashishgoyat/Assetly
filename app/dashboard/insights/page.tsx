@@ -2,6 +2,7 @@
  * Insights page — Server Component
  */
 
+import Link from "next/link";
 import Icon from "@/app/components/ui/Icon";
 import Sparkline from "@/app/components/charts/Sparkline";
 import type { Insight } from "@/contracts/api-contracts";
@@ -130,12 +131,12 @@ export default async function InsightsPage() {
               {pinned.body}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
-              <button className="btn btn-accent" type="button">
+              <Link href="/dashboard/goals" className="btn btn-accent">
                 {pinned.cta} <Icon name="arrowR" size={13} />
-              </button>
-              <button className="btn" type="button">
+              </Link>
+              <Link href="/dashboard/goals" className="btn">
                 Adjust goal
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -236,9 +237,9 @@ export default async function InsightsPage() {
                 >
                   {c.body}
                 </div>
-                <button className="btn btn-sm" type="button">
+                <Link href="/dashboard/transactions" className="btn btn-sm">
                   {c.cta} <Icon name="chev" size={11} />
-                </button>
+                </Link>
               </article>
             );
           })}
