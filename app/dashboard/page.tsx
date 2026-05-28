@@ -7,6 +7,7 @@ import Icon from "@/app/components/ui/Icon";
 import MerchantIcon from "@/app/components/ui/MerchantIcon";
 import AreaChart from "@/app/components/charts/AreaChart";
 import DonutChart from "@/app/components/charts/DonutChart";
+import PeriodSelector from "@/app/components/ui/PeriodSelector";
 import type { DashboardSummary } from "@/contracts/api-contracts";
 import { MOCK_DASHBOARD } from "@/lib/mock-data";
 import { formatCurrency, formatCompact } from "@/lib/format";
@@ -162,21 +163,7 @@ export default async function DashboardPage() {
                 </span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 4 }}>
-              {["1W", "1M", "3M", "1Y"].map((p, i) => (
-                <button
-                  key={p}
-                  className="btn btn-sm btn-ghost"
-                  style={{
-                    background: i === 1 ? "var(--bg-soft)" : undefined,
-                    fontWeight: i === 1 ? 600 : 400,
-                  }}
-                  type="button"
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
+            <PeriodSelector periods={["1W", "1M", "3M", "1Y"]} defaultIndex={1} />
           </div>
           <div style={{ marginTop: 14 }}>
             <AreaChart data={cashOnHand.cashFlowData} h={150} color="var(--accent)" />
@@ -532,6 +519,21 @@ function ActionCard({ action: a }: { action: ActionItem }) {
   const iconName =
     a.type === "bill" ? "bill" : a.type === "insight" ? "sparkle" : "check";
 
+  // When the card has a route, the whole card is a link — render the CTA as a
+  // styled span to avoid nesting interactive elements (invalid HTML).
+  const ctaEl = a.route ? (
+    <span className={`btn btn-sm${isPrimary ? " btn-primary" : ""}`}>
+      {a.cta}
+    </span>
+  ) : (
+    <button
+      className={`btn btn-sm${isPrimary ? " btn-primary" : ""}`}
+      type="button"
+    >
+      {a.cta}
+    </button>
+  );
+
   const content = (
     <div
       className="card"
@@ -616,12 +618,7 @@ function ActionCard({ action: a }: { action: ActionItem }) {
       >
         {a.sub}
       </div>
-      <button
-        className={`btn btn-sm${isPrimary ? " btn-primary" : ""}`}
-        type="button"
-      >
-        {a.cta}
-      </button>
+      {ctaEl}
     </div>
   );
 

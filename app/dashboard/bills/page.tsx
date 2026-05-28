@@ -2,7 +2,10 @@
  * Bills & Subscriptions page — Server Component
  */
 
+import Link from "next/link";
 import Icon from "@/app/components/ui/Icon";
+import PeriodSelector from "@/app/components/ui/PeriodSelector";
+import SavingsOpportunityCard from "@/app/dashboard/bills/SavingsOpportunityCard";
 import type { BillsSummary } from "@/contracts/api-contracts";
 import { MOCK_BILLS } from "@/lib/mock-data";
 import { formatCurrency, formatCurrencyExact } from "@/lib/format";
@@ -84,21 +87,7 @@ export default async function BillsPage() {
                   {formatCurrency(totalDueNext30DaysInCents)}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 4 }}>
-                {["30d", "60d", "90d"].map((p, i) => (
-                  <button
-                    key={p}
-                    className="btn btn-sm btn-ghost"
-                    style={{
-                      background: i === 0 ? "var(--bg-soft)" : undefined,
-                      fontWeight: i === 0 ? 600 : 400,
-                    }}
-                    type="button"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
+              <PeriodSelector periods={["30d", "60d", "90d"]} defaultIndex={0} />
             </div>
 
             {/* Visual timeline */}
@@ -283,9 +272,13 @@ export default async function BillsPage() {
                 >
                   {formatCurrency(b.amountInCents)}
                 </div>
-                <button className="btn btn-sm" type="button">
+                <Link
+                  href="/dashboard/bills"
+                  className="btn btn-sm"
+                  aria-label={b.isAutoPay ? `View ${b.name}` : `Pay ${b.name}`}
+                >
                   {b.isAutoPay ? "View" : "Pay"}
-                </button>
+                </Link>
               </div>
             ))}
           </div>
@@ -294,7 +287,7 @@ export default async function BillsPage() {
         {/* Right column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {/* Subscriptions */}
-          <div className="card" style={{ padding: 22 }}>
+          <div id="subscriptions" className="card" style={{ padding: 22 }}>
             <div className="sec-label">Subscriptions</div>
             <div
               style={{
@@ -376,62 +369,11 @@ export default async function BillsPage() {
 
           {/* Save money insight */}
           {savingsOpportunityInCents !== undefined && (
-            <div
-              className="card"
-              style={{
-                padding: 18,
-                background:
-                  "linear-gradient(180deg, var(--accent-tint), var(--surface) 80%)",
-                borderColor: "var(--accent-soft)",
-              }}
-            >
-              <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 8,
-                    background: "var(--accent)",
-                    color: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  aria-hidden
-                >
-                  <Icon name="info" size={14} stroke={2} />
-                </div>
-                <div
-                  style={{
-                    fontWeight: 600,
-                    fontSize: 13.5,
-                    alignSelf: "center",
-                  }}
-                >
-                  Save {formatCurrency(savingsOpportunityInCents)}/mo
-                </div>
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: "var(--ink-2)",
-                  lineHeight: 1.5,
-                }}
-              >
-                {savingsOpportunityNote ??
-                  (unusedSubs.length > 0
-                    ? `You haven't used ${unusedSubs.map((s) => s.name).join(" and ")}. Cancel to save ${formatCurrency(savingsOpportunityInCents)}/mo.`
-                    : "")}
-              </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                <button className="btn btn-sm btn-accent" type="button">
-                  Review subs
-                </button>
-                <button className="btn btn-sm btn-ghost" type="button">
-                  Keep all
-                </button>
-              </div>
-            </div>
+            <SavingsOpportunityCard
+              savingsOpportunityInCents={savingsOpportunityInCents}
+              savingsOpportunityNote={savingsOpportunityNote}
+              unusedSubNames={unusedSubs.map((s) => s.name)}
+            />
           )}
         </div>
       </div>

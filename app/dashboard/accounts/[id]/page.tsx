@@ -7,6 +7,7 @@ import Link from "next/link";
 import Icon from "@/app/components/ui/Icon";
 import MerchantIcon from "@/app/components/ui/MerchantIcon";
 import AreaChart from "@/app/components/charts/AreaChart";
+import PeriodSelector from "@/app/components/ui/PeriodSelector";
 import type { AccountDetail } from "@/contracts/api-contracts";
 import { MOCK_ACCOUNT_DETAILS } from "@/lib/mock-data";
 import { formatCurrency, formatCurrencyExact } from "@/lib/format";
@@ -185,21 +186,7 @@ export default async function AccountPage({ params }: AccountPageProps) {
                 marginTop: 8,
               }}
             >
-              <div style={{ display: "flex", gap: 4 }}>
-                {["1W", "1M", "3M", "6M", "1Y", "All"].map((p, i) => (
-                  <button
-                    key={p}
-                    className="btn btn-sm btn-ghost"
-                    style={{
-                      background: i === 1 ? "var(--bg-soft)" : undefined,
-                      fontWeight: i === 1 ? 600 : 400,
-                    }}
-                    type="button"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
+              <PeriodSelector periods={["1W", "1M", "3M", "6M", "1Y", "All"]} defaultIndex={1} />
               <div
                 style={{
                   display: "flex",
