@@ -7,6 +7,7 @@ import Icon from "@/app/components/ui/Icon";
 import { signOutAction } from "@/app/components/layout/sign-out-action";
 import Modal from "@/app/components/ui/Modal";
 import AddAccountForm from "@/app/components/forms/AddAccountForm";
+import { useSidebar } from "@/app/components/layout/SidebarContext";
 import type { Account } from "@/contracts/api-contracts";
 
 interface SidebarProps {
@@ -15,14 +16,21 @@ interface SidebarProps {
   accounts: Account[];
 }
 
-const NAV_ITEMS = [
-  { href: "/dashboard",              label: "Home",         icon: "home"     as const },
-  { href: "/dashboard/transactions", label: "Transactions", icon: "list"     as const, badge: 3 },
-  { href: "/dashboard/budgets",      label: "Budgets",      icon: "pie"      as const },
-  { href: "/dashboard/goals",        label: "Goals",        icon: "goal"     as const },
-  { href: "/dashboard/bills",        label: "Bills",        icon: "bill"     as const },
-  { href: "/dashboard/insights",     label: "Insights",     icon: "sparkle"  as const },
-  { href: "/dashboard/settings",     label: "Settings",     icon: "settings" as const },
+type NavItem = {
+  href: string
+  label: string
+  icon: "home" | "list" | "pie" | "goal" | "bill" | "sparkle" | "settings"
+  badge?: number
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/dashboard",              label: "Home",         icon: "home"     },
+  { href: "/dashboard/transactions", label: "Transactions", icon: "list"     },
+  { href: "/dashboard/budgets",      label: "Budgets",      icon: "pie"      },
+  { href: "/dashboard/goals",        label: "Goals",        icon: "goal"     },
+  { href: "/dashboard/bills",        label: "Bills",        icon: "bill"     },
+  { href: "/dashboard/insights",     label: "Insights",     icon: "sparkle"  },
+  { href: "/dashboard/settings",     label: "Settings",     icon: "settings" },
 ];
 
 function formatBalance(cents: number): string {
@@ -35,6 +43,7 @@ function formatBalance(cents: number): string {
 
 export default function Sidebar({ userName, userInitials, accounts }: SidebarProps) {
   const pathname = usePathname();
+  const { collapsed, toggle } = useSidebar();
   const [menuOpen, setMenuOpen] = useState(false);
   const [addAccountOpen, setAddAccountOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -56,11 +65,20 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
   }
 
   return (
-    <aside className="sidebar" aria-label="Main navigation">
+    <aside className={`sidebar${collapsed ? " sidebar-icon-only" : ""}`} aria-label="Main navigation">
       {/* Brand */}
       <div className="brand">
-        <div className="brand-mark" aria-hidden>A</div>
+        {!collapsed && <div className="brand-mark" aria-hidden>A</div>}
         <div className="brand-name">Assetly</div>
+        <button
+          className="btn btn-icon btn-ghost sidebar-toggle"
+          onClick={toggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          type="button"
+          style={{ marginLeft: "auto" }}
+        >
+          <Icon name="sidebar" size={16} />
+        </button>
       </div>
 
       {/* Main navigation */}
@@ -109,17 +127,19 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
             </span>
           </Link>
         ))}
-        <button
-          className="nav-item"
-          aria-label="Add account"
-          type="button"
-          onClick={() => setAddAccountOpen(true)}
-        >
-          <span className="nav-icon">
-            <Icon name="plus" size={14} />
-          </span>
-          <span style={{ color: "var(--ink-3)" }}>Add account</span>
-        </button>
+        {!collapsed && (
+          <button
+            className="nav-item"
+            aria-label="Add account"
+            type="button"
+            onClick={() => setAddAccountOpen(true)}
+          >
+            <span className="nav-icon">
+              <Icon name="plus" size={14} />
+            </span>
+            <span style={{ color: "var(--ink-3)" }}>Add account</span>
+          </button>
+        )}
       </div>
 
       {addAccountOpen && (
@@ -159,7 +179,7 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
                 aria-label="Sign out of Assetly"
               >
                 <span className="nav-icon">
-                  <Icon name="arrowR" size={14} color="#e53935" />
+                  <Icon name="logout" size={14} color="#e53935" />
                 </span>
                 <span>Sign out</span>
               </button>
@@ -171,6 +191,7 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
           aria-label={`${userName} — open menu`}
           aria-expanded={menuOpen}
           type="button"
+          style={{ width: "100%" }}
           onClick={() => setMenuOpen((o) => !o)}
         >
           <div
@@ -183,7 +204,7 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
           <span style={{ flex: 1, textAlign: "left" }} className="user-name">
             {userName}
           </span>
-          <Icon name="dots" size={14} color="var(--ink-4)" />
+          {!collapsed && <Icon name="dots" size={14} color="var(--ink-4)" />}
         </button>
       </div>
     </aside>

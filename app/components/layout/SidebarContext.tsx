@@ -1,6 +1,26 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useSyncExternalStore } from "react";
+
+const listeners = new Set<() => void>();
+
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+}
+
+function getSnapshot() {
+  return localStorage.getItem("sidebar-collapsed") === "true";
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
+function setSidebarCollapsed(next: boolean) {
+  localStorage.setItem("sidebar-collapsed", String(next));
+  listeners.forEach((cb) => cb());
+}
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -13,18 +33,10 @@ const SidebarContext = createContext<SidebarContextType>({
 });
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    if (localStorage.getItem("sidebar-collapsed") === "true") setCollapsed(true);
-  }, []);
+  const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   function toggle() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem("sidebar-collapsed", String(next));
-      return next;
-    });
+    setSidebarCollapsed(!collapsed);
   }
 
   return (

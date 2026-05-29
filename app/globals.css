@@ -197,11 +197,7 @@ input, textarea {
 
 @media (min-width: 1280px) {
   .app[data-sidebar-collapsed="true"] {
-    grid-template-columns: 0px 1fr;
-  }
-  .app[data-sidebar-collapsed="true"] .sidebar-desktop {
-    opacity: 0;
-    pointer-events: none;
+    grid-template-columns: 64px 1fr;
   }
 }
 
@@ -465,7 +461,7 @@ input, textarea {
   color: var(--surface);
   border-color: var(--ink);
 }
-.btn-primary:hover { background: #000; border-color: #000; }
+.btn-primary:hover { background: #000; border-color: #000; color: white; }
 
 .btn-accent {
   background: var(--accent);
@@ -497,6 +493,8 @@ input, textarea {
   flex-direction: column;
   gap: 2px;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 .brand {
@@ -511,7 +509,7 @@ input, textarea {
   height: 26px;
   border-radius: 8px;
   background: var(--ink);
-  color: white;
+  color: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;

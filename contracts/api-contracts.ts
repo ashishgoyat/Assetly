@@ -268,11 +268,36 @@ export interface TransactionsSummary {
 // GET /api/accounts/[id]
 //   → ApiResponse<AccountDetail>
 //
+// GET /api/notifications
+//   → ApiResponse<Notification[]>
+//
+// PATCH /api/notifications/[id]/read
+//   → ApiResponse<{ ok: true }>
+//
+// GET /api/transactions?page=1&pageSize=20&category=...&accountId=...&q=searchText
+//   (q param: text search across merchant and category)
+//
 // GET /api/settings
 //   → ApiResponse<UserSettings>
 //
 // PATCH /api/settings
 //   → ApiResponse<UserSettings>
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+export type NotificationType = 'bill_due' | 'budget_exceeded' | 'large_transaction' | 'goal_milestone' | 'weekly_digest'
+
+export interface Notification {
+  id: string
+  type: NotificationType
+  title: string
+  body: string
+  isRead: boolean
+  createdAt: string  // ISO datetime "2026-05-28T10:30:00Z"
+  route?: string     // Optional deep-link e.g. "/dashboard/bills"
+}
 
 // ---------------------------------------------------------------------------
 // Settings

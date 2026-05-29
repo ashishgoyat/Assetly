@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * Topbar — Client Component (search input needs client)
+ * Topbar — Client Component (search input, notifications, and keyboard shortcuts need client)
  */
 
+import { useState, useEffect, useRef } from "react";
 import Icon from "@/app/components/ui/Icon";
 import DarkModeToggle from "@/app/components/ui/DarkModeToggle";
 import HamburgerButton from "@/app/components/layout/HamburgerButton";
-import { useSidebar } from "@/app/components/layout/SidebarContext";
-import type { Account } from "@/contracts/api-contracts";
+import SearchDropdown from "@/app/components/layout/SearchDropdown";
+import NotificationPanel from "@/app/components/layout/NotificationPanel";
+import type { Account, Notification } from "@/contracts/api-contracts";
 
 interface TopbarProps {
   userName: string;
@@ -17,46 +19,112 @@ interface TopbarProps {
 }
 
 export default function Topbar({ userName, userInitials, accounts }: TopbarProps) {
-  const { collapsed, toggle } = useSidebar();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Fetch notifications once on mount
+  useEffect(() => {
+    fetch("/api/notifications")
+      .then((r) => r.json())
+      .then((d: { data?: Notification[] }) => {
+        if (d.data) setNotifications(d.data);
+      })
+      .catch(() => {
+        // Silently fail — notification fetch is non-critical
+      });
+  }, []);
+
+  // Click outside notification panel to close
+  useEffect(() => {
+    function handleMouseDown(e: MouseEvent) {
+      if (
+        notifWrapperRef.current &&
+        !notifWrapperRef.current.contains(e.target as Node)
+      ) {
+        setNotifOpen(false);
+      }
+    }
+    if (notifOpen) {
+      document.addEventListener("mousedown", handleMouseDown);
+    }
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [notifOpen]);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  function handleMarkAllRead() {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  }
 
   return (
     <header className="topbar" role="banner">
-      {/* Sidebar toggle — desktop only (hidden on mobile/tablet via CSS) */}
-      <button
-        className="btn btn-icon btn-ghost sidebar-toggle"
-        onClick={toggle}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        type="button"
-      >
-        <Icon name="sidebar" size={16} />
-      </button>
-
       {/* Hamburger — only visible on mobile via .hamburger CSS class */}
       <HamburgerButton
         userName={userName}
         userInitials={userInitials}
         accounts={accounts}
       />
+
+      {/* Search bar wrapping the SearchDropdown */}
       <div className="search" role="search">
         <Icon name="search" size={15} color="var(--ink-3)" />
-        <input
-          type="search"
-          placeholder="Search transactions, merchants, categories…"
-          aria-label="Search"
-        />
+        <SearchDropdown inputRef={searchInputRef} />
         <span className="kbd" aria-label="Keyboard shortcut Command K">⌘K</span>
       </div>
 
       <div style={{ flex: 1 }} />
 
       <DarkModeToggle />
-      <button
-        className="btn btn-icon btn-ghost"
-        aria-label="Notifications"
-        type="button"
+
+      {/* Bell button + notification panel */}
+      <div
+        ref={notifWrapperRef}
+        style={{ position: "relative", display: "inline-flex" }}
       >
-        <Icon name="bell" size={16} />
-      </button>
+        <button
+          className="btn btn-icon btn-ghost"
+          aria-label={
+            unreadCount > 0
+              ? `Notifications, ${unreadCount} unread`
+              : "Notifications"
+          }
+          aria-expanded={notifOpen}
+          aria-haspopup="dialog"
+          type="button"
+          onClick={() => setNotifOpen((prev) => !prev)}
+          style={{ position: "relative" }}
+        >
+          <Icon name="bell" size={16} />
+          {unreadCount > 0 && (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: 4,
+                right: 4,
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#e53935",
+                border: "1.5px solid var(--surface)",
+                display: "block",
+              }}
+            />
+          )}
+        </button>
+
+        {notifOpen && (
+          <NotificationPanel
+            notifications={notifications}
+            onMarkAllRead={handleMarkAllRead}
+          />
+        )}
+      </div>
+
       <button
         className="btn btn-icon btn-ghost"
         aria-label="Settings"

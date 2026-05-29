@@ -25,13 +25,25 @@ import type {
   Bill,
   Subscription,
   Insight,
+  Notification,
 } from '@/contracts/api-contracts'
 
 // ---------------------------------------------------------------------------
 // cashFlowData — static chart constant, no need to DB-ify
 // ---------------------------------------------------------------------------
 
-export { cashFlowData } from '@/lib/data/seed-data'
+export { cashFlowData, cashFlowDataByPeriod } from '@/lib/data/seed-data'
+
+// ---------------------------------------------------------------------------
+// Notifications — static seed data, no DB table needed
+// ---------------------------------------------------------------------------
+
+import { SEED_NOTIFICATIONS } from '@/lib/data/seed-data'
+
+export async function getNotifications(): Promise<Notification[]> {
+  // TODO: replace with DB query when notifications become persistent
+  return SEED_NOTIFICATIONS
+}
 
 // ---------------------------------------------------------------------------
 // Row-to-domain mappers
@@ -258,6 +270,34 @@ export async function insertBill(bill: Bill): Promise<void> {
     icon: bill.icon,
     color: bill.color,
   })
+}
+
+export async function removeTransaction(id: string): Promise<void> {
+  await ensureDb()
+  await db.delete(transactionsTable).where(eq(transactionsTable.id, id))
+}
+
+export async function updateTransaction(
+  id: string,
+  updates: {
+    merchant?: string
+    category?: string
+    accountLabel?: string
+    status?: string
+    note?: string | null
+  },
+): Promise<void> {
+  await ensureDb()
+  await db
+    .update(transactionsTable)
+    .set({
+      ...(updates.merchant !== undefined ? { merchant: updates.merchant } : {}),
+      ...(updates.category !== undefined ? { category: updates.category } : {}),
+      ...(updates.accountLabel !== undefined ? { accountLabel: updates.accountLabel } : {}),
+      ...(updates.status !== undefined ? { status: updates.status } : {}),
+      ...(updates.note !== undefined ? { note: updates.note } : {}),
+    })
+    .where(eq(transactionsTable.id, id))
 }
 
 export async function insertAccount(account: Account): Promise<void> {

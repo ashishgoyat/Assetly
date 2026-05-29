@@ -6,6 +6,7 @@ import {
   getGoals,
   getBudgets,
   cashFlowData,
+  cashFlowDataByPeriod,
 } from '@/lib/data/store'
 import {
   computeNetWorth,
@@ -171,6 +172,7 @@ export async function GET() {
         totalInCents: cashTotalInCents,
         weekDeltaInCents: cashWeekDeltaInCents,
         cashFlowData,
+        cashFlowDataByPeriod,
       },
       netWorth: {
         totalInCents: netWorthCalc.totalInCents,

@@ -13,6 +13,7 @@ import type {
   Bill,
   Subscription,
   Insight,
+  Notification,
 } from '@/contracts/api-contracts'
 
 // ---------------------------------------------------------------------------
@@ -563,3 +564,81 @@ export const cashFlowData: number[] = [
   20, 24, 22, 26, 25, 28, 27, 30, 29, 32,
   31, 33, 32, 35, 34, 36, 35, 37, 36, 38,
 ].map((v) => v * 100)
+
+export const cashFlowDataByPeriod: Record<'1W' | '1M' | '3M' | '1Y', number[]> = {
+  '1W': [35, 34, 36, 35, 37, 36, 38].map((v) => v * 100),
+  '1M': cashFlowData,
+  '3M': [
+     8,  9,  8, 10,  9, 11, 10, 12, 11, 13,
+    12, 14, 13, 15, 14, 16, 15, 17, 16, 18,
+    17, 19, 18, 20, 19, 21, 20, 22, 21, 23,
+    22, 24, 23, 25, 24, 26, 25, 27, 26, 28,
+    27, 29, 28, 30, 29, 31, 30, 32, 31, 33,
+    32, 34, 33, 35, 34, 36, 35, 37, 36, 38,
+    31, 33, 32, 35, 34, 36, 35, 37, 36, 38,
+    29, 31, 30, 33, 32, 34, 33, 36, 35, 37,
+    30, 32, 31, 34, 33, 35, 34, 36, 35, 38,
+  ].map((v) => v * 100),
+  '1Y': [18, 20, 22, 19, 24, 26, 23, 28, 30, 27, 34, 38].map((v) => v * 100),
+}
+
+// ---------------------------------------------------------------------------
+// Notifications (static seed — no DB table needed)
+// ---------------------------------------------------------------------------
+
+export const SEED_NOTIFICATIONS: Notification[] = [
+  {
+    id: 'notif-1',
+    type: 'bill_due',
+    title: 'Rent due in 2 days',
+    body: 'Your $2,200 rent payment is due on May 31.',
+    isRead: false,
+    createdAt: '2026-05-29T08:00:00Z',
+    route: '/dashboard/bills',
+  },
+  {
+    id: 'notif-2',
+    type: 'budget_exceeded',
+    title: 'Dining budget exceeded',
+    body: "You've spent $412 of your $350 Dining budget this month.",
+    isRead: false,
+    createdAt: '2026-05-28T18:45:00Z',
+    route: '/dashboard/budgets',
+  },
+  {
+    id: 'notif-3',
+    type: 'large_transaction',
+    title: 'Large transaction detected',
+    body: 'A $340 charge from Best Buy was posted to Chase ··4521.',
+    isRead: false,
+    createdAt: '2026-05-27T14:22:00Z',
+    route: '/dashboard/transactions',
+  },
+  {
+    id: 'notif-4',
+    type: 'goal_milestone',
+    title: 'Emergency fund at 50%!',
+    body: "You've saved $5,000 of your $10,000 emergency fund goal.",
+    isRead: true,
+    createdAt: '2026-05-25T09:10:00Z',
+    route: '/dashboard/goals',
+  },
+  {
+    id: 'notif-5',
+    type: 'budget_exceeded',
+    title: 'Shopping budget at 90%',
+    body: "You've used $270 of your $300 Shopping budget.",
+    isRead: true,
+    createdAt: '2026-05-24T11:30:00Z',
+    route: '/dashboard/budgets',
+  },
+  {
+    id: 'notif-6',
+    type: 'weekly_digest',
+    title: 'Your weekly summary',
+    body: 'You spent $847 this week — $120 less than last week. Keep it up!',
+    isRead: true,
+    createdAt: '2026-05-24T07:00:00Z',
+    route: '/dashboard/insights',
+  },
+]

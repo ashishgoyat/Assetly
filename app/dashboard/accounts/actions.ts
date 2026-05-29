@@ -18,8 +18,8 @@ const dollarsToCents = z
 
 const createAccountSchema = z.object({
   name: z.string().min(1, 'Account name is required').max(80),
-  type: z.enum(['checking', 'savings', 'investment'], {
-    errorMap: () => ({ message: 'Account type is required' }),
+  type: z.enum(['checking', 'savings', 'investment'] as const, {
+    error: 'Account type is required',
   }),
   balanceDollars: dollarsToCents,
   lastFour: z

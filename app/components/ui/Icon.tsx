@@ -44,7 +44,9 @@ export type IconName =
   | "heart"
   | "sun"
   | "moon"
-  | "sidebar";
+  | "sidebar"
+  | "logout"
+  | "trash";
 
 interface IconProps {
   name: IconName;
@@ -257,6 +259,15 @@ export default function Icon({
       <>
         <rect x="3" y="3" width="18" height="18" rx="2" />
         <path d="M9 3v18" />
+      </>
+    ),
+    logout: (
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+    ),
+    trash: (
+      <>
+        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+        <path d="M10 11v6M14 11v6" />
       </>
     ),
   };

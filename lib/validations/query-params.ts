@@ -34,6 +34,7 @@ const transactionsQueryRawSchema = z.object({
   pageSize: z.string().optional(),
   category: z.enum(TRANSACTION_CATEGORIES).optional(),
   accountId: z.string().optional(),
+  q: z.string().trim().optional(),
 })
 
 export interface TransactionsQuery {
@@ -41,6 +42,7 @@ export interface TransactionsQuery {
   pageSize: number
   category?: TransactionCategory
   accountId?: string
+  q?: string
 }
 
 export function parseTransactionsQuery(
@@ -51,6 +53,7 @@ export function parseTransactionsQuery(
     pageSize: searchParams.get('pageSize') ?? undefined,
     category: searchParams.get('category') ?? undefined,
     accountId: searchParams.get('accountId') ?? undefined,
+    q: searchParams.get('q') ?? undefined,
   }
 
   const parsed = transactionsQueryRawSchema.safeParse(raw)
@@ -76,6 +79,7 @@ export function parseTransactionsQuery(
       pageSize,
       category: parsed.data.category,
       accountId: parsed.data.accountId,
+      ...(parsed.data.q !== undefined && parsed.data.q !== '' ? { q: parsed.data.q } : {}),
     },
   }
 }

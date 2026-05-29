@@ -7,7 +7,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { insertTransaction } from '@/lib/data/store'
+import { insertTransaction, removeTransaction, updateTransaction } from '@/lib/data/store'
 import type { TransactionCategory, TransactionType } from '@/contracts/api-contracts'
 
 // ---------------------------------------------------------------------------
@@ -122,5 +122,58 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
   } catch (err) {
     console.error('[createTransaction] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+export async function deleteTransaction(id: string): Promise<ActionResult> {
+  try {
+    if (!id || typeof id !== 'string') {
+      return { success: false, error: 'Invalid transaction ID.' }
+    }
+    await removeTransaction(id)
+    revalidatePath('/dashboard/transactions')
+    revalidatePath('/dashboard')
+    return { success: true, id }
+  } catch (err) {
+    console.error('[deleteTransaction] unexpected error:', err)
+    return { success: false, error: 'Failed to delete transaction. Please try again.' }
+  }
+}
+
+const updateTransactionSchema = z.object({
+  merchant: z.string().min(1, 'Merchant is required').max(100),
+  category: z.enum(TRANSACTION_CATEGORIES),
+  accountLabel: z.string().min(1, 'Account is required'),
+  status: z.enum(['posted', 'pending'] as const),
+  note: z.string().max(500).nullable().optional(),
+})
+
+export async function updateTransactionAction(
+  id: string,
+  raw: {
+    merchant: string
+    category: string
+    accountLabel: string
+    status: string
+    note: string | null
+  },
+): Promise<ActionResult> {
+  try {
+    if (!id) return { success: false, error: 'Invalid transaction ID.' }
+
+    const parsed = updateTransactionSchema.safeParse(raw)
+    if (!parsed.success) {
+      const message = parsed.error.issues.map((i) => i.message).join(', ')
+      return { success: false, error: message }
+    }
+
+    await updateTransaction(id, parsed.data)
+    revalidatePath('/dashboard/transactions')
+    revalidatePath('/dashboard')
+
+    return { success: true, id }
+  } catch (err) {
+    console.error('[updateTransactionAction] unexpected error:', err)
+    return { success: false, error: 'Failed to update transaction. Please try again.' }
   }
 }

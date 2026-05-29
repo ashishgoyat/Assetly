@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       return err(parsed.message, 'INVALID_QUERY_PARAMS', 400)
     }
 
-    const { page, pageSize, category, accountId } = parsed.data
+    const { page, pageSize, category, accountId, q } = parsed.data
 
     const allTransactions = await getTransactions()
 
@@ -27,6 +27,14 @@ export async function GET(req: NextRequest) {
     if (accountId !== undefined) {
       filtered = filtered.filter((tx) =>
         tx.accountLabel.toLowerCase().includes(accountId.toLowerCase()),
+      )
+    }
+    if (q !== undefined && q !== '') {
+      const qLower = q.toLowerCase()
+      filtered = filtered.filter(
+        (tx) =>
+          tx.merchant.toLowerCase().includes(qLower) ||
+          tx.category.toLowerCase().includes(qLower),
       )
     }
 
