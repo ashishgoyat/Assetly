@@ -7,7 +7,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { insertGoal } from '@/lib/data/store'
+import { insertGoal, getGoalById, updateGoal, removeGoal } from '@/lib/data/store'
+import { computeGoalPercentage } from '@/lib/calculations'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -130,5 +131,83 @@ export async function createGoal(formData: FormData): Promise<ActionResult> {
   } catch (err) {
     console.error('[createGoal] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+export async function addFundsToGoal(
+  id: string,
+  amountDollars: string,
+): Promise<ActionResult> {
+  try {
+    const parsedAmount = Math.round(parseFloat(amountDollars) * 100)
+    if (!Number.isInteger(parsedAmount) || parsedAmount <= 0) {
+      return { success: false, error: 'Amount must be a positive number.' }
+    }
+
+    const goal = await getGoalById(id)
+    if (!goal) return { success: false, error: 'Goal not found.' }
+
+    const newCurrentInCents = goal.currentInCents + parsedAmount
+    const newPercentage = computeGoalPercentage(newCurrentInCents, goal.targetInCents)
+    const newEta = computeEta(
+      Math.max(0, goal.targetInCents - newCurrentInCents),
+      goal.monthlyContributionInCents,
+    )
+
+    await updateGoal(id, {
+      currentInCents: newCurrentInCents,
+      percentageComplete: newPercentage,
+      eta: newEta,
+    })
+
+    revalidatePath('/dashboard/goals')
+    revalidatePath('/dashboard')
+    return { success: true, id }
+  } catch (err) {
+    console.error('[addFundsToGoal] unexpected error:', err)
+    return { success: false, error: 'Failed to add funds. Please try again.' }
+  }
+}
+
+export async function updateGoalMonthly(
+  id: string,
+  newMonthlyDollars: string,
+): Promise<ActionResult> {
+  try {
+    const parsedCents = Math.round(parseFloat(newMonthlyDollars) * 100)
+    if (!Number.isInteger(parsedCents) || parsedCents <= 0) {
+      return { success: false, error: 'Monthly amount must be a positive number.' }
+    }
+
+    const goal = await getGoalById(id)
+    if (!goal) return { success: false, error: 'Goal not found.' }
+
+    const remaining = Math.max(0, goal.targetInCents - goal.currentInCents)
+    const newEta = computeEta(remaining, parsedCents)
+
+    await updateGoal(id, {
+      monthlyContributionInCents: parsedCents,
+      eta: newEta,
+    })
+
+    revalidatePath('/dashboard/goals')
+    revalidatePath('/dashboard')
+    return { success: true, id }
+  } catch (err) {
+    console.error('[updateGoalMonthly] unexpected error:', err)
+    return { success: false, error: 'Failed to update monthly amount. Please try again.' }
+  }
+}
+
+export async function deleteGoal(id: string): Promise<ActionResult> {
+  try {
+    if (!id) return { success: false, error: 'Invalid goal ID.' }
+    await removeGoal(id)
+    revalidatePath('/dashboard/goals')
+    revalidatePath('/dashboard')
+    return { success: true, id }
+  } catch (err) {
+    console.error('[deleteGoal] unexpected error:', err)
+    return { success: false, error: 'Failed to delete goal. Please try again.' }
   }
 }

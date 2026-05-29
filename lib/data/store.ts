@@ -256,6 +256,30 @@ export async function insertGoal(goal: Goal): Promise<void> {
   })
 }
 
+export async function getGoalById(id: string): Promise<Goal | undefined> {
+  await ensureDb()
+  const rows = await db.select().from(goalsTable).where(eq(goalsTable.id, id))
+  return rows[0] ? mapGoal(rows[0]) : undefined
+}
+
+export async function updateGoal(
+  id: string,
+  updates: {
+    currentInCents?: number
+    monthlyContributionInCents?: number
+    percentageComplete?: number
+    eta?: string
+  },
+): Promise<void> {
+  await ensureDb()
+  await db.update(goalsTable).set(updates).where(eq(goalsTable.id, id))
+}
+
+export async function removeGoal(id: string): Promise<void> {
+  await ensureDb()
+  await db.delete(goalsTable).where(eq(goalsTable.id, id))
+}
+
 export async function insertBill(bill: Bill): Promise<void> {
   await ensureDb()
   await db.insert(billsTable).values({
@@ -316,6 +340,37 @@ export async function insertAccount(account: Account): Promise<void> {
     lastSync: account.lastSync,
     balanceHistory: JSON.stringify(account.balanceHistory),
   })
+}
+
+export async function insertBudget(budget: Budget): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.insert(budgetsTable).values({
+    id: budget.id,
+    name: budget.name,
+    category: budget.category,
+    limitInCents: budget.limitInCents,
+    spentInCents: budget.spentInCents,
+    percentageUsed: budget.percentageUsed,
+    icon: budget.icon,
+    color: budget.color,
+    isOver: budget.isOver,
+  })
+}
+
+export async function updateBudget(
+  id: string,
+  updates: { limitInCents?: number; name?: string },
+): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.update(budgetsTable).set(updates).where(eq(budgetsTable.id, id))
+}
+
+export async function removeBudget(id: string): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.delete(budgetsTable).where(eq(budgetsTable.id, id))
 }
 
 // ---------------------------------------------------------------------------

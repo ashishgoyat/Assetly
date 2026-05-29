@@ -142,8 +142,33 @@
 
 ---
 
+## Session 2026-05-29 (continued)
+
+### What was built / fixed
+
+- **Budgets page — client component rewrite** (`app/dashboard/budgets/page.tsx`): converted from Server Component to Client Component; adds month picker dropdown (last 12 months), loading skeleton, error/empty states, and a `BudgetCard` sub-component with a dots-menu for inline limit editing and delete.
+- **Budget cards — edit limit + delete** (`app/dashboard/budgets/page.tsx`): each budget card now has a ⋯ dropdown; "Edit limit" reveals an inline input+save; "Delete" calls `deleteBudget` and removes the card optimistically.
+- **NewBudgetButton — real form** (`app/dashboard/budgets/NewBudgetButton.tsx`): replaced the "coming soon" stub with a fully wired modal form (name, category, monthly limit, icon picker, color picker); calls `createBudget` server action; emits `budget-created` event to trigger page re-fetch.
+- **Budget server actions** (`app/dashboard/budgets/actions.ts`, new file): `createBudget`, `updateBudgetLimit`, `deleteBudget` server actions with Zod validation.
+- **Budgets API — month param** (`app/api/budgets/route.ts`): `GET /api/budgets?month=YYYY-MM` now accepts a client-selected month; computes `daysLeft` relative to today (0 for past months, full for future); heatmap covers exact calendar days of selected month instead of a fixed 30-day window.
+- **Goals page — client component rewrite** (`app/dashboard/goals/page.tsx`): converted from Server Component to Client Component; adds `GoalCard` sub-component with dots-menu (Add funds, Adjust monthly, Delete), loading skeleton, error state, empty state.
+- **Goal server actions** (`app/dashboard/goals/actions.ts`): added `addFundsToGoal`, `updateGoalMonthly`, and `deleteGoal` server actions; recalculate `percentageComplete` and `eta` on mutation.
+- **Store — goal + budget DB helpers** (`lib/data/store.ts`): added `getGoalById`, `updateGoal`, `removeGoal`, `insertBudget`, `updateBudget`, `removeBudget`.
+
+### Known limitations / pending
+1. **Edit/delete for bills** — create only; no edit or delete for bills
+2. **Seed transactions only cover April 17–23, 2026** — vsLastMonth returns []; budget spentInCents is seeded, not aggregated from transactions
+3. **Quick actions for bills** — bill Pay now / Schedule not wired to server actions yet
+4. **Cash on hand period data is mock-only** — `cashFlowDataByPeriod` is hardcoded; API returns single array
+
+### Last checks
+- pnpm lint: not run
+- pnpm build: not run
+
+---
+
 ## Next session — choose an iteration
 
-E) Edit/delete for goals and bills (transactions now done)
-G) Empty states + polish — skeleton loading refinements, zero-data empty states for all sections
-I) Wire quick actions — connect bill Pay now / Schedule, goal Add funds / Pause to real server actions
+E) Edit/delete for bills
+G) Empty states + polish — remaining zero-data empty states
+I) Wire bill quick actions — Pay now / Schedule to real server actions
