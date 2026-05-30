@@ -4,9 +4,11 @@ import { useState } from "react";
 import Icon from "@/app/components/ui/Icon";
 import MerchantIcon from "@/app/components/ui/MerchantIcon";
 import { formatCurrency } from "@/lib/format";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
 import type { Transaction } from "@/contracts/api-contracts";
 
 export default function TransactionRow({ tx: r }: { tx: Transaction }) {
+  const currency = useCurrency();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -34,7 +36,7 @@ export default function TransactionRow({ tx: r }: { tx: Transaction }) {
           }}
         >
           {r.type === "income" ? "+" : "−"}
-          {formatCurrency(r.amountInCents)}
+          {formatCurrency(r.amountInCents, currency)}
         </div>
         <Icon name={expanded ? "chevd" : "chev"} size={14} color="var(--ink-4)" />
       </button>

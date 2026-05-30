@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import Icon from "@/app/components/ui/Icon";
 import type { Goal, GoalSummary } from "@/contracts/api-contracts";
 import { formatCurrency, formatCompact, formatPercent } from "@/lib/format";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
 import NewGoalButton from "@/app/dashboard/goals/NewGoalButton";
 import {
   addFundsToGoal,
@@ -29,6 +30,7 @@ function GoalCard({
   onUpdate: (updated: Goal) => void;
   onDelete: (id: string) => void;
 }) {
+  const currency = useCurrency();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeAction, setActiveAction] = useState<"funds" | "monthly" | null>(
     null
@@ -128,7 +130,7 @@ function GoalCard({
             {goal.name}
           </div>
           <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-            {goal.vibe} · {formatCurrency(goal.monthlyContributionInCents)}/mo auto
+            {goal.vibe} · {formatCurrency(goal.monthlyContributionInCents, currency)}/mo auto
           </div>
         </div>
 
@@ -355,6 +357,7 @@ function GoalCard({
 // ---------------------------------------------------------------------------
 
 export default function GoalsPage() {
+  const currency = useCurrency();
   const [data, setData] = useState<GoalSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -597,7 +600,7 @@ export default function GoalsPage() {
                 color: "var(--pos)",
               }}
             >
-              {formatCurrency(totalMonthlyContributionInCents)}
+              {formatCurrency(totalMonthlyContributionInCents, currency)}
               <span style={{ fontSize: 16, color: "var(--ink-3)" }}>/mo</span>
             </div>
             <div className="muted" style={{ marginTop: 6 }}>

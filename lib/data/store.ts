@@ -442,6 +442,28 @@ export async function getUserByEmail(email: string): Promise<UserRow | undefined
   return rows[0]
 }
 
+export async function getUserById(id: string): Promise<UserRow | undefined> {
+  // TODO: replace with DB query
+  await ensureDb()
+  const rows = await db.select().from(usersTable).where(eq(usersTable.id, id))
+  return rows[0]
+}
+
+export async function updateUser(
+  id: string,
+  updates: { name?: string; email?: string; passwordHash?: string },
+): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.update(usersTable).set(updates).where(eq(usersTable.id, id))
+}
+
+export async function removeUser(id: string): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.delete(usersTable).where(eq(usersTable.id, id))
+}
+
 export async function createUser(data: {
   id: string
   name: string

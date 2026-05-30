@@ -3,6 +3,8 @@
  */
 
 import Link from "next/link";
+import { auth } from "@/auth";
+import { cookies } from "next/headers";
 import Icon from "@/app/components/ui/Icon";
 import DonutChart from "@/app/components/charts/DonutChart";
 import CashOnHandCard from "@/app/components/dashboard/CashOnHandCard";
@@ -12,6 +14,36 @@ import GoalCard from "@/app/components/dashboard/GoalCard";
 import type { DashboardSummary } from "@/contracts/api-contracts";
 import { MOCK_DASHBOARD } from "@/lib/mock-data";
 import { formatCurrency, formatCompact } from "@/lib/format";
+
+function getHourInTimezone(timezone: string): number {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      hour: "numeric",
+      hour12: false,
+    }).formatToParts(new Date());
+    const h = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10);
+    return Number.isNaN(h) ? new Date().getHours() : h % 24;
+  } catch {
+    return new Date().getHours();
+  }
+}
+
+function getGreeting(hour: number): string {
+  if (hour < 5) return "Late night";
+  if (hour < 7) return "Early morning";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  if (hour < 22) return "Good evening";
+  return "Late night";
+}
+
+function firstName(full: string | null | undefined): string {
+  if (!full) return "there";
+  const trimmed = full.trim();
+  if (!trimmed) return "there";
+  return trimmed.split(/\s+/)[0];
+}
 
 async function getDashboardData(): Promise<DashboardSummary> {
   try {
@@ -30,8 +62,16 @@ async function getDashboardData(): Promise<DashboardSummary> {
 }
 
 export default async function DashboardPage() {
-  const data = await getDashboardData();
+  const [data, session, cookieStore] = await Promise.all([
+    getDashboardData(),
+    auth(),
+    cookies(),
+  ]);
   const { user, today, cashOnHand, actions, recentTransactions, upcomingBills, savingGoals, spendingCategories, totalSpentThisMonthInCents } = data;
+
+  const displayName = firstName(session?.user?.name ?? user.name);
+  const timezone = cookieStore.get("assetly-timezone")?.value ?? "Asia/Kolkata";
+  const greeting = getGreeting(getHourInTimezone(timezone));
 
   const pctToday = today.percentSpentToday;
 
@@ -44,7 +84,7 @@ export default async function DashboardPage() {
           className="serif"
           style={{ fontSize: 40, lineHeight: 1.02, letterSpacing: "-0.02em", margin: 0 }}
         >
-          Morning, {user.name}.{" "}
+          {greeting}, {displayName}.{" "}
           <span style={{ color: "var(--ink-3)" }}>
             {actions.length} things need your attention.
           </span>

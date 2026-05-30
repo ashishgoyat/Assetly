@@ -18,6 +18,7 @@ import type {
 } from "@/contracts/api-contracts";
 import { MOCK_TRANSACTIONS, MOCK_TX_SUMMARY } from "@/lib/mock-data";
 import { formatCurrency, formatCurrencyExact } from "@/lib/format";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
 import {
   deleteTransaction,
   updateTransactionAction,
@@ -82,6 +83,7 @@ function exportCsv(rows: Transaction[]) {
 }
 
 export default function TransactionsPage() {
+  const currency = useCurrency();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<TransactionsSummary | null>(null);
   const [filter, setFilter] = useState<FilterValue>("all");
@@ -255,13 +257,13 @@ export default function TransactionsPage() {
             [
               {
                 label: "Money in",
-                value: `+${formatCurrency(summary.moneyInInCents)}`,
+                value: `+${formatCurrency(summary.moneyInInCents, currency)}`,
                 tone: "pos",
                 sparkData: [1, 2, 2, 3, 4, 5, 5, 6],
               },
               {
                 label: "Money out",
-                value: `−${formatCurrency(summary.moneyOutInCents)}`,
+                value: `−${formatCurrency(summary.moneyOutInCents, currency)}`,
                 tone: "ink",
                 sparkData: [4, 5, 3, 6, 4, 7, 5, 8],
               },
@@ -269,14 +271,14 @@ export default function TransactionsPage() {
                 label: "Net",
                 value:
                   summary.netInCents >= 0
-                    ? `+${formatCurrency(summary.netInCents)}`
-                    : `−${formatCurrency(Math.abs(summary.netInCents))}`,
+                    ? `+${formatCurrency(summary.netInCents, currency)}`
+                    : `−${formatCurrency(Math.abs(summary.netInCents), currency)}`,
                 tone: "accent",
                 sparkData: [1, 2, 2, 3, 3, 4, 5, 5],
               },
               {
                 label: "Daily avg",
-                value: formatCurrency(summary.dailyAvgOutInCents),
+                value: formatCurrency(summary.dailyAvgOutInCents, currency),
                 tone: "muted",
                 sparkData: [3, 4, 3, 5, 4, 5, 4, 5],
               },
@@ -647,7 +649,7 @@ export default function TransactionsPage() {
                       setSelected((prev) => (prev?.id === r.id ? null : r))
                     }
                     aria-expanded={selected?.id === r.id}
-                    aria-label={`${r.merchant}, ${formatCurrencyExact(r.amountInCents)}, ${r.category}`}
+                    aria-label={`${r.merchant}, ${formatCurrencyExact(r.amountInCents, currency)}, ${r.category}`}
                     type="button"
                   >
                     <MerchantIcon name={r.merchant} size={32} />
@@ -674,7 +676,7 @@ export default function TransactionsPage() {
                       }}
                     >
                       {r.type === "income" ? "+" : "−"}
-                      {formatCurrencyExact(r.amountInCents)}
+                      {formatCurrencyExact(r.amountInCents, currency)}
                     </div>
                     <Icon name="chev" size={14} color="var(--ink-4)" />
                   </button>
@@ -726,6 +728,7 @@ function TxDetailPanel({
   onDelete: (id: string) => void;
   onUpdate: (updated: Transaction) => void;
 }) {
+  const currency = useCurrency();
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -907,7 +910,7 @@ function TxDetailPanel({
           }}
         >
           {tx.type === "income" ? "+" : "−"}
-          {formatCurrencyExact(tx.amountInCents)}
+          {formatCurrencyExact(tx.amountInCents, currency)}
         </div>
         <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
           {tx.date} · {tx.time}

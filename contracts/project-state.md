@@ -214,3 +214,36 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed
 - pnpm build: not run
+
+---
+
+## Session 2026-05-30 (settings + greeting)
+
+### What was built / fixed
+- **Settings — Edit Profile modal** (`app/dashboard/settings/page.tsx`): "Edit Profile" button now opens a modal with name, currency dropdown (USD/INR/EUR), and timezone fields; saving calls `updateProfile` server action; on success propagates new currency via `useSetCurrency()` so all client pages re-render immediately.
+- **Settings — Change Password modal** (`app/dashboard/settings/page.tsx`): "Change password" opens a modal with current/new/confirm fields, client-side match validation, 8-char minimum; calls `updatePassword` action; shows brief success message before close.
+- **Settings — Delete Account modal** (`app/dashboard/settings/page.tsx`): "Delete account" opens a confirmation modal requiring password; calls `deleteAccount` action; redirects to `/` on success.
+- **Settings — Sign Out All** (`app/dashboard/settings/page.tsx`): "Sign out all" button confirms via `window.confirm`, calls `signOutAllSessions`, redirects to `/login`.
+- **Settings — Export All Data** (`app/dashboard/settings/page.tsx`): "Export all data" calls `exportUserData` and downloads a JSON blob (`assetly-export-YYYY-MM-DD.json`) containing profile, transactions, accounts, budgets, goals, bills, subscriptions.
+- **Settings — 2FA toggle** (`app/dashboard/settings/page.tsx`): "Enable" / "Manage" button toggles cookie-backed 2FA state via `toggle2FA` action and re-fetches.
+- **Currency context** (`app/contexts/CurrencyContext.tsx`, NEW): `CurrencyProvider`, `useCurrency`, `useSetCurrency` hooks; persists to `assetly-currency` cookie so server-side reads work too.
+- **Providers — currency wired** (`app/providers.tsx`, `app/layout.tsx`): root layout reads currency cookie server-side and passes `initialCurrency` to a new CurrencyProvider wrapping all client pages.
+- **Currency propagation across client pages** (`app/dashboard/bills/page.tsx`, `budgets/page.tsx`, `goals/page.tsx`, `transactions/page.tsx`, `bills/SavingsOpportunityCard.tsx`, `components/dashboard/BillRow.tsx`, `components/dashboard/TransactionRow.tsx`): each calls `useCurrency()` and passes the currency to all `formatCurrency`/`formatCurrencyExact` calls so the user-selected currency takes effect across the whole app.
+- **Settings server actions** (`app/dashboard/settings/actions.ts`, NEW): `updateProfile`, `updatePassword`, `deleteAccount`, `signOutAllSessions`, `exportUserData`, `toggle2FA`; all Zod-validated with proper session checks; currency/timezone/2FA/lastPasswordChange persisted via cookies (1yr max-age) rather than a DB schema change.
+- **Server prefs helper** (`lib/server-prefs.ts`, NEW): `getCurrencyServer`, `getTimezoneServer`, `getTwoFactorEnabledServer` for reading user preferences from cookies in server components.
+- **User store helpers** (`lib/data/store.ts`): added `getUserById`, `updateUser`, `removeUser` for profile/password/account-deletion flows.
+- **Settings API enriched** (`app/api/settings/route.ts`): now reads fresh name/email from DB via `getUserById(session.user.id)` rather than session-only, and pulls currency/timezone/2FA/lastPasswordChange from cookies.
+- **Auth session id exposed** (`auth.ts`): session callback now copies `token.id` onto `session.user.id` so server actions can identify the current user.
+- **Dashboard greeting — dynamic name + time of day** (`app/dashboard/page.tsx`): page now calls `auth()` directly (the server-side fetch to `/api/dashboard` didn't carry session cookies, so name fell back to "You"); reads `assetly-timezone` cookie and computes the current hour via `Intl.DateTimeFormat` to choose between Late night / Early morning / Good morning / Good afternoon / Good evening; uses just the first name for a natural greeting.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — vsLastMonth returns []; budget spentInCents is seeded, not aggregated from transactions
+2. Cash on hand period data is mock-only — cashFlowDataByPeriod is hardcoded; API returns single array
+3. Currency propagation in server components — `app/dashboard/page.tsx` and `app/dashboard/accounts/[id]/page.tsx` still hardcode USD for currency formatting (need a server-side cookie read pass)
+4. JWT session can't be individually revoked — "Sign out all" only signs out the current session
+5. 2FA is cookie-backed stub — no real TOTP/SMS flow implemented
+6. Contract `UserSettings.profile.currency` is `'USD' | 'INR'` but actions accept `'USD' | 'INR' | 'EUR'` — cast at API boundary; manager should widen the contract type
+
+### Last checks
+- pnpm lint: passed
+- pnpm build: not run

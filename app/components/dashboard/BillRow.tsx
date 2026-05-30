@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Icon from "@/app/components/ui/Icon";
 import { formatCurrency } from "@/lib/format";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
 import type { Bill } from "@/contracts/api-contracts";
 
 export default function BillRow({ bill: b }: { bill: Bill }) {
+  const currency = useCurrency();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -55,7 +57,7 @@ export default function BillRow({ bill: b }: { bill: Bill }) {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="num" style={{ fontSize: 15, fontWeight: 600 }}>{formatCurrency(b.amountInCents)}</span>
+          <span className="num" style={{ fontSize: 15, fontWeight: 600 }}>{formatCurrency(b.amountInCents, currency)}</span>
           <Icon name={expanded ? "chevd" : "chev"} size={12} color="var(--ink-4)" />
         </div>
       </button>

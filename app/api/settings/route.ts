@@ -1,5 +1,12 @@
+import { cookies } from 'next/headers'
 import { ok, err } from '@/lib/api-response'
 import { auth } from '@/auth'
+import { getUserById } from '@/lib/data/store'
+import {
+  getCurrencyServer,
+  getTimezoneServer,
+  getTwoFactorEnabledServer,
+} from '@/lib/server-prefs'
 import type { UserSettings } from '@/contracts/api-contracts'
 
 /**
@@ -25,16 +32,42 @@ export async function GET() {
       return err('Not authenticated', 'UNAUTHORIZED', 401)
     }
 
-    const name = session.user.name ?? 'You'
-    const email = session.user.email ?? ''
+    // The JWT callback sets token.id, which the session callback copies onto
+    // session.user.id. The default NextAuth types don't expose .id, so we cast.
+    const userId = (session.user as { id?: string }).id
+
+    // Try to read the latest name/email from the DB so a freshly updated
+    // profile shows up immediately, even before the session JWT is refreshed.
+    let name = session.user.name ?? 'You'
+    let email = session.user.email ?? ''
+    if (userId) {
+      const row = await getUserById(userId)
+      if (row) {
+        name = row.name
+        email = row.email
+      }
+    }
+
+    const [currency, timezone, twoFactorEnabled] = await Promise.all([
+      getCurrencyServer(),
+      getTimezoneServer(),
+      getTwoFactorEnabledServer(),
+    ])
+
+    const lastPasswordChange =
+      (await cookies()).get('assetly-last-password-change')?.value ??
+      '2025-01-15'
 
     const settings: UserSettings = {
       profile: {
         name,
         email,
         initials: computeInitials(name),
-        currency: 'USD',
-        timezone: 'Asia/Kolkata',
+        // The cookie may hold 'USD' | 'INR' | 'EUR'; the contract currently
+        // narrows to 'USD' | 'INR'. Cast through unknown so EUR still flows
+        // through to the client without breaking existing consumers.
+        currency: currency as unknown as UserSettings['profile']['currency'],
+        timezone,
       },
       notifications: {
         billsDue: true,
@@ -44,8 +77,8 @@ export async function GET() {
         goalMilestones: true,
       },
       security: {
-        twoFactorEnabled: false,
-        lastPasswordChange: '2025-01-15',
+        twoFactorEnabled,
+        lastPasswordChange,
         activeSessions: 1,
       },
     }

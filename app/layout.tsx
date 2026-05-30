@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Caveat } from "next/font/google";
+import { cookies } from "next/headers";
 import Providers from "@/app/providers";
+import type { Currency } from "@/app/contexts/CurrencyContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,11 +26,19 @@ export const metadata: Metadata = {
   description: "Personal finance dashboard",
 };
 
-export default function RootLayout({
+const VALID_CURRENCIES: Currency[] = ["USD", "INR", "EUR"];
+
+async function getInitialCurrency(): Promise<Currency> {
+  const c = (await cookies()).get("assetly-currency")?.value;
+  return VALID_CURRENCIES.includes(c as Currency) ? (c as Currency) : "USD";
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialCurrency = await getInitialCurrency();
   return (
     <html
       lang="en"
@@ -36,7 +46,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body>
-        <Providers>{children}</Providers>
+        <Providers initialCurrency={initialCurrency}>{children}</Providers>
       </body>
     </html>
   );

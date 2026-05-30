@@ -8,6 +8,7 @@
 import { useState } from "react";
 import Icon from "@/app/components/ui/Icon";
 import { formatCurrency } from "@/lib/format";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
 
 interface SavingsOpportunityCardProps {
   savingsOpportunityInCents: number;
@@ -20,6 +21,7 @@ export default function SavingsOpportunityCard({
   savingsOpportunityNote,
   unusedSubNames,
 }: SavingsOpportunityCardProps) {
+  const currency = useCurrency();
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
@@ -27,7 +29,7 @@ export default function SavingsOpportunityCard({
   const note =
     savingsOpportunityNote ??
     (unusedSubNames.length > 0
-      ? `You haven't used ${unusedSubNames.join(" and ")}. Cancel to save ${formatCurrency(savingsOpportunityInCents)}/mo.`
+      ? `You haven't used ${unusedSubNames.join(" and ")}. Cancel to save ${formatCurrency(savingsOpportunityInCents, currency)}/mo.`
       : "");
 
   return (
@@ -63,7 +65,7 @@ export default function SavingsOpportunityCard({
             alignSelf: "center",
           }}
         >
-          Save {formatCurrency(savingsOpportunityInCents)}/mo
+          Save {formatCurrency(savingsOpportunityInCents, currency)}/mo
         </div>
       </div>
       <div

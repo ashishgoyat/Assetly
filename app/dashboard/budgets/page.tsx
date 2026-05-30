@@ -12,6 +12,7 @@ import BudgetSuggestionCard from "@/app/dashboard/budgets/BudgetSuggestionCard";
 import NewBudgetButton from "@/app/dashboard/budgets/NewBudgetButton";
 import type { Budget, BudgetSummary } from "@/contracts/api-contracts";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
 import {
   updateBudgetLimit,
   deleteBudget,
@@ -61,6 +62,7 @@ const heatmapIntensityColors = [
 // ---------------------------------------------------------------------------
 
 export default function BudgetsPage() {
+  const currency = useCurrency();
   const [data, setData] = useState<BudgetSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
@@ -383,7 +385,7 @@ export default function BudgetsPage() {
                 className="sec-label"
                 style={{ color: "var(--accent-2)" }}
               >
-                Spent of {formatCurrency(totalLimitInCents)} monthly budget
+                Spent of {formatCurrency(totalLimitInCents, currency)} monthly budget
               </div>
               <div
                 style={{
@@ -397,10 +399,10 @@ export default function BudgetsPage() {
                   className="serif num"
                   style={{ fontSize: 44, lineHeight: 1 }}
                 >
-                  {formatCurrency(totalSpentInCents)}
+                  {formatCurrency(totalSpentInCents, currency)}
                 </span>
                 <span style={{ color: "var(--ink-3)" }}>
-                  · {formatCurrency(remainingInCents)} left
+                  · {formatCurrency(remainingInCents, currency)} left
                 </span>
               </div>
               <div
@@ -417,7 +419,7 @@ export default function BudgetsPage() {
               <div style={{ marginTop: 10, fontSize: 12, color: "var(--ink-2)" }}>
                 You&apos;re on track — daily limit going forward:{" "}
                 <span className="num" style={{ fontWeight: 600 }}>
-                  {formatCurrency(dailyLimitGoingForwardInCents)}
+                  {formatCurrency(dailyLimitGoingForwardInCents, currency)}
                 </span>
               </div>
             </div>
@@ -637,7 +639,7 @@ export default function BudgetsPage() {
                     }}
                   >
                     {item.deltaInCents > 0 ? "+" : "−"}
-                    {formatCurrency(Math.abs(item.deltaInCents))}
+                    {formatCurrency(Math.abs(item.deltaInCents), currency)}
                   </span>
                 </div>
               ))}
@@ -660,6 +662,7 @@ interface BudgetCardProps {
 }
 
 function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
+  const currency = useCurrency();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeAction, setActiveAction] = useState<"limit" | null>(null);
   const [inputValue, setInputValue] = useState("");
@@ -742,8 +745,8 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
             }}
           >
             {b.isOver
-              ? `Over by ${formatCurrency(b.spentInCents - b.limitInCents)}`
-              : `${formatCurrency(b.limitInCents - b.spentInCents)} left`}
+              ? `Over by ${formatCurrency(b.spentInCents - b.limitInCents, currency)}`
+              : `${formatCurrency(b.limitInCents - b.spentInCents, currency)} left`}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -754,12 +757,12 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
               fontWeight: 600,
               color: b.isOver ? "var(--neg)" : "var(--ink)",
             }}
-            aria-label={`Spent ${formatCurrency(b.spentInCents)} of ${formatCurrency(b.limitInCents)}`}
+            aria-label={`Spent ${formatCurrency(b.spentInCents, currency)} of ${formatCurrency(b.limitInCents, currency)}`}
           >
-            {formatCurrency(b.spentInCents)}
+            {formatCurrency(b.spentInCents, currency)}
           </div>
           <div className="num muted" style={{ fontSize: 11 }}>
-            of {formatCurrency(b.limitInCents)}
+            of {formatCurrency(b.limitInCents, currency)}
           </div>
         </div>
 
