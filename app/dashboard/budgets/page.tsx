@@ -552,9 +552,11 @@ export default function BudgetsPage() {
                         justifyContent: "center",
                         background: bg,
                         color:
-                          intensity > 0.55 || isToday
+                          intensity > 0.55
                             ? "white"
-                            : "var(--ink-2)",
+                            : intensity > 0.1
+                              ? "#1c1a16"
+                              : "var(--ink-2)",
                         borderRadius: 5,
                         fontFamily: "var(--f-mono)",
                         fontSize: 10,

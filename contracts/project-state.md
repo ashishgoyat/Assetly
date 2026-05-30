@@ -172,3 +172,21 @@
 E) Edit/delete for bills
 G) Empty states + polish — remaining zero-data empty states
 I) Wire bill quick actions — Pay now / Schedule to real server actions
+
+---
+
+## Session 2026-05-30
+
+### What was built / fixed
+- **Budget daily calendar — day number visibility fix** (`app/dashboard/budgets/page.tsx` line 554): day number text on low-intensity cells (cream background) was invisible in dark mode because `--ink-2` in dark mode is `#c4b89e` (tan), nearly indistinguishable from the `#f5edd9` cream cell background. Fixed by using `#1c1a16` (dark brown) for cells with intensity > 0.1.
+- **Budget daily calendar — today's day number fix** (`app/dashboard/budgets/page.tsx` line 554): removed `isToday` from the color condition; it was forcing white text on today's cell regardless of background intensity. Today (the 30th) had a cream background but white text — making it invisible. Today's cell is already distinguished by its border and bold font weight.
+
+### Known limitations / pending
+1. Edit/delete for bills — create only; no edit or delete for bills
+2. Seed transactions only cover April 17–23, 2026 — vsLastMonth returns []; budget spentInCents is seeded, not aggregated from transactions
+3. Quick actions for bills — bill Pay now / Schedule not wired to server actions yet
+4. Cash on hand period data is mock-only — cashFlowDataByPeriod is hardcoded; API returns single array
+
+### Last checks
+- pnpm lint: passed
+- pnpm build: not run
