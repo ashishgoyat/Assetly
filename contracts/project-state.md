@@ -247,3 +247,31 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed
 - pnpm build: not run
+
+---
+
+## Session 2026-05-30 (home page UI polish)
+
+### What was built / fixed
+- **Due Soon card** (`app/dashboard/page.tsx`, `app/globals.css`): added new `.card-hoverable` CSS class (lift + box-shadow + border darkening on hover); `ActionCard` no longer renders a CTA button for `bill` type cards — clicking the whole card navigates to `/dashboard/bills` via the existing Link wrapper. Insight/todo cards still render their CTAs.
+- **Settings icon removed** (`app/components/layout/Topbar.tsx`): removed the non-functional cog button from the right side of the topbar.
+- **Cash on hand chart — fully dynamic** (`app/api/dashboard/route.ts`, `app/components/dashboard/CashOnHandCard.tsx`): API now walks real transactions backwards from current cash to reconstruct a balance-over-time series; samples 1W = 7 daily points, 1M = 30 daily, 3M = 13 weekly, 1Y = 12 monthly; CashOnHandCard reads dynamic axis labels from a new `cashFlowLabelsByPeriod` prop so the X-axis updates with real "Today"-relative dates when the user toggles periods.
+- **Contract — cash flow labels** (`contracts/api-contracts.ts`): added `cashFlowLabelsByPeriod: Record<'1W' | '1M' | '3M' | '1Y', string[]>` to `DashboardSummary.cashOnHand`.
+- **Mock data** (`lib/mock-data.ts`): added matching `cashFlowLabelsByPeriod` to MOCK_DASHBOARD so the dev fallback still satisfies the contract.
+- **Quick-action server actions** (`app/dashboard/home-actions.ts`, NEW): `payBill` (inserts expense + removes bill), `skipBill` (dueInDays += 30), `setTransactionCategory`, `setTransactionNote`, `excludeTransaction`, `addFundsToGoalAction` (recomputes percentage + ETA), `setGoalMonthly` (recomputes ETA), `pauseGoal` (monthly = 0, ETA = "Paused"). All Zod-validated with integer-cent math.
+- **Upcoming bills quick actions** (`app/components/dashboard/BillRow.tsx`): Pay now calls `payBill` and optimistically lifts the row via `onPaid`; Schedule + Edit auto-pay are now `<Link>`s to `/dashboard/bills`; View history deep-links to `/dashboard/transactions?q=<billName>`; Skip this month calls `skipBill`. Inline error + aria-busy + disabled states during mutations.
+- **Recent activity quick actions** (`app/components/dashboard/TransactionRow.tsx`): Categorize opens an inline `<select>` of all 13 `TransactionCategory` values with Apply/Cancel — calls `setTransactionCategory`, updates the row's subtitle on success; Add note opens an inline text input with Save/Cancel — calls `setTransactionNote`; Split links to `/dashboard/transactions`; Exclude calls `excludeTransaction` and lifts via `onExcluded`.
+- **Saving goals quick actions** (`app/components/dashboard/GoalCard.tsx`): Add funds opens inline `$` input + Add/Cancel — calls `addFundsToGoalAction`; Adjust monthly opens inline `$` input + Save/Cancel — calls `setGoalMonthly`; Pause calls `pauseGoal`. All three reload the page after success (parent is a Server Component, so refetch can't be lifted).
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — vsLastMonth returns []; budget spentInCents is seeded, not aggregated from transactions
+2. Currency propagation in server components — `app/dashboard/page.tsx` and `app/dashboard/accounts/[id]/page.tsx` still hardcode USD for currency formatting (need a server-side cookie read pass)
+3. JWT session can't be individually revoked — "Sign out all" only signs out the current session
+4. 2FA is cookie-backed stub — no real TOTP/SMS flow implemented
+5. Contract `UserSettings.profile.currency` is `'USD' | 'INR'` but actions accept `'USD' | 'INR' | 'EUR'` — cast at API boundary; manager should widen the contract type
+6. Pay now uses `accountLabel: 'Auto'` — should ideally pick the user's default account
+7. GoalCard quick actions reload the full page on success — should use a parent-side refetch when the goals list moves to a Client Component
+
+### Last checks
+- pnpm lint: passed
+- pnpm build: not run

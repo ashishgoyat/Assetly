@@ -11,18 +11,17 @@ interface Props {
   totalInCents: number;
   weekDeltaInCents: number;
   cashFlowDataByPeriod: Record<Period, number[]>;
+  cashFlowLabelsByPeriod: Record<Period, string[]>;
 }
 
 const PERIODS: Period[] = ["1W", "1M", "3M", "1Y"];
 
-const DATE_LABELS: Record<Period, string[]> = {
-  "1W": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Today"],
-  "1M": ["Apr 1", "Apr 8", "Apr 15", "Apr 22", "Today"],
-  "3M": ["Feb", "Mar 1", "Mar 15", "Apr 1", "Today"],
-  "1Y": ["May", "Jul", "Sep", "Nov", "Today"],
-};
-
-export default function CashOnHandCard({ totalInCents, weekDeltaInCents, cashFlowDataByPeriod }: Props) {
+export default function CashOnHandCard({
+  totalInCents,
+  weekDeltaInCents,
+  cashFlowDataByPeriod,
+  cashFlowLabelsByPeriod,
+}: Props) {
   const [period, setPeriod] = useState<Period>("1M");
 
   return (
@@ -72,7 +71,7 @@ export default function CashOnHandCard({ totalInCents, weekDeltaInCents, cashFlo
           padding: "0 4px",
         }}
       >
-        {DATE_LABELS[period].map((l) => (
+        {cashFlowLabelsByPeriod[period].map((l) => (
           <span key={l}>{l}</span>
         ))}
       </div>

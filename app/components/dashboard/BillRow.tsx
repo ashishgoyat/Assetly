@@ -1,14 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import Link from "next/link";
 import Icon from "@/app/components/ui/Icon";
 import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { payBill, skipBill } from "@/app/dashboard/home-actions";
 import type { Bill } from "@/contracts/api-contracts";
 
-export default function BillRow({ bill: b }: { bill: Bill }) {
+interface Props {
+  bill: Bill;
+  onPaid?: (id: string) => void;
+  onSkipped?: (id: string) => void;
+}
+
+export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
   const currency = useCurrency();
   const [expanded, setExpanded] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function handlePay() {
+    setError(null);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("id", b.id);
+      const res = await payBill(fd);
+      if (res.success) {
+        onPaid?.(b.id);
+      } else {
+        setError(res.error);
+      }
+    });
+  }
+
+  function handleSkip() {
+    setError(null);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("id", b.id);
+      const res = await skipBill(fd);
+      if (res.success) {
+        onSkipped?.(b.id);
+      } else {
+        setError(res.error);
+      }
+    });
+  }
 
   return (
     <div>
@@ -63,32 +101,52 @@ export default function BillRow({ bill: b }: { bill: Bill }) {
       </button>
 
       {expanded && (
-        <div style={{ display: "flex", gap: 6, padding: "6px 0 8px 52px", flexWrap: "wrap" }}>
-          {!b.isAutoPay && (
-            <button className="btn btn-sm btn-primary" type="button">
-              Pay now
-            </button>
-          )}
-          {!b.isAutoPay && (
-            <button className="btn btn-sm btn-ghost" type="button">
-              Schedule
-            </button>
-          )}
-          {b.isAutoPay && (
-            <button className="btn btn-sm btn-ghost" type="button">
-              Edit auto-pay
-            </button>
-          )}
-          <button className="btn btn-sm btn-ghost" type="button">
-            View history
-          </button>
-          <button
-            className="btn btn-sm btn-ghost"
-            type="button"
-            style={{ color: "var(--ink-3)" }}
+        <div style={{ padding: "6px 0 8px 52px" }}>
+          <div
+            style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}
+            aria-busy={isPending}
           >
-            Skip this month
-          </button>
+            {!b.isAutoPay && (
+              <button
+                className="btn btn-sm btn-primary"
+                type="button"
+                disabled={isPending}
+                onClick={handlePay}
+              >
+                Pay now
+              </button>
+            )}
+            {!b.isAutoPay && (
+              <Link href="/dashboard/bills" className="btn btn-sm btn-ghost">
+                Schedule
+              </Link>
+            )}
+            {b.isAutoPay && (
+              <Link href="/dashboard/bills" className="btn btn-sm btn-ghost">
+                Edit auto-pay
+              </Link>
+            )}
+            <Link
+              href={`/dashboard/transactions?q=${encodeURIComponent(b.name)}`}
+              className="btn btn-sm btn-ghost"
+            >
+              View history
+            </Link>
+            <button
+              className="btn btn-sm btn-ghost"
+              type="button"
+              style={{ color: "var(--ink-3)" }}
+              disabled={isPending}
+              onClick={handleSkip}
+            >
+              Skip this month
+            </button>
+          </div>
+          {error && (
+            <div style={{ marginTop: 6, color: "var(--neg)", fontSize: 11 }}>
+              {error}
+            </div>
+          )}
         </div>
       )}
     </div>

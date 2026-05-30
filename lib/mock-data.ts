@@ -255,6 +255,12 @@ export const MOCK_DASHBOARD: DashboardSummary = {
         580000, 610000, 595000, 640000, 710000, 842000,
       ],
     },
+    cashFlowLabelsByPeriod: {
+      "1W": ["Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Today"],
+      "1M": ["Mar 25", "Apr 1", "Apr 8", "Apr 15", "Today"],
+      "3M": ["Feb", "Mar", "Mar", "Apr", "Today"],
+      "1Y": ["May", "Jul", "Sep", "Nov", "Jan", "Today"],
+    },
   },
   netWorth: {
     totalInCents: 2784300,

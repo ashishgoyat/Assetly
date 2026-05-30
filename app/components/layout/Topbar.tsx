@@ -125,13 +125,6 @@ export default function Topbar({ userName, userInitials, accounts }: TopbarProps
         )}
       </div>
 
-      <button
-        className="btn btn-icon btn-ghost"
-        aria-label="Settings"
-        type="button"
-      >
-        <Icon name="settings" size={16} />
-      </button>
     </header>
   );
 }

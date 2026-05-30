@@ -178,6 +178,7 @@ export default async function DashboardPage() {
           totalInCents={cashOnHand.totalInCents}
           weekDeltaInCents={cashOnHand.weekDeltaInCents}
           cashFlowDataByPeriod={cashOnHand.cashFlowDataByPeriod}
+          cashFlowLabelsByPeriod={cashOnHand.cashFlowLabelsByPeriod}
         />
       </div>
 
@@ -361,28 +362,33 @@ function ActionCard({ action: a }: { action: ActionItem }) {
   const isAccent = a.tone === "accent";
   const isWarn = a.tone === "warn";
   const isPrimary = a.tone === "primary";
+  const isBill = a.type === "bill";
 
   const iconName =
     a.type === "bill" ? "bill" : a.type === "insight" ? "sparkle" : "check";
 
-  // When the card has a route, the whole card is a link — render the CTA as a
-  // styled span to avoid nesting interactive elements (invalid HTML).
-  const ctaEl = a.route ? (
-    <span className={`btn btn-sm${isPrimary ? " btn-primary" : ""}`}>
-      {a.cta}
-    </span>
-  ) : (
-    <button
-      className={`btn btn-sm${isPrimary ? " btn-primary" : ""}`}
-      type="button"
-    >
-      {a.cta}
-    </button>
-  );
+  // Bill cards: the whole card is the link to /dashboard/bills, no CTA button.
+  // Other cards (insight, todo): keep their CTA.
+  const ctaEl = isBill
+    ? null
+    : a.route
+      ? (
+          <span className={`btn btn-sm${isPrimary ? " btn-primary" : ""}`}>
+            {a.cta}
+          </span>
+        )
+      : (
+          <button
+            className={`btn btn-sm${isPrimary ? " btn-primary" : ""}`}
+            type="button"
+          >
+            {a.cta}
+          </button>
+        );
 
   const content = (
     <div
-      className="card"
+      className={`card${a.route ? " card-hoverable" : ""}`}
       style={{
         padding: 18,
         position: "relative",
@@ -458,7 +464,7 @@ function ActionCard({ action: a }: { action: ActionItem }) {
         style={{
           fontSize: 12.5,
           color: "var(--ink-3)",
-          marginBottom: 14,
+          marginBottom: ctaEl ? 14 : 0,
           lineHeight: 1.4,
         }}
       >
