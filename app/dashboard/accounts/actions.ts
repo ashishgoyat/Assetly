@@ -6,6 +6,17 @@ import { insertAccount } from '@/lib/data/store'
 
 type ActionResult = { success: true; id: string } | { success: false; error: string }
 
+// ---------------------------------------------------------------------------
+// Safe formData reader — converts null/File to undefined so Zod optional schemas
+// accept missing form fields. (formData.get returns null when the field is
+// absent, which fails z.string().optional() because Zod treats null != undefined.)
+// ---------------------------------------------------------------------------
+
+function val(fd: FormData, key: string): string | undefined {
+  const v = fd.get(key)
+  return typeof v === 'string' ? v : undefined
+}
+
 const ACCOUNT_COLORS = [
   'var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)',
   'var(--cat-4)', 'var(--cat-5)', 'var(--cat-6)',
@@ -30,10 +41,10 @@ const createAccountSchema = z.object({
 export async function createAccount(formData: FormData): Promise<ActionResult> {
   try {
     const raw = {
-      name: formData.get('name'),
-      type: formData.get('type'),
-      balanceDollars: formData.get('balanceDollars'),
-      lastFour: formData.get('lastFour'),
+      name: val(formData, 'name'),
+      type: val(formData, 'type'),
+      balanceDollars: val(formData, 'balanceDollars'),
+      lastFour: val(formData, 'lastFour'),
     }
 
     const parsed = createAccountSchema.safeParse(raw)

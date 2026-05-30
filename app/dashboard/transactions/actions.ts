@@ -17,6 +17,17 @@ import type { TransactionCategory, TransactionType } from '@/contracts/api-contr
 type ActionResult = { success: true; id: string } | { success: false; error: string }
 
 // ---------------------------------------------------------------------------
+// Safe formData reader — converts null/File to undefined so Zod optional schemas
+// accept missing form fields. (formData.get returns null when the field is
+// absent, which fails z.string().optional() because Zod treats null != undefined.)
+// ---------------------------------------------------------------------------
+
+function val(fd: FormData, key: string): string | undefined {
+  const v = fd.get(key)
+  return typeof v === 'string' ? v : undefined
+}
+
+// ---------------------------------------------------------------------------
 // Validation helpers
 // ---------------------------------------------------------------------------
 
@@ -82,11 +93,11 @@ function formatTime(date: Date): string {
 export async function createTransaction(formData: FormData): Promise<ActionResult> {
   try {
     const raw = {
-      merchant: formData.get('merchant'),
-      amountDollars: formData.get('amountDollars'),
-      type: formData.get('type'),
-      category: formData.get('category'),
-      accountLabel: formData.get('accountLabel'),
+      merchant: val(formData, 'merchant'),
+      amountDollars: val(formData, 'amountDollars'),
+      type: val(formData, 'type'),
+      category: val(formData, 'category'),
+      accountLabel: val(formData, 'accountLabel'),
     }
 
     const parsed = createTransactionSchema.safeParse(raw)

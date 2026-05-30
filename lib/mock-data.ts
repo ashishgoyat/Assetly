@@ -484,7 +484,8 @@ export const MOCK_GOALS: GoalSummary = {
 // ---------------------------------------------------------------------------
 
 export const MOCK_BILLS: BillsSummary = {
-  totalDueNext30DaysInCents: 189300,
+  periodDays: 30,
+  totalDuePeriodInCents: 189300,
   totalSubsMonthlyInCents: 4897,
   totalSubsAnnualInCents: 58764,
   savingsOpportunityInCents: 1799,

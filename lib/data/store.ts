@@ -296,6 +296,63 @@ export async function insertBill(bill: Bill): Promise<void> {
   })
 }
 
+export async function updateBill(
+  id: string,
+  updates: {
+    name?: string
+    amountInCents?: number
+    dueDate?: string
+    dueInDays?: number
+    isAutoPay?: boolean
+    isUrgent?: boolean
+    category?: string
+  },
+): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.update(billsTable).set(updates).where(eq(billsTable.id, id))
+}
+
+export async function removeBill(id: string): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.delete(billsTable).where(eq(billsTable.id, id))
+}
+
+export async function insertSubscription(sub: Subscription): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.insert(subscriptionsTable).values({
+    id: sub.id,
+    name: sub.name,
+    amountMonthlyInCents: sub.amountMonthlyInCents,
+    nextDate: sub.nextDate,
+    isUsed: sub.isUsed,
+    icon: sub.icon,
+    color: sub.color,
+  })
+}
+
+export async function updateSubscription(
+  id: string,
+  updates: {
+    name?: string
+    amountMonthlyInCents?: number
+    nextDate?: string
+    isUsed?: boolean
+  },
+): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.update(subscriptionsTable).set(updates).where(eq(subscriptionsTable.id, id))
+}
+
+export async function removeSubscription(id: string): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.delete(subscriptionsTable).where(eq(subscriptionsTable.id, id))
+}
+
 export async function removeTransaction(id: string): Promise<void> {
   await ensureDb()
   await db.delete(transactionsTable).where(eq(transactionsTable.id, id))

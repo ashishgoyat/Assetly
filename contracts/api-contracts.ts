@@ -213,10 +213,11 @@ export interface GoalSummary {
 }
 
 export interface BillsSummary {
-  totalDueNext30DaysInCents: number
+  periodDays: number                  // 30 | 60 | 90 — selected window
+  totalDuePeriodInCents: number       // sum of bills.amountInCents for this window
   totalSubsMonthlyInCents: number
   totalSubsAnnualInCents: number
-  bills: Bill[]
+  bills: Bill[]                       // filtered to dueInDays <= periodDays
   subscriptions: Subscription[]
   savingsOpportunityInCents?: number  // From unused subscriptions
   savingsOpportunityNote?: string
@@ -256,8 +257,8 @@ export interface TransactionsSummary {
 // GET /api/goals
 //   → ApiResponse<GoalSummary>
 //
-// GET /api/bills
-//   → ApiResponse<BillsSummary>
+// GET /api/bills?days=30|60|90
+//   → ApiResponse<BillsSummary>  (bills filtered to dueInDays <= days, default 30)
 //
 // GET /api/insights
 //   → ApiResponse<Insight[]>

@@ -17,6 +17,17 @@ import { computeGoalPercentage } from '@/lib/calculations'
 type ActionResult = { success: true; id: string } | { success: false; error: string }
 
 // ---------------------------------------------------------------------------
+// Safe formData reader — converts null/File to undefined so Zod optional schemas
+// accept missing form fields. (formData.get returns null when the field is
+// absent, which fails z.string().optional() because Zod treats null != undefined.)
+// ---------------------------------------------------------------------------
+
+function val(fd: FormData, key: string): string | undefined {
+  const v = fd.get(key)
+  return typeof v === 'string' ? v : undefined
+}
+
+// ---------------------------------------------------------------------------
 // Validation helpers
 // ---------------------------------------------------------------------------
 
@@ -86,12 +97,12 @@ function computeEta(
 export async function createGoal(formData: FormData): Promise<ActionResult> {
   try {
     const raw = {
-      name: formData.get('name'),
-      targetInCents: formData.get('targetInCents'),
-      monthlyContributionInCents: formData.get('monthlyContributionInCents'),
-      icon: formData.get('icon'),
-      color: formData.get('color'),
-      vibe: formData.get('vibe'),
+      name: val(formData, 'name'),
+      targetInCents: val(formData, 'targetInCents'),
+      monthlyContributionInCents: val(formData, 'monthlyContributionInCents'),
+      icon: val(formData, 'icon'),
+      color: val(formData, 'color'),
+      vibe: val(formData, 'vibe'),
     }
 
     const parsed = createGoalSchema.safeParse(raw)

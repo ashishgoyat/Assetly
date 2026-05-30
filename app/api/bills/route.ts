@@ -1,13 +1,27 @@
+import { NextRequest } from 'next/server'
 import { ok, err } from '@/lib/api-response'
 import { getBills, getSubscriptions } from '@/lib/data/store'
 import type { BillsSummary } from '@/contracts/api-contracts'
 
-export async function GET() {
+const VALID_PERIODS = [30, 60, 90] as const
+type PeriodDays = (typeof VALID_PERIODS)[number]
+
+function parsePeriodDays(raw: string | null): PeriodDays {
+  const n = parseInt(raw ?? '30', 10)
+  return (VALID_PERIODS as readonly number[]).includes(n) ? (n as PeriodDays) : 30
+}
+
+export async function GET(request: NextRequest) {
   try {
+    const days = parsePeriodDays(request.nextUrl.searchParams.get('days'))
+
     const [billList, subList] = await Promise.all([getBills(), getSubscriptions()])
 
+    // Filter bills to only those due within the selected period
+    const filteredBills = billList.filter((b) => b.dueInDays <= days)
+
     // --- Totals (integer math only) ---
-    const totalDueNext30DaysInCents = billList.reduce(
+    const totalDuePeriodInCents = filteredBills.reduce(
       (sum, b) => sum + b.amountInCents,
       0,
     )
@@ -32,10 +46,11 @@ export async function GET() {
         : undefined
 
     const summary: BillsSummary = {
-      totalDueNext30DaysInCents,
+      periodDays: days,
+      totalDuePeriodInCents,
       totalSubsMonthlyInCents,
       totalSubsAnnualInCents,
-      bills: billList,
+      bills: filteredBills,
       subscriptions: subList,
       savingsOpportunityInCents,
       savingsOpportunityNote,

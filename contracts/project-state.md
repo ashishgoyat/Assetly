@@ -190,3 +190,27 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed
 - pnpm build: not run
+
+---
+
+## Session 2026-05-30 (continued)
+
+### What was built / fixed
+- **Bills page — client component rewrite** (`app/dashboard/bills/page.tsx`): converted from Server Component to Client Component; fetches `GET /api/bills?days=period`; 30d/60d/90d period buttons switch the window and re-fetch; dynamic timeline with real date labels computed from today; bill list filtered to selected period; "Edit" inline panel per bill row (name, amount, due date, days until due, category, auto-pay) with Save/Cancel/Delete; loading skeletons, error state with retry, empty state.
+- **Bills API — period filter** (`app/api/bills/route.ts`): `GET /api/bills?days=30|60|90`; filters bills to `dueInDays <= days`; returns `periodDays` and `totalDuePeriodInCents`; contract field `totalDueNext30DaysInCents` renamed to `totalDuePeriodInCents`.
+- **Store — bill + subscription mutations** (`lib/data/store.ts`): added `updateBill`, `removeBill`, `insertSubscription`, `updateSubscription`, `removeSubscription`.
+- **Bills actions — update/delete bills** (`app/dashboard/bills/actions.ts`): added `updateBillAction`, `deleteBillAction`; added `createSubscription`, `updateSubscriptionAction`, `deleteSubscriptionAction`; fixed `formData.get()` null→undefined bug via `val()` helper (Zod `.optional()` rejects null, causing "expected string, received null" errors when optional fields absent from form).
+- **Subscriptions section — fully editable** (`app/dashboard/bills/page.tsx`): each subscription row gets a ⋯ button expanding an inline edit panel (name, amount/mo, next date, in-use toggle) with Save/Cancel/Delete; "+" button in header opens an inline Add form; optimistic delete; re-fetch on save/add.
+- **formData null bug fix — all action files** (`app/dashboard/budgets/actions.ts`, `goals/actions.ts`, `transactions/actions.ts`, `accounts/actions.ts`): added `val()` helper and replaced all `formData.get()` calls to prevent Zod `.optional()` failures on missing form fields.
+- **Settings API** (`app/api/settings/route.ts`): new `GET /api/settings`; reads name/email from NextAuth session; returns `UserSettings` contract shape (profile, notifications defaults, security defaults); 401 on unauthenticated request.
+- **Settings page — dynamic** (`app/dashboard/settings/page.tsx`): converted from fully static to client component fetching `/api/settings`; profile section shows real name/email/initials/currency/timezone; security section reflects real 2FA state and password-change date; loading skeleton; error state with retry.
+- **Contract update** (`contracts/api-contracts.ts`): `BillsSummary.totalDueNext30DaysInCents` → `totalDuePeriodInCents`; added `periodDays: number`.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — vsLastMonth returns []; budget spentInCents is seeded, not aggregated from transactions
+2. Cash on hand period data is mock-only — cashFlowDataByPeriod is hardcoded; API returns single array
+3. Settings PATCH not implemented — profile/notifications/security fields are read-only
+
+### Last checks
+- pnpm lint: passed
+- pnpm build: not run
