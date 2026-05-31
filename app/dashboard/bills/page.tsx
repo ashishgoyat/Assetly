@@ -594,11 +594,19 @@ function SubRow({ sub, isExpanded, onToggleEdit, onDeleted, onSaved }: SubRowPro
         transition: "background var(--t-sm)",
       }}
     >
-      <div
-        className="tx-row"
+      <button
+        type="button"
+        className={`tx-row${isExpanded ? "" : " card-hoverable"}`}
+        onClick={() => onToggleEdit(sub.id)}
+        aria-expanded={isExpanded}
+        aria-label={`Edit ${sub.name}`}
         style={{
-          gridTemplateColumns: "32px 1fr auto auto",
+          gridTemplateColumns: "32px 1fr auto",
           padding: "8px 6px",
+          width: "100%",
+          textAlign: "left",
+          border: 0,
+          background: isExpanded ? "var(--surface-hover)" : undefined,
         }}
       >
         <div
@@ -632,17 +640,7 @@ function SubRow({ sub, isExpanded, onToggleEdit, onDeleted, onSaved }: SubRowPro
         <div className="num" style={{ fontSize: 13, fontWeight: 600 }}>
           {formatCurrencyExact(sub.amountMonthlyInCents, currency)}
         </div>
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={() => onToggleEdit(sub.id)}
-          aria-expanded={isExpanded}
-          aria-label={`Edit ${sub.name}`}
-          style={{ padding: "2px 6px" }}
-        >
-          <Icon name="dots" size={14} />
-        </button>
-      </div>
+      </button>
 
       {isExpanded && (
         <SubEditPanel
@@ -678,9 +676,20 @@ function BillRow({ bill, isExpanded, onToggleEdit, onDeleted, onSaved }: BillRow
         transition: "background var(--t-sm)",
       }}
     >
-      <div
-        className="tx-row"
-        style={{ gridTemplateColumns: "48px 1fr auto auto", borderRadius: 0 }}
+      <button
+        type="button"
+        className={`tx-row${isExpanded ? "" : " card-hoverable"}`}
+        onClick={() => onToggleEdit(bill.id)}
+        aria-expanded={isExpanded}
+        aria-label={`${isExpanded ? "Close" : "Edit"} ${bill.name}`}
+        style={{
+          gridTemplateColumns: "48px 1fr auto",
+          borderRadius: 0,
+          width: "100%",
+          textAlign: "left",
+          border: 0,
+          background: isExpanded ? "var(--surface-hover)" : undefined,
+        }}
       >
         {/* Date badge */}
         <div
@@ -752,18 +761,7 @@ function BillRow({ bill, isExpanded, onToggleEdit, onDeleted, onSaved }: BillRow
         <div className="num" style={{ fontSize: 17, fontWeight: 600 }}>
           {formatCurrency(bill.amountInCents, currency)}
         </div>
-
-        {/* Edit toggle */}
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={() => onToggleEdit(bill.id)}
-          aria-expanded={isExpanded}
-          aria-label={`Edit ${bill.name}`}
-        >
-          {isExpanded ? "Close" : "Edit"}
-        </button>
-      </div>
+      </button>
 
       {/* Inline edit panel */}
       {isExpanded && (

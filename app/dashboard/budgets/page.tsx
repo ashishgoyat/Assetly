@@ -663,24 +663,10 @@ interface BudgetCardProps {
 
 function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
   const currency = useCurrency();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [activeAction, setActiveAction] = useState<"limit" | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!menuOpen) return;
-    function handleMouseDown(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, [menuOpen]);
 
   async function handleLimitSubmit() {
     if (!inputValue) return;
@@ -695,7 +681,7 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
         isOver: b.spentInCents > newLimitInCents,
         percentageUsed: Math.round((b.spentInCents / newLimitInCents) * 100),
       });
-      setActiveAction(null);
+      setExpanded(false);
       setInputValue("");
       setActionError("");
     } else {
@@ -705,7 +691,6 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
   }
 
   async function handleDelete() {
-    setMenuOpen(false);
     const result = await deleteBudget(b.id);
     if (result.success) {
       onDelete(b.id);
@@ -714,13 +699,34 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
     }
   }
 
+  function handleCardKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setExpanded((v) => !v);
+    }
+  }
+
   return (
-    <div className="card" style={{ padding: 18 }}>
+    <div
+      className={`card${expanded ? "" : " card-hoverable"}`}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      aria-label={`Edit budget ${b.name}`}
+      onClick={(e) => {
+        // Only toggle when clicking the card itself, not interactive children
+        if (e.target === e.currentTarget) setExpanded((v) => !v);
+      }}
+      onKeyDown={handleCardKeyDown}
+      style={{ padding: 18 }}
+    >
       <div
         style={{
           display: "flex",
           alignItems: "center",
           gap: 14,
+          pointerEvents: "none",
         }}
       >
         <div
@@ -765,86 +771,11 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
             of {formatCurrency(b.limitInCents, currency)}
           </div>
         </div>
-
-        {/* Dots button + dropdown */}
-        <div ref={menuRef} style={{ position: "relative" }}>
-          <button
-            className="btn btn-icon btn-ghost"
-            type="button"
-            aria-label={`Options for ${b.name}`}
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            onClick={() => setMenuOpen((o) => !o)}
-            style={{ marginLeft: 8 }}
-          >
-            <Icon name="dots" size={14} />
-          </button>
-
-          {menuOpen && (
-            <div
-              role="menu"
-              style={{
-                position: "absolute",
-                top: "calc(100% + 4px)",
-                right: 0,
-                zIndex: 50,
-                minWidth: 130,
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: 10,
-                padding: 4,
-                boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-              }}
-            >
-              <button
-                role="menuitem"
-                type="button"
-                onClick={() => {
-                  setActiveAction("limit");
-                  setMenuOpen(false);
-                }}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "7px 10px",
-                  fontSize: 13,
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: 7,
-                  cursor: "pointer",
-                  color: "var(--ink)",
-                }}
-              >
-                Edit limit
-              </button>
-              <button
-                role="menuitem"
-                type="button"
-                onClick={handleDelete}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "7px 10px",
-                  fontSize: 13,
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: 7,
-                  cursor: "pointer",
-                  color: "#e53935",
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       <div
         className="bar"
-        style={{ marginTop: 12 }}
+        style={{ marginTop: 12, pointerEvents: "none" }}
         role="progressbar"
         aria-valuenow={Math.min(b.percentageUsed, 100)}
         aria-valuemin={0}
@@ -859,62 +790,98 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
         />
       </div>
 
-      {activeAction === "limit" && (
+      {expanded && (
         <div
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          role="presentation"
           style={{
-            marginTop: 10,
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            flexWrap: "wrap",
+            marginTop: 14,
+            paddingTop: 12,
+            borderTop: "1px solid var(--border-2)",
           }}
         >
-          <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
-            New monthly limit ($)
-          </span>
-          <input
-            type="number"
-            min="1"
-            step="1"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            aria-label={`New monthly limit for ${b.name}`}
+          <div
             style={{
-              width: 90,
-              fontSize: 12,
-              padding: "3px 8px",
-              borderRadius: 6,
-              border: "1px solid var(--border)",
-              background: "var(--surface)",
-              color: "var(--ink)",
-            }}
-            disabled={submitting}
-          />
-          <button
-            className="btn btn-sm btn-primary"
-            type="button"
-            disabled={submitting || !inputValue}
-            onClick={handleLimitSubmit}
-          >
-            {submitting ? "…" : "Save"}
-          </button>
-          <button
-            className="btn btn-sm"
-            type="button"
-            disabled={submitting}
-            onClick={() => {
-              setActiveAction(null);
-              setInputValue("");
-              setActionError("");
+              fontSize: 11,
+              color: "var(--ink-3)",
+              marginBottom: 6,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              fontWeight: 600,
             }}
           >
-            Cancel
-          </button>
-        </div>
-      )}
-      {actionError && (
-        <div style={{ color: "#e53935", fontSize: 11, marginTop: 6 }}>
-          {actionError}
+            New monthly limit ($)
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={String(Math.round(b.limitInCents / 100))}
+              aria-label={`New monthly limit for ${b.name}`}
+              style={{
+                flex: 1,
+                minWidth: 100,
+                fontSize: 13,
+                padding: "6px 10px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                background: "var(--surface-2)",
+                color: "var(--ink)",
+              }}
+              disabled={submitting}
+            />
+            <button
+              className="btn btn-sm btn-primary"
+              type="button"
+              disabled={submitting || !inputValue}
+              onClick={handleLimitSubmit}
+            >
+              {submitting ? "…" : "Save"}
+            </button>
+            <button
+              className="btn btn-sm btn-ghost"
+              type="button"
+              disabled={submitting}
+              onClick={() => {
+                setExpanded(false);
+                setInputValue("");
+                setActionError("");
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-sm"
+              type="button"
+              disabled={submitting}
+              onClick={handleDelete}
+              aria-label={`Delete ${b.name}`}
+              style={{
+                marginLeft: "auto",
+                color: "var(--neg)",
+                borderColor: "var(--neg-soft)",
+                background: "var(--neg-soft)",
+              }}
+            >
+              <Icon name="trash" size={13} /> Delete
+            </button>
+          </div>
+          {actionError && (
+            <div style={{ color: "#e53935", fontSize: 11, marginTop: 6 }}>
+              {actionError}
+            </div>
+          )}
         </div>
       )}
     </div>

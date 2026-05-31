@@ -18,6 +18,8 @@ import {
   removeTransaction,
   getGoalById,
   updateGoal,
+  getSubscriptions,
+  updateSubscription,
 } from '@/lib/data/store'
 
 // ---------------------------------------------------------------------------
@@ -119,10 +121,7 @@ export async function payBill(formData: FormData): Promise<ActionResult> {
     const bill = bills.find((b) => b.id === id)
     if (!bill) return { success: false, error: 'Bill not found' }
 
-    // Validate category against the transaction enum (fall back to "Bills").
-    const categoryParsed = categorySchema.safeParse(bill.category)
-    const category = categoryParsed.success ? categoryParsed.data : 'Bills'
-
+    // Bill payments always count against the "Bills" budget category.
     const now = new Date()
     const txId = crypto.randomUUID()
     await insertTransaction({
@@ -130,7 +129,7 @@ export async function payBill(formData: FormData): Promise<ActionResult> {
       date: now.toISOString().slice(0, 10),
       time: formatTime(now),
       merchant: bill.name,
-      category,
+      category: 'Bills',
       accountLabel: 'Auto',
       amountInCents: bill.amountInCents,
       type: 'expense',
@@ -142,11 +141,65 @@ export async function payBill(formData: FormData): Promise<ActionResult> {
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/bills')
     revalidatePath('/dashboard/transactions')
+    revalidatePath('/dashboard/budgets')
 
     return { success: true, id }
   } catch (err) {
     console.error('[payBill] unexpected error:', err)
     return { success: false, error: 'Failed to pay bill. Please try again.' }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Subscription actions
+// ---------------------------------------------------------------------------
+
+function formatShortDate(date: Date): string {
+  return `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}`
+}
+
+export async function paySubscription(subscriptionId: string): Promise<ActionResult> {
+  try {
+    const idParsed = idSchema.safeParse(subscriptionId)
+    if (!idParsed.success) {
+      return { success: false, error: 'Subscription id is required' }
+    }
+    const id = idParsed.data
+
+    const subs = await getSubscriptions()
+    const sub = subs.find((s) => s.id === id)
+    if (!sub) return { success: false, error: 'Subscription not found' }
+
+    // Insert an expense transaction so it counts against the Subscriptions budget.
+    const now = new Date()
+    const txId = crypto.randomUUID()
+    await insertTransaction({
+      id: txId,
+      date: now.toISOString().slice(0, 10),
+      time: formatTime(now),
+      merchant: sub.name,
+      category: 'Subscriptions',
+      accountLabel: 'Auto',
+      amountInCents: sub.amountMonthlyInCents,
+      type: 'expense',
+      status: 'posted',
+    })
+
+    // Advance nextDate by ~1 month (30 days) using the same short-label format
+    // as the seed data (e.g. "May 5").
+    const nextDate = new Date(now.getTime() + 30 * 86_400_000)
+    await updateSubscription(id, {
+      nextDate: formatShortDate(nextDate),
+    })
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/bills')
+    revalidatePath('/dashboard/budgets')
+
+    return { success: true, id }
+  } catch (err) {
+    console.error('[paySubscription] unexpected error:', err)
+    return { success: false, error: 'Failed to pay subscription. Please try again.' }
   }
 }
 

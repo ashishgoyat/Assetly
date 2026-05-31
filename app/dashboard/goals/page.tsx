@@ -5,7 +5,7 @@
  * Fetches from GET /api/goals and manages goal card quick-edit actions.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/app/components/ui/Icon";
 import type { Goal, GoalSummary } from "@/contracts/api-contracts";
 import { formatCurrency, formatCompact, formatPercent } from "@/lib/format";
@@ -31,26 +31,13 @@ function GoalCard({
   onDelete: (id: string) => void;
 }) {
   const currency = useCurrency();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [activeAction, setActiveAction] = useState<"funds" | "monthly" | null>(
     null
   );
   const [inputValue, setInputValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!menuOpen) return;
-    function handleMouseDown(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, [menuOpen]);
 
   async function handleActionSubmit() {
     if (!inputValue) return;
@@ -83,16 +70,46 @@ function GoalCard({
   }
 
   async function handleDelete() {
-    setMenuOpen(false);
     const result = await deleteGoal(goal.id);
     if (result.success) {
       onDelete(goal.id);
+    } else {
+      setActionError(result.error);
+    }
+  }
+
+  function toggleExpanded() {
+    setExpanded((v) => {
+      const next = !v;
+      if (!next) {
+        // Collapsing — reset any in-progress action
+        setActiveAction(null);
+        setInputValue("");
+        setActionError(null);
+      }
+      return next;
+    });
+  }
+
+  function handleCardKeyDown(e: React.KeyboardEvent<HTMLElement>) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleExpanded();
     }
   }
 
   return (
     <article
-      className="card"
+      className={`card${expanded ? "" : " card-hoverable"}`}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      aria-label={`Open actions for ${goal.name}`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) toggleExpanded();
+      }}
+      onKeyDown={handleCardKeyDown}
       style={{ padding: 22, position: "relative", overflow: "visible" }}
     >
       <div
@@ -101,6 +118,7 @@ function GoalCard({
           alignItems: "flex-start",
           gap: 14,
           marginBottom: 18,
+          pointerEvents: "none",
         }}
       >
         <div
@@ -133,87 +151,6 @@ function GoalCard({
             {goal.vibe} · {formatCurrency(goal.monthlyContributionInCents, currency)}/mo auto
           </div>
         </div>
-
-        {/* Dots button + dropdown */}
-        <div ref={menuRef} style={{ position: "relative" }}>
-          <button
-            className="btn btn-icon btn-ghost"
-            aria-label={`Options for ${goal.name}`}
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            type="button"
-            onClick={() => setMenuOpen((prev) => !prev)}
-          >
-            <Icon name="dots" size={16} />
-          </button>
-
-          {menuOpen && (
-            <div
-              role="menu"
-              style={{
-                position: "absolute",
-                top: "calc(100% + 4px)",
-                right: 0,
-                zIndex: 50,
-                minWidth: 160,
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: 10,
-                padding: 4,
-                boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-              }}
-            >
-              <button
-                className="nav-item"
-                type="button"
-                role="menuitem"
-                style={{ width: "100%" }}
-                onClick={() => {
-                  setActiveAction("funds");
-                  setMenuOpen(false);
-                  setInputValue("");
-                  setActionError(null);
-                }}
-              >
-                <span className="nav-icon">
-                  <Icon name="plus" size={14} />
-                </span>
-                <span>Add funds</span>
-              </button>
-              <button
-                className="nav-item"
-                type="button"
-                role="menuitem"
-                style={{ width: "100%" }}
-                onClick={() => {
-                  setActiveAction("monthly");
-                  setMenuOpen(false);
-                  setInputValue(
-                    String(goal.monthlyContributionInCents / 100)
-                  );
-                  setActionError(null);
-                }}
-              >
-                <span className="nav-icon">
-                  <Icon name="refresh" size={14} />
-                </span>
-                <span>Adjust monthly</span>
-              </button>
-              <button
-                className="nav-item"
-                type="button"
-                role="menuitem"
-                style={{ width: "100%", color: "#e53935" }}
-                onClick={handleDelete}
-              >
-                <span className="nav-icon">
-                  <Icon name="trash" size={14} color="#e53935" />
-                </span>
-                <span>Delete</span>
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       <div
@@ -222,6 +159,7 @@ function GoalCard({
           alignItems: "baseline",
           justifyContent: "space-between",
           marginBottom: 8,
+          pointerEvents: "none",
         }}
       >
         <div>
@@ -251,6 +189,7 @@ function GoalCard({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={`${goal.name}: ${goal.percentageComplete}% complete`}
+        style={{ pointerEvents: "none" }}
       >
         <i
           style={{
@@ -266,6 +205,7 @@ function GoalCard({
           justifyContent: "space-between",
           marginTop: 14,
           fontSize: 12,
+          pointerEvents: "none",
         }}
       >
         <span style={{ color: "var(--ink-3)" }}>
@@ -285,62 +225,114 @@ function GoalCard({
         </span>
       </div>
 
-      {/* Inline action panel */}
-      {activeAction && (
+      {/* Inline action panel — shown when card is expanded */}
+      {expanded && (
         <div
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          role="presentation"
           style={{
             marginTop: 14,
             padding: "12px 0 0",
             borderTop: "1px solid var(--border-2)",
           }}
         >
-          <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 6 }}>
-            {activeAction === "funds"
-              ? "Amount to add ($)"
-              : "New monthly amount ($)"}
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder={activeAction === "funds" ? "100" : "200"}
-              aria-label={
-                activeAction === "funds"
-                  ? `Amount to add to ${goal.name}`
-                  : `New monthly contribution for ${goal.name}`
-              }
-              style={{
-                flex: 1,
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background: "var(--surface-2)",
-                color: "var(--ink)",
-                fontSize: 13,
-              }}
-            />
-            <button
-              className="btn btn-sm btn-primary"
-              type="button"
-              disabled={submitting || !inputValue}
-              onClick={handleActionSubmit}
-            >
-              {submitting ? "…" : "Save"}
-            </button>
-            <button
-              className="btn btn-sm btn-ghost"
-              type="button"
-              onClick={() => {
-                setActiveAction(null);
-                setActionError(null);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
+          {/* Action chooser */}
+          {!activeAction && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <button
+                className="btn btn-sm"
+                type="button"
+                onClick={() => {
+                  setActiveAction("funds");
+                  setInputValue("");
+                  setActionError(null);
+                }}
+              >
+                <Icon name="plus" size={12} /> Add funds
+              </button>
+              <button
+                className="btn btn-sm"
+                type="button"
+                onClick={() => {
+                  setActiveAction("monthly");
+                  setInputValue(String(goal.monthlyContributionInCents / 100));
+                  setActionError(null);
+                }}
+              >
+                <Icon name="refresh" size={12} /> Adjust monthly
+              </button>
+              <button
+                className="btn btn-sm"
+                type="button"
+                onClick={handleDelete}
+                aria-label={`Delete ${goal.name}`}
+                style={{
+                  marginLeft: "auto",
+                  color: "var(--neg)",
+                  borderColor: "var(--neg-soft)",
+                  background: "var(--neg-soft)",
+                }}
+              >
+                <Icon name="trash" size={12} /> Delete
+              </button>
+            </div>
+          )}
+
+          {/* Active action form */}
+          {activeAction && (
+            <>
+              <div
+                style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 6 }}
+              >
+                {activeAction === "funds"
+                  ? "Amount to add ($)"
+                  : "New monthly amount ($)"}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder={activeAction === "funds" ? "100" : "200"}
+                  aria-label={
+                    activeAction === "funds"
+                      ? `Amount to add to ${goal.name}`
+                      : `New monthly contribution for ${goal.name}`
+                  }
+                  style={{
+                    flex: 1,
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    background: "var(--surface-2)",
+                    color: "var(--ink)",
+                    fontSize: 13,
+                  }}
+                />
+                <button
+                  className="btn btn-sm btn-primary"
+                  type="button"
+                  disabled={submitting || !inputValue}
+                  onClick={handleActionSubmit}
+                >
+                  {submitting ? "…" : "Save"}
+                </button>
+                <button
+                  className="btn btn-sm btn-ghost"
+                  type="button"
+                  onClick={() => {
+                    setActiveAction(null);
+                    setActionError(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
           {actionError && (
             <div style={{ color: "#e53935", fontSize: 11, marginTop: 6 }}>
               {actionError}

@@ -275,3 +275,29 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed
 - pnpm build: not run
+
+---
+
+## Session 2026-05-31 (budgets aggregation + clickable cards)
+
+### What was built / fixed
+- **Budgets API — real transaction aggregation** (`app/api/budgets/route.ts`): `Budget.spentInCents` is no longer read from the seeded DB column; for each budget it's now summed from real `expense` transactions whose `category` matches the budget's `category` and whose `date` falls inside the selected month (`?month=YYYY-MM`, default = latest tx date / today). `percentageUsed`, `isOver`, and `BudgetSummary.totalSpentInCents` are recomputed from the new values. Response shape unchanged.
+- **payBill — Bills category enforced** (`app/dashboard/home-actions.ts`): inserted transaction now hardcoded to `category: 'Bills'` so it counts against a Bills budget; added `revalidatePath('/dashboard/budgets')`.
+- **paySubscription server action** (`app/dashboard/home-actions.ts`, NEW): Zod-validates id, inserts an `expense` transaction with `category: 'Subscriptions'`, merchant = subscription name, amount = `amountMonthlyInCents`, status `posted`, account `'Auto'`; advances `nextDate` by 30 days; revalidates `/dashboard`, `/dashboard/bills`, `/dashboard/budgets`. Returns `ActionResult` to match the file convention.
+- **Budgets page — whole-card click target** (`app/dashboard/budgets/page.tsx`): `BudgetCard` ⋯ dropdown removed; entire card is now `role="button"` + `tabIndex={0}` with Enter/Space activation; click toggles an inline edit panel (limit input + Save + Cancel + Delete). `.card-hoverable` applied while collapsed. `aria-expanded` reflects state.
+- **Goals page — whole-card click target** (`app/dashboard/goals/page.tsx`): `GoalCard` ⋯ dropdown removed; entire card clickable + keyboard-activatable; expanded panel surfaces Add funds / Adjust monthly / Delete, then swaps in the inline form. `.card-hoverable` applied while collapsed.
+- **Bills page — clickable bill rows and subscription tiles** (`app/dashboard/bills/page.tsx`): `BillRow` and `SubRow` converted to `<button>` containers — the standalone "Edit" toggle and "⋯" trigger removed. Click anywhere on the row/tile opens the existing inline edit panel (Save / Cancel / Delete unchanged). `.card-hoverable` applied while collapsed.
+- **Transactions page — single-mode edit panel** (`app/dashboard/transactions/page.tsx`): the inner "Edit" button removed from the detail panel; row click now opens the panel directly with all fields editable. Header label updated to "Edit transaction". Save / Cancel / Delete preserved.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation will read $0 outside that window unless real transactions are added
+2. Cash on hand period data is mock-only — `cashFlowDataByPeriod` hardcoded; API returns single array
+3. Currency propagation in server components — `app/dashboard/page.tsx` and `app/dashboard/accounts/[id]/page.tsx` still hardcode USD
+4. JWT session can't be individually revoked — "Sign out all" only signs out the current session
+5. 2FA is cookie-backed stub — no real TOTP/SMS flow implemented
+6. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+7. Subscription pay button is not yet wired in the UI — `paySubscription` exists but no caller yet
+
+### Last checks
+- pnpm lint: passed (both agents)
+- pnpm build: passed (backend agent, 22 routes)

@@ -732,8 +732,7 @@ function TxDetailPanel({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Issue 3 — editable state
-  const [editing, setEditing] = useState(false);
+  // Issue 3 — panel is always in edit mode; clicking a row IS the trigger
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -756,18 +755,6 @@ function TxDetailPanel({
     }
   }
 
-  function handleCancel() {
-    setEditing(false);
-    setForm({
-      merchant: tx.merchant,
-      category: tx.category as string,
-      accountLabel: tx.accountLabel,
-      status: tx.status as string,
-      note: tx.note ?? "",
-    });
-    setSaveError(null);
-  }
-
   async function handleSave() {
     setSaving(true);
     setSaveError(null);
@@ -788,7 +775,6 @@ function TxDetailPanel({
         note: form.note || undefined,
       };
       onUpdate(updated);
-      setEditing(false);
     } else {
       setSaveError(result.error);
     }
@@ -831,37 +817,15 @@ function TxDetailPanel({
           marginBottom: 16,
         }}
       >
-        <div className="sec-label">Transaction</div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {!editing && (
-            <>
-              <button
-                className="btn btn-sm"
-                type="button"
-                onClick={() => setEditing(true)}
-              >
-                Edit
-              </button>
-              <button
-                className="btn btn-icon btn-ghost"
-                type="button"
-                onClick={onClose}
-                aria-label="Close detail panel"
-              >
-                <Icon name="x" size={14} />
-              </button>
-            </>
-          )}
-          {editing && (
-            <button
-              className="btn"
-              type="button"
-              onClick={handleCancel}
-            >
-              Cancel
-            </button>
-          )}
-        </div>
+        <div className="sec-label">Edit transaction</div>
+        <button
+          className="btn btn-icon btn-ghost"
+          type="button"
+          onClick={onClose}
+          aria-label="Close detail panel"
+        >
+          <Icon name="x" size={14} />
+        </button>
       </div>
 
       {/* Merchant + amount hero */}
@@ -875,32 +839,26 @@ function TxDetailPanel({
         }}
       >
         <MerchantIcon name={tx.merchant} size={56} />
-        {editing ? (
-          <input
-            type="text"
-            value={form.merchant}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, merchant: e.target.value }))
-            }
-            aria-label="Merchant name"
-            style={{
-              fontSize: 17,
-              fontWeight: 600,
-              textAlign: "center",
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              padding: "4px 8px",
-              background: "var(--surface-2)",
-              color: "var(--ink)",
-              width: "100%",
-              marginTop: 10,
-            }}
-          />
-        ) : (
-          <div style={{ fontSize: 17, fontWeight: 600, marginTop: 10 }}>
-            {tx.merchant}
-          </div>
-        )}
+        <input
+          type="text"
+          value={form.merchant}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, merchant: e.target.value }))
+          }
+          aria-label="Merchant name"
+          style={{
+            fontSize: 17,
+            fontWeight: 600,
+            textAlign: "center",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            padding: "4px 8px",
+            background: "var(--surface-2)",
+            color: "var(--ink)",
+            width: "100%",
+            marginTop: 10,
+          }}
+        />
         <div
           className="serif num"
           style={{
@@ -929,34 +887,28 @@ function TxDetailPanel({
           }}
         >
           <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Category</span>
-          {editing ? (
-            <select
-              value={form.category}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, category: e.target.value }))
-              }
-              aria-label="Category"
-              style={{
-                fontSize: 13,
-                padding: "4px 8px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background: "var(--surface-2)",
-                color: "var(--ink)",
-                width: "60%",
-              }}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span style={{ fontSize: 13, fontWeight: 500 }}>
-              <span className="pill">{tx.category}</span>
-            </span>
-          )}
+          <select
+            value={form.category}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, category: e.target.value }))
+            }
+            aria-label="Category"
+            style={{
+              fontSize: 13,
+              padding: "4px 8px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--surface-2)",
+              color: "var(--ink)",
+              width: "60%",
+            }}
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Account */}
@@ -970,37 +922,31 @@ function TxDetailPanel({
           }}
         >
           <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Account</span>
-          {editing ? (
-            <select
-              value={form.accountLabel}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, accountLabel: e.target.value }))
-              }
-              aria-label="Account"
-              style={{
-                fontSize: 13,
-                padding: "4px 8px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background: "var(--surface-2)",
-                color: "var(--ink)",
-                width: "60%",
-              }}
-            >
-              {accounts.length > 0
-                ? accounts.map((a) => (
-                    <option key={a.id} value={a.name}>
-                      {a.name}
-                    </option>
-                  ))
-                : <option value={form.accountLabel}>{form.accountLabel}</option>
-              }
-            </select>
-          ) : (
-            <span style={{ fontSize: 13, fontWeight: 500 }}>
-              {tx.accountLabel}
-            </span>
-          )}
+          <select
+            value={form.accountLabel}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, accountLabel: e.target.value }))
+            }
+            aria-label="Account"
+            style={{
+              fontSize: 13,
+              padding: "4px 8px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--surface-2)",
+              color: "var(--ink)",
+              width: "60%",
+            }}
+          >
+            {accounts.length > 0
+              ? accounts.map((a) => (
+                  <option key={a.id} value={a.name}>
+                    {a.name}
+                  </option>
+                ))
+              : <option value={form.accountLabel}>{form.accountLabel}</option>
+            }
+          </select>
         </div>
 
         {/* Status */}
@@ -1014,34 +960,25 @@ function TxDetailPanel({
           }}
         >
           <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Status</span>
-          {editing ? (
-            <select
-              value={form.status}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, status: e.target.value }))
-              }
-              aria-label="Status"
-              style={{
-                fontSize: 13,
-                padding: "4px 8px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background: "var(--surface-2)",
-                color: "var(--ink)",
-                width: "60%",
-              }}
-            >
-              <option value="posted">Posted</option>
-              <option value="pending">Pending</option>
-            </select>
-          ) : (
-            <span style={{ fontSize: 13, fontWeight: 500 }}>
-              <span className="pill pill-pos">
-                <Icon name="check" size={10} />{" "}
-                {tx.status === "posted" ? "Posted" : "Pending"}
-              </span>
-            </span>
-          )}
+          <select
+            value={form.status}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, status: e.target.value }))
+            }
+            aria-label="Status"
+            style={{
+              fontSize: 13,
+              padding: "4px 8px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--surface-2)",
+              color: "var(--ink)",
+              width: "60%",
+            }}
+          >
+            <option value="posted">Posted</option>
+            <option value="pending">Pending</option>
+          </select>
         </div>
 
       </div>
@@ -1061,13 +998,8 @@ function TxDetailPanel({
         </label>
         <textarea
           id="tx-note"
-          value={editing ? form.note : (tx.note ?? "")}
-          onChange={
-            editing
-              ? (e) => setForm((f) => ({ ...f, note: e.target.value }))
-              : undefined
-          }
-          readOnly={!editing}
+          value={form.note}
+          onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
           placeholder="Add a note…"
           rows={3}
           style={{
@@ -1087,45 +1019,47 @@ function TxDetailPanel({
 
       {/* Action buttons */}
       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-        {editing && (
-          <>
-            <button
-              className="btn btn-primary btn-sm"
-              style={{ flex: 1 }}
-              disabled={saving}
-              type="button"
-              onClick={handleSave}
-            >
-              {saving ? "Saving…" : "Save changes"}
-            </button>
-          </>
-        )}
-        {!editing && (
-          <button
-            className="btn btn-sm"
-            style={{
-              flex: 1,
-              color: "#e53935",
-              borderColor: "#e53935",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-            type="button"
-            disabled={deleting}
-            onClick={handleDelete}
-          >
-            <span>{deleting ? "Deleting…" : "Delete"}</span>
-            {!deleting && <Icon name="trash" size={14} color="#e53935" />}
-          </button>
-        )}
+        <button
+          className="btn btn-primary btn-sm"
+          style={{ flex: 1 }}
+          disabled={saving || deleting}
+          type="button"
+          onClick={handleSave}
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          className="btn btn-sm btn-ghost"
+          type="button"
+          disabled={saving || deleting}
+          onClick={onClose}
+        >
+          Cancel
+        </button>
+        <button
+          className="btn btn-sm"
+          style={{
+            color: "#e53935",
+            borderColor: "#e53935",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+          type="button"
+          disabled={saving || deleting}
+          onClick={handleDelete}
+          aria-label="Delete transaction"
+        >
+          <Icon name="trash" size={13} color="#e53935" />
+          <span>{deleting ? "Deleting…" : "Delete"}</span>
+        </button>
       </div>
-      {editing && saveError && (
+      {saveError && (
         <div style={{ color: "#e53935", fontSize: 12, marginTop: 6, width: "100%" }}>
           {saveError}
         </div>
       )}
-      {!editing && deleteError && (
+      {deleteError && (
         <div style={{ color: "#e53935", fontSize: 12, marginTop: 6 }}>
           {deleteError}
         </div>

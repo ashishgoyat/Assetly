@@ -69,12 +69,37 @@ export async function GET(req: NextRequest) {
 
     const monthLabel = formatMonthLabel(referenceDate)
 
-    // --- Aggregate totals (integer math only) ---
-    const totalSpentInCents = budgetList.reduce(
+    // --- Compute per-category spend from real transactions (integer math only) ---
+    // Only expense transactions from the selected month count.
+    const mmStr = String(month).padStart(2, '0')
+    const monthPrefix = `${year}-${mmStr}`
+    const spentByCategory = new Map<string, number>()
+    for (const tx of txList) {
+      if (tx.type !== 'expense') continue
+      if (!tx.date.startsWith(monthPrefix)) continue
+      spentByCategory.set(
+        tx.category,
+        (spentByCategory.get(tx.category) ?? 0) + tx.amountInCents,
+      )
+    }
+
+    // --- Enrich each budget with computed fields driven by real transactions ---
+    const budgets = budgetList.map((b) => {
+      const spentInCents = spentByCategory.get(b.category) ?? 0
+      return {
+        ...b,
+        spentInCents,
+        percentageUsed: computeBudgetPercentage(spentInCents, b.limitInCents),
+        isOver: spentInCents > b.limitInCents,
+      }
+    })
+
+    // --- Aggregate totals (integer math only) — use the computed per-budget values ---
+    const totalSpentInCents = budgets.reduce(
       (sum, b) => sum + b.spentInCents,
       0,
     )
-    const totalLimitInCents = budgetList.reduce(
+    const totalLimitInCents = budgets.reduce(
       (sum, b) => sum + b.limitInCents,
       0,
     )
@@ -87,13 +112,6 @@ export async function GET(req: NextRequest) {
     // Daily limit going forward: remaining / days left (integer, rounded)
     const dailyLimitGoingForwardInCents =
       daysLeft > 0 ? Math.round(remainingInCents / daysLeft) : 0
-
-    // --- Enrich each budget with computed fields ---
-    const budgets = budgetList.map((b) => ({
-      ...b,
-      percentageUsed: computeBudgetPercentage(b.spentInCents, b.limitInCents),
-      isOver: b.spentInCents > b.limitInCents,
-    }))
 
     // --- Real daily spend heatmap: one entry per calendar day of the selected month ---
     const dailySpendHistory = computeDailySpendTotals(txList, referenceDate, numDays)
