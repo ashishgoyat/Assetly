@@ -225,121 +225,133 @@ function GoalCard({
         </span>
       </div>
 
-      {/* Inline action panel — shown when card is expanded */}
-      {expanded && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-          role="presentation"
-          style={{
-            marginTop: 14,
-            padding: "12px 0 0",
-            borderTop: "1px solid var(--border-2)",
-          }}
-        >
-          {/* Action chooser */}
-          {!activeAction && (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <button
-                className="btn btn-sm"
-                type="button"
-                onClick={() => {
-                  setActiveAction("funds");
-                  setInputValue("");
-                  setActionError(null);
-                }}
-              >
-                <Icon name="plus" size={12} /> Add funds
-              </button>
-              <button
-                className="btn btn-sm"
-                type="button"
-                onClick={() => {
-                  setActiveAction("monthly");
-                  setInputValue(String(goal.monthlyContributionInCents / 100));
-                  setActionError(null);
-                }}
-              >
-                <Icon name="refresh" size={12} /> Adjust monthly
-              </button>
-              <button
-                className="btn btn-sm"
-                type="button"
-                onClick={handleDelete}
-                aria-label={`Delete ${goal.name}`}
-                style={{
-                  marginLeft: "auto",
-                  color: "var(--neg)",
-                  borderColor: "var(--neg-soft)",
-                  background: "var(--neg-soft)",
-                }}
-              >
-                <Icon name="trash" size={12} /> Delete
-              </button>
-            </div>
-          )}
-
-          {/* Active action form */}
-          {activeAction && (
-            <>
-              <div
-                style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 6 }}
-              >
-                {activeAction === "funds"
-                  ? "Amount to add ($)"
-                  : "New monthly amount ($)"}
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder={activeAction === "funds" ? "100" : "200"}
-                  aria-label={
-                    activeAction === "funds"
-                      ? `Amount to add to ${goal.name}`
-                      : `New monthly contribution for ${goal.name}`
-                  }
-                  style={{
-                    flex: 1,
-                    padding: "6px 10px",
-                    borderRadius: 8,
-                    border: "1px solid var(--border)",
-                    background: "var(--surface-2)",
-                    color: "var(--ink)",
-                    fontSize: 13,
-                  }}
-                />
+      {/* Inline action panel — wrapped in .anim-collapsible for smooth expand */}
+      <div
+        className="anim-collapsible"
+        data-open={expanded ? "true" : "false"}
+        aria-hidden={!expanded}
+      >
+        <div className="anim-collapsible-inner">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
+            style={{
+              marginTop: 14,
+              padding: "12px 0 0",
+              borderTop: "1px solid var(--border-2)",
+            }}
+          >
+            {/* Action chooser */}
+            {!activeAction && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <button
-                  className="btn btn-sm btn-primary"
-                  type="button"
-                  disabled={submitting || !inputValue}
-                  onClick={handleActionSubmit}
-                >
-                  {submitting ? "…" : "Save"}
-                </button>
-                <button
-                  className="btn btn-sm btn-ghost"
+                  className="btn btn-sm"
                   type="button"
                   onClick={() => {
-                    setActiveAction(null);
+                    setActiveAction("funds");
+                    setInputValue("");
                     setActionError(null);
                   }}
+                  tabIndex={expanded ? 0 : -1}
                 >
-                  Cancel
+                  <Icon name="plus" size={12} /> Add funds
+                </button>
+                <button
+                  className="btn btn-sm"
+                  type="button"
+                  onClick={() => {
+                    setActiveAction("monthly");
+                    setInputValue(String(goal.monthlyContributionInCents / 100));
+                    setActionError(null);
+                  }}
+                  tabIndex={expanded ? 0 : -1}
+                >
+                  <Icon name="refresh" size={12} /> Adjust monthly
+                </button>
+                <button
+                  className="btn btn-sm"
+                  type="button"
+                  onClick={handleDelete}
+                  aria-label={`Delete ${goal.name}`}
+                  tabIndex={expanded ? 0 : -1}
+                  style={{
+                    marginLeft: "auto",
+                    color: "var(--neg)",
+                    borderColor: "var(--neg-soft)",
+                    background: "var(--neg-soft)",
+                  }}
+                >
+                  <Icon name="trash" size={12} /> Delete
                 </button>
               </div>
-            </>
-          )}
-          {actionError && (
-            <div style={{ color: "#e53935", fontSize: 11, marginTop: 6 }}>
-              {actionError}
-            </div>
-          )}
+            )}
+
+            {/* Active action form */}
+            {activeAction && (
+              <div className="anim-fade-in">
+                <div
+                  style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 6 }}
+                >
+                  {activeAction === "funds"
+                    ? "Amount to add ($)"
+                    : "New monthly amount ($)"}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder={activeAction === "funds" ? "100" : "200"}
+                    aria-label={
+                      activeAction === "funds"
+                        ? `Amount to add to ${goal.name}`
+                        : `New monthly contribution for ${goal.name}`
+                    }
+                    style={{
+                      flex: 1,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "1px solid var(--border)",
+                      background: "var(--surface-2)",
+                      color: "var(--ink)",
+                      fontSize: 13,
+                    }}
+                  />
+                  <button
+                    className="btn btn-sm btn-primary"
+                    type="button"
+                    disabled={submitting || !inputValue}
+                    onClick={handleActionSubmit}
+                  >
+                    {submitting ? "…" : "Save"}
+                  </button>
+                  <button
+                    className="btn btn-sm btn-ghost"
+                    type="button"
+                    onClick={() => {
+                      setActiveAction(null);
+                      setActionError(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            {actionError && (
+              <div
+                className="anim-slide-down"
+                style={{ color: "#e53935", fontSize: 11, marginTop: 6 }}
+              >
+                {actionError}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </article>
   );
 }

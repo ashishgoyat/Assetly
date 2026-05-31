@@ -116,8 +116,7 @@ export default function NewBudgetButton() {
         <Icon name="plus" size={13} /> New budget
       </button>
 
-      {open && (
-        <Modal title="New budget" onClose={() => setOpen(false)}>
+      <Modal open={open} title="New budget" onClose={() => setOpen(false)}>
           <form
             onSubmit={handleSubmit}
             style={{ display: "flex", flexDirection: "column", gap: 14 }}
@@ -248,7 +247,6 @@ export default function NewBudgetButton() {
             )}
           </form>
         </Modal>
-      )}
     </>
   );
 }

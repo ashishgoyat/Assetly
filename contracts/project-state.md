@@ -301,3 +301,35 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (both agents)
 - pnpm build: passed (backend agent, 22 routes)
+
+---
+
+## Session 2026-05-31 (motion system + exit animations + theme crossfade)
+
+### What was built / fixed
+- **Centralized motion tokens** (`app/globals.css` `:root` lines 67–82): `--dur-instant: 120ms`, `--dur-fast: 220ms`, `--dur-base: 320ms`, `--dur-slow: 480ms`, `--ease-out-quart: cubic-bezier(0.22, 1, 0.36, 1)`, `--ease-in-out-quart`, `--ease-spring`. Bridged into Tailwind v4 via `@theme` so `duration-fast`/`ease-out-quart` resolve to these vars. Legacy `--t-sm` retained as alias.
+- **Reusable `.anim-*` classes** (`app/globals.css`): `.anim-fade-in`, `.anim-slide-up`, `.anim-slide-down`, `.anim-scale-in`, `.anim-pop`, `.anim-enter`, `.anim-collapsible` (grid-rows trick — animates both directions), `.press-feedback`. Plus matching keyframes — every existing transition/keyframe in `globals.css` was refactored to consume the tokens.
+- **`prefers-reduced-motion: reduce` guard** (`app/globals.css` ~line 1005): redeclares every duration token to `0.01ms`; universal `* { animation-duration / transition-duration: 0.01ms !important }`; explicit `animation: none !important` on every `.anim-*` class, `[data-exiting="true"]`, `.drawer`, `.modal-*`, `.skeleton`, and `html.theme-transitioning *`.
+- **Motion applied across app**: sidebar collapse + drawer + user menu, modal backdrop/panel, notifications panel, search dropdown, transactions filter/month + detail panel, budgets month picker, all inline edit panels (Budgets/Goals/Bills/Subs), `AddSubForm` mount, form-field focus, button press feedback. `.card-hoverable` re-routed through tokens.
+- **Form-file inline transitions cleaned up** (`app/components/forms/AddBillForm.tsx`, `AddTransactionForm.tsx`, `NewGoalForm.tsx`, `app/dashboard/goals/NewGoalButton.tsx`): replaced ad-hoc `transition: "all var(--t-sm)"` with explicit narrow-property token transitions.
+- **Theme toggle crossfade** (`app/lib/applyThemeWithTransition.ts`, NEW): adds `theme-transitioning` class to `<html>`, calls `setTheme`, removes the class after 350ms. CSS rule `html.theme-transitioning *` applies `transition: background-color, border-color, color, fill, stroke var(--dur-base) var(--ease-in-out-quart) !important` so the whole UI crossfades over ~320ms. Hover transitions stay snappy outside the swap window. Both `DarkModeToggle.tsx` and `SettingsThemeToggle.tsx` now wrap their `setTheme` calls.
+- **Home dashboard row expansions smoothed** (`app/components/dashboard/BillRow.tsx`, `TransactionRow.tsx`, `GoalCard.tsx`): the `{expanded && <panel>}` instant-mount pattern replaced with `.anim-collapsible[data-open]` + `.anim-collapsible-inner` — same pattern as the tab pages. Animates both open and close natively via `grid-template-rows: 0fr ↔ 1fr`.
+- **`useExitAnimation` hook** (`app/hooks/useExitAnimation.ts`, NEW): centralized exit-animation primitive. Exports `MOTION_MS = { instant: 120, fast: 220, base: 320, slow: 480 }` (JS↔CSS duration parity) and `useExitAnimation(isOpen, durationMs)` returning `{ shouldRender, isExiting }`. Uses React 19 setState-during-render to detect prop transitions (avoids `set-state-in-effect` lint rule). Short-circuits under `prefers-reduced-motion` for immediate unmount.
+- **Exit-animation CSS** (`app/globals.css`): new keyframes `anim-pop-exit`, `anim-fade-out`, `anim-scale-out`, `anim-slide-in-right`, `anim-slide-out-right`. `[data-exiting="true"]` selectors for `.anim-pop / .anim-fade-in / .anim-scale-in / .anim-slide-in-right / .modal-overlay / .modal-panel` swap in the reverse keyframe. Reduced-motion block neutralizes them all.
+- **Transaction detail panel slide-in-from-right** (`app/dashboard/transactions/page.tsx`): aside root changed from `.anim-fade-in` to `.anim-slide-in-right` + `data-exiting`. Gated on `shouldRender` from `useExitAnimation(Boolean(selected), MOTION_MS.base)`. Added `panelTx` state to keep content during exit window; grid track follows `shouldRender` so panel doesn't squish mid-exit.
+- **Popover exit animations wired** (6 sites): transactions filter dropdown + month picker, budgets month picker, sidebar user menu, search results listbox, notifications panel — each now `{shouldRender && <X data-exiting={…}/>}` driven by the hook.
+- **Modal API refactor** (`app/components/ui/Modal.tsx`): now `<Modal open title onClose>`; component owns its own mount/unmount via `useExitAnimation(open, MOTION_MS.base)`. Backdrop fades out + panel scales out on close. All 8 callsites updated across 6 files: `NewGoalButton`, `NewBudgetButton`, `AddBillButton`, `AddTransactionButton`, `Sidebar` (Add Account), `settings/page.tsx` (Edit Profile / Change Password / Delete Account).
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. Cash on hand period data is mock-only — `cashFlowDataByPeriod` hardcoded; API returns single array
+3. Currency propagation in server components — `app/dashboard/page.tsx` and `app/dashboard/accounts/[id]/page.tsx` still hardcode USD
+4. JWT session can't be individually revoked — "Sign out all" only signs out the current session
+5. 2FA is cookie-backed stub — no real TOTP/SMS flow implemented
+6. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+7. Subscription pay button is not yet wired in the UI — `paySubscription` exists but no caller yet
+8. Subtle `<Modal>` API churn — the prop change is mechanical, but any future modal callsite must use `<Modal open …/>`, not `{open && <Modal …/>}`
+
+### Last checks
+- pnpm lint: passed
+- pnpm build: passed (22 routes)

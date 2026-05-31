@@ -219,7 +219,11 @@ function EditPanel({ bill, onClose, onDeleted, onSaved }: EditPanelProps) {
         </div>
 
         {error && (
-          <div className="field-error" style={{ marginBottom: 8 }} role="alert">
+          <div
+            className="field-error anim-slide-down"
+            style={{ marginBottom: 8 }}
+            role="alert"
+          >
             {error}
           </div>
         )}
@@ -395,7 +399,11 @@ function SubEditPanel({ sub, onClose, onDeleted, onSaved }: SubEditPanelProps) {
         </div>
 
         {error && (
-          <div className="field-error" style={{ marginBottom: 8 }} role="alert">
+          <div
+            className="field-error anim-slide-down"
+            style={{ marginBottom: 8 }}
+            role="alert"
+          >
             {error}
           </div>
         )}
@@ -470,6 +478,7 @@ function AddSubForm({ onClose, onSaved }: AddSubFormProps) {
 
   return (
     <div
+      className="anim-fade-in"
       style={{
         padding: "14px 10px 16px",
         background: "var(--surface-2)",
@@ -544,7 +553,11 @@ function AddSubForm({ onClose, onSaved }: AddSubFormProps) {
         </div>
 
         {error && (
-          <div className="field-error" style={{ marginBottom: 8 }} role="alert">
+          <div
+            className="field-error anim-slide-down"
+            style={{ marginBottom: 8 }}
+            role="alert"
+          >
             {error}
           </div>
         )}
@@ -591,7 +604,6 @@ function SubRow({ sub, isExpanded, onToggleEdit, onDeleted, onSaved }: SubRowPro
       style={{
         borderRadius: "var(--r)",
         overflow: "hidden",
-        transition: "background var(--t-sm)",
       }}
     >
       <button
@@ -642,14 +654,22 @@ function SubRow({ sub, isExpanded, onToggleEdit, onDeleted, onSaved }: SubRowPro
         </div>
       </button>
 
-      {isExpanded && (
-        <SubEditPanel
-          sub={sub}
-          onClose={() => onToggleEdit(sub.id)}
-          onDeleted={onDeleted}
-          onSaved={onSaved}
-        />
-      )}
+      <div
+        className="anim-collapsible"
+        data-open={isExpanded ? "true" : "false"}
+        aria-hidden={!isExpanded}
+      >
+        <div className="anim-collapsible-inner">
+          {isExpanded && (
+            <SubEditPanel
+              sub={sub}
+              onClose={() => onToggleEdit(sub.id)}
+              onDeleted={onDeleted}
+              onSaved={onSaved}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -673,7 +693,6 @@ function BillRow({ bill, isExpanded, onToggleEdit, onDeleted, onSaved }: BillRow
       style={{
         borderRadius: "var(--r)",
         overflow: "hidden",
-        transition: "background var(--t-sm)",
       }}
     >
       <button
@@ -763,15 +782,23 @@ function BillRow({ bill, isExpanded, onToggleEdit, onDeleted, onSaved }: BillRow
         </div>
       </button>
 
-      {/* Inline edit panel */}
-      {isExpanded && (
-        <EditPanel
-          bill={bill}
-          onClose={() => onToggleEdit(bill.id)}
-          onDeleted={onDeleted}
-          onSaved={onSaved}
-        />
-      )}
+      {/* Inline edit panel — wrapped in .anim-collapsible for smooth expand */}
+      <div
+        className="anim-collapsible"
+        data-open={isExpanded ? "true" : "false"}
+        aria-hidden={!isExpanded}
+      >
+        <div className="anim-collapsible-inner">
+          {isExpanded && (
+            <EditPanel
+              bill={bill}
+              onClose={() => onToggleEdit(bill.id)}
+              onDeleted={onDeleted}
+              onSaved={onSaved}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

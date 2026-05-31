@@ -1044,45 +1044,44 @@ export default function SettingsPage() {
       </div>
 
       {/* ─── Modals ─── */}
-      {editProfileOpen && profile && (
-        <Modal
-          title="Edit profile"
-          onClose={() => setEditProfileOpen(false)}
-        >
+      <Modal
+        open={editProfileOpen && profile !== null}
+        title="Edit profile"
+        onClose={() => setEditProfileOpen(false)}
+      >
+        {profile && (
           <EditProfileForm
             initial={profile}
             onSaved={handleProfileSaved}
             onCancel={() => setEditProfileOpen(false)}
           />
-        </Modal>
-      )}
+        )}
+      </Modal>
 
-      {changePasswordOpen && (
-        <Modal
-          title="Change password"
-          onClose={() => setChangePasswordOpen(false)}
-        >
-          <ChangePasswordForm
-            onSaved={() => {
-              setChangePasswordOpen(false);
-              void fetchSettings();
-            }}
-            onCancel={() => setChangePasswordOpen(false)}
-          />
-        </Modal>
-      )}
+      <Modal
+        open={changePasswordOpen}
+        title="Change password"
+        onClose={() => setChangePasswordOpen(false)}
+      >
+        <ChangePasswordForm
+          onSaved={() => {
+            setChangePasswordOpen(false);
+            void fetchSettings();
+          }}
+          onCancel={() => setChangePasswordOpen(false)}
+        />
+      </Modal>
 
-      {deleteAccountOpen && (
-        <Modal
-          title="Delete account"
-          onClose={() => setDeleteAccountOpen(false)}
-        >
-          <DeleteAccountForm
-            onDeleted={handleDeleted}
-            onCancel={() => setDeleteAccountOpen(false)}
-          />
-        </Modal>
-      )}
+      <Modal
+        open={deleteAccountOpen}
+        title="Delete account"
+        onClose={() => setDeleteAccountOpen(false)}
+      >
+        <DeleteAccountForm
+          onDeleted={handleDeleted}
+          onCancel={() => setDeleteAccountOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }

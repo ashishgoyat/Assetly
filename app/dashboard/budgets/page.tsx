@@ -10,6 +10,7 @@ import Icon from "@/app/components/ui/Icon";
 import DonutChart from "@/app/components/charts/DonutChart";
 import BudgetSuggestionCard from "@/app/dashboard/budgets/BudgetSuggestionCard";
 import NewBudgetButton from "@/app/dashboard/budgets/NewBudgetButton";
+import { useExitAnimation, MOTION_MS } from "@/app/hooks/useExitAnimation";
 import type { Budget, BudgetSummary } from "@/contracts/api-contracts";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { useCurrency } from "@/app/contexts/CurrencyContext";
@@ -72,6 +73,7 @@ export default function BudgetsPage() {
   });
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const monthPickerRef = useRef<HTMLDivElement>(null);
+  const monthPicker = useExitAnimation(monthPickerOpen, MOTION_MS.fast);
 
   const availableMonths = getAvailableMonths();
 
@@ -308,10 +310,12 @@ export default function BudgetsPage() {
                 availableMonths[0].label.split(" ")[0]}
               <Icon name="chevd" size={11} />
             </button>
-            {monthPickerOpen && (
+            {monthPicker.shouldRender && (
               <div
                 role="listbox"
                 aria-label="Select month"
+                className="anim-pop"
+                data-exiting={monthPicker.isExiting ? "true" : "false"}
                 style={{
                   position: "absolute",
                   top: "calc(100% + 6px)",
@@ -323,6 +327,7 @@ export default function BudgetsPage() {
                   borderRadius: 12,
                   padding: "6px 0",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                  transformOrigin: "top right",
                 }}
               >
                 {availableMonths.map(({ key, label }) => (
@@ -790,100 +795,113 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
         />
       </div>
 
-      {expanded && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-          role="presentation"
-          style={{
-            marginTop: 14,
-            paddingTop: 12,
-            borderTop: "1px solid var(--border-2)",
-          }}
-        >
+      <div
+        className="anim-collapsible"
+        data-open={expanded ? "true" : "false"}
+        aria-hidden={!expanded}
+      >
+        <div className="anim-collapsible-inner">
           <div
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
             style={{
-              fontSize: 11,
-              color: "var(--ink-3)",
-              marginBottom: 6,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              fontWeight: 600,
+              marginTop: 14,
+              paddingTop: 12,
+              borderTop: "1px solid var(--border-2)",
             }}
           >
-            New monthly limit ($)
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder={String(Math.round(b.limitInCents / 100))}
-              aria-label={`New monthly limit for ${b.name}`}
+            <div
               style={{
-                flex: 1,
-                minWidth: 100,
-                fontSize: 13,
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background: "var(--surface-2)",
-                color: "var(--ink)",
-              }}
-              disabled={submitting}
-            />
-            <button
-              className="btn btn-sm btn-primary"
-              type="button"
-              disabled={submitting || !inputValue}
-              onClick={handleLimitSubmit}
-            >
-              {submitting ? "…" : "Save"}
-            </button>
-            <button
-              className="btn btn-sm btn-ghost"
-              type="button"
-              disabled={submitting}
-              onClick={() => {
-                setExpanded(false);
-                setInputValue("");
-                setActionError("");
+                fontSize: 11,
+                color: "var(--ink-3)",
+                marginBottom: 6,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                fontWeight: 600,
               }}
             >
-              Cancel
-            </button>
-            <button
-              className="btn btn-sm"
-              type="button"
-              disabled={submitting}
-              onClick={handleDelete}
-              aria-label={`Delete ${b.name}`}
-              style={{
-                marginLeft: "auto",
-                color: "var(--neg)",
-                borderColor: "var(--neg-soft)",
-                background: "var(--neg-soft)",
-              }}
-            >
-              <Icon name="trash" size={13} /> Delete
-            </button>
-          </div>
-          {actionError && (
-            <div style={{ color: "#e53935", fontSize: 11, marginTop: 6 }}>
-              {actionError}
+              New monthly limit ($)
             </div>
-          )}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={String(Math.round(b.limitInCents / 100))}
+                aria-label={`New monthly limit for ${b.name}`}
+                style={{
+                  flex: 1,
+                  minWidth: 100,
+                  fontSize: 13,
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface-2)",
+                  color: "var(--ink)",
+                }}
+                disabled={submitting}
+                tabIndex={expanded ? 0 : -1}
+              />
+              <button
+                className="btn btn-sm btn-primary"
+                type="button"
+                disabled={submitting || !inputValue}
+                onClick={handleLimitSubmit}
+                tabIndex={expanded ? 0 : -1}
+              >
+                {submitting ? "…" : "Save"}
+              </button>
+              <button
+                className="btn btn-sm btn-ghost"
+                type="button"
+                disabled={submitting}
+                onClick={() => {
+                  setExpanded(false);
+                  setInputValue("");
+                  setActionError("");
+                }}
+                tabIndex={expanded ? 0 : -1}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-sm"
+                type="button"
+                disabled={submitting}
+                onClick={handleDelete}
+                aria-label={`Delete ${b.name}`}
+                tabIndex={expanded ? 0 : -1}
+                style={{
+                  marginLeft: "auto",
+                  color: "var(--neg)",
+                  borderColor: "var(--neg-soft)",
+                  background: "var(--neg-soft)",
+                }}
+              >
+                <Icon name="trash" size={13} /> Delete
+              </button>
+            </div>
+            {actionError && (
+              <div
+                className="anim-slide-down"
+                style={{ color: "#e53935", fontSize: 11, marginTop: 6 }}
+              >
+                {actionError}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

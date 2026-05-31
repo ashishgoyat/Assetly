@@ -100,55 +100,61 @@ export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
         </div>
       </button>
 
-      {expanded && (
-        <div style={{ padding: "6px 0 8px 52px" }}>
-          <div
-            style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}
-            aria-busy={isPending}
-          >
-            {!b.isAutoPay && (
-              <button
-                className="btn btn-sm btn-primary"
-                type="button"
-                disabled={isPending}
-                onClick={handlePay}
+      <div
+        className="anim-collapsible"
+        data-open={expanded ? "true" : "false"}
+        aria-hidden={!expanded}
+      >
+        <div className="anim-collapsible-inner">
+          <div style={{ padding: "6px 0 8px 52px" }} onClick={(e) => e.stopPropagation()}>
+            <div
+              style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}
+              aria-busy={isPending}
+            >
+              {!b.isAutoPay && (
+                <button
+                  className="btn btn-sm btn-primary"
+                  type="button"
+                  disabled={isPending}
+                  onClick={handlePay}
+                >
+                  Pay now
+                </button>
+              )}
+              {!b.isAutoPay && (
+                <Link href="/dashboard/bills" className="btn btn-sm btn-ghost">
+                  Schedule
+                </Link>
+              )}
+              {b.isAutoPay && (
+                <Link href="/dashboard/bills" className="btn btn-sm btn-ghost">
+                  Edit auto-pay
+                </Link>
+              )}
+              <Link
+                href={`/dashboard/transactions?q=${encodeURIComponent(b.name)}`}
+                className="btn btn-sm btn-ghost"
               >
-                Pay now
+                View history
+              </Link>
+              <button
+                className="btn btn-sm btn-ghost"
+                type="button"
+                style={{ color: "var(--ink-3)" }}
+                disabled={isPending}
+                onClick={handleSkip}
+              >
+                Skip this month
               </button>
-            )}
-            {!b.isAutoPay && (
-              <Link href="/dashboard/bills" className="btn btn-sm btn-ghost">
-                Schedule
-              </Link>
-            )}
-            {b.isAutoPay && (
-              <Link href="/dashboard/bills" className="btn btn-sm btn-ghost">
-                Edit auto-pay
-              </Link>
-            )}
-            <Link
-              href={`/dashboard/transactions?q=${encodeURIComponent(b.name)}`}
-              className="btn btn-sm btn-ghost"
-            >
-              View history
-            </Link>
-            <button
-              className="btn btn-sm btn-ghost"
-              type="button"
-              style={{ color: "var(--ink-3)" }}
-              disabled={isPending}
-              onClick={handleSkip}
-            >
-              Skip this month
-            </button>
-          </div>
-          {error && (
-            <div style={{ marginTop: 6, color: "var(--neg)", fontSize: 11 }}>
-              {error}
             </div>
-          )}
+            {error && (
+              <div style={{ marginTop: 6, color: "var(--neg)", fontSize: 11 }}>
+                {error}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

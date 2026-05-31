@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
+import { applyThemeWithTransition } from "@/app/lib/applyThemeWithTransition";
 
 type ThemeOption = "light" | "system" | "dark";
 
@@ -65,7 +66,7 @@ export default function SettingsThemeToggle() {
             type="button"
             aria-pressed={isActive}
             aria-label={`${opt.label} theme`}
-            onClick={() => setTheme(opt.value)}
+            onClick={() => applyThemeWithTransition(setTheme, opt.value)}
             style={
               isActive
                 ? { background: "var(--ink)", color: "var(--surface)" }

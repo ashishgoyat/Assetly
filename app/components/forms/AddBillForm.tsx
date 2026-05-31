@@ -147,7 +147,7 @@ export default function AddBillForm({ onClose }: AddBillFormProps) {
               style={{
                 fontSize: 13,
                 color: autoPay ? "var(--pos)" : "var(--ink-3)",
-                transition: "color var(--t-sm)",
+                transition: "color var(--dur-fast) var(--ease-out-quart)",
               }}
             >
               {autoPay ? "On" : "Off"}

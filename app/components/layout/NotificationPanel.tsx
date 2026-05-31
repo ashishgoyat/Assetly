@@ -5,6 +5,7 @@ import type { Notification, NotificationType } from "@/contracts/api-contracts";
 interface NotificationPanelProps {
   notifications: Notification[];
   onMarkAllRead: () => void;
+  isExiting?: boolean;
 }
 
 const TYPE_COLORS: Record<NotificationType, string> = {
@@ -31,12 +32,15 @@ function getRelativeTime(isoString: string): string {
 export default function NotificationPanel({
   notifications,
   onMarkAllRead,
+  isExiting = false,
 }: NotificationPanelProps) {
   return (
     <div
       role="dialog"
       aria-label="Notifications"
       aria-modal="false"
+      className="anim-pop"
+      data-exiting={isExiting ? "true" : "false"}
       style={{
         position: "absolute",
         top: "calc(100% + 8px)",
@@ -48,7 +52,7 @@ export default function NotificationPanel({
         boxShadow: "var(--shadow-lg)",
         zIndex: 50,
         overflow: "hidden",
-        animation: "fadeIn 175ms cubic-bezier(0.22,1,0.36,1)",
+        transformOrigin: "top right",
       }}
     >
       {/* Header */}
@@ -126,7 +130,8 @@ export default function NotificationPanel({
                 borderLeft: notif.isRead
                   ? "3px solid transparent"
                   : "3px solid var(--accent)",
-                transition: "background 175ms ease",
+                transition:
+                  "background var(--dur-fast) var(--ease-out-quart)",
                 cursor: notif.route ? "pointer" : "default",
               }}
               role="article"

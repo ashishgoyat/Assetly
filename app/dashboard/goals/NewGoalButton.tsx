@@ -38,7 +38,8 @@ export default function NewGoalButton({ variant = "default" }: NewGoalButtonProp
             background: "transparent",
             color: "var(--ink-3)",
             cursor: "pointer",
-            transition: "all var(--t-sm)",
+            transition:
+              "background var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), color var(--dur-fast) var(--ease-out-quart)",
             width: "100%",
           }}
         >
@@ -57,11 +58,9 @@ export default function NewGoalButton({ variant = "default" }: NewGoalButtonProp
         </button>
       )}
 
-      {open && (
-        <Modal title="New goal" onClose={() => setOpen(false)}>
-          <NewGoalForm onClose={() => setOpen(false)} />
-        </Modal>
-      )}
+      <Modal open={open} title="New goal" onClose={() => setOpen(false)}>
+        <NewGoalForm onClose={() => setOpen(false)} />
+      </Modal>
     </>
   );
 }

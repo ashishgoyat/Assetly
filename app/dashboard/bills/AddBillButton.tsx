@@ -22,11 +22,9 @@ export default function AddBillButton() {
         <Icon name="plus" size={13} /> Add bill
       </button>
 
-      {open && (
-        <Modal title="Add bill" onClose={() => setOpen(false)}>
-          <AddBillForm onClose={() => setOpen(false)} />
-        </Modal>
-      )}
+      <Modal open={open} title="Add bill" onClose={() => setOpen(false)}>
+        <AddBillForm onClose={() => setOpen(false)} />
+      </Modal>
     </>
   );
 }

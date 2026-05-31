@@ -174,7 +174,8 @@ export default function NewGoalForm({ onClose }: NewGoalFormProps) {
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: "pointer",
-                    transition: "all var(--t-sm)",
+                    transition:
+                      "background var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), color var(--dur-fast) var(--ease-out-quart)",
                     flexShrink: 0,
                   }}
                 >

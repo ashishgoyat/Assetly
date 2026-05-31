@@ -22,11 +22,9 @@ export default function AddTransactionButton() {
         <Icon name="plus" size={13} /> Add transaction
       </button>
 
-      {open && (
-        <Modal title="Add transaction" onClose={() => setOpen(false)}>
-          <AddTransactionForm onClose={() => setOpen(false)} />
-        </Modal>
-      )}
+      <Modal open={open} title="Add transaction" onClose={() => setOpen(false)}>
+        <AddTransactionForm onClose={() => setOpen(false)} />
+      </Modal>
     </>
   );
 }

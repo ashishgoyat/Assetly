@@ -10,6 +10,7 @@ import Icon from "@/app/components/ui/Icon";
 import MerchantIcon from "@/app/components/ui/MerchantIcon";
 import Sparkline from "@/app/components/charts/Sparkline";
 import AddTransactionButton from "@/app/dashboard/transactions/AddTransactionButton";
+import { useExitAnimation, MOTION_MS } from "@/app/hooks/useExitAnimation";
 import type {
   Account,
   Transaction,
@@ -102,6 +103,21 @@ export default function TransactionsPage() {
   const [monthFilter, setMonthFilter] = useState<string | null>(null);
   const [monthOpen, setMonthOpen] = useState(false);
   const monthRef = useRef<HTMLDivElement>(null);
+
+  // Exit-animation drivers for the two popovers and the detail panel
+  const filterPop = useExitAnimation(filterOpen, MOTION_MS.fast);
+  const monthPop = useExitAnimation(monthOpen, MOTION_MS.fast);
+  const detail = useExitAnimation(selected !== null, MOTION_MS.base);
+
+  // Cache the last non-null selection so the detail panel still has data to
+  // render during its exit animation (right after the user clicks close, the
+  // hook keeps shouldRender true for MOTION_MS.base while selected goes null).
+  // setState-during-render pattern: React discards the in-progress render and
+  // restarts with the new state — no extra cycle, no effect.
+  const [panelTx, setPanelTx] = useState<Transaction | null>(selected);
+  if (selected && selected !== panelTx) {
+    setPanelTx(selected);
+  }
 
   useEffect(() => {
     fetchTransactions()
@@ -392,10 +408,12 @@ export default function TransactionsPage() {
               </span>
             )}
           </button>
-          {filterOpen && (
+          {filterPop.shouldRender && (
             <div
               role="dialog"
               aria-label="Filter transactions"
+              className="anim-pop"
+              data-exiting={filterPop.isExiting ? "true" : "false"}
               style={{
                 position: "absolute",
                 top: "calc(100% + 6px)",
@@ -407,6 +425,7 @@ export default function TransactionsPage() {
                 borderRadius: 12,
                 padding: 14,
                 boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                transformOrigin: "top right",
               }}
             >
               <div
@@ -499,10 +518,12 @@ export default function TransactionsPage() {
             <Icon name="cal" size={13} />{" "}
             {monthFilter ? formatMonthLabel(monthFilter) : "Month"}
           </button>
-          {monthOpen && (
+          {monthPop.shouldRender && (
             <div
               role="dialog"
               aria-label="Select month"
+              className="anim-pop"
+              data-exiting={monthPop.isExiting ? "true" : "false"}
               style={{
                 position: "absolute",
                 top: "calc(100% + 6px)",
@@ -514,6 +535,7 @@ export default function TransactionsPage() {
                 borderRadius: 12,
                 padding: "6px 0",
                 boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                transformOrigin: "top right",
               }}
             >
               <button
@@ -580,7 +602,7 @@ export default function TransactionsPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: selected ? "1fr 360px" : "1fr",
+          gridTemplateColumns: detail.shouldRender ? "1fr 360px" : "1fr",
           gap: 14,
         }}
       >
@@ -688,11 +710,12 @@ export default function TransactionsPage() {
         {/* /table-scroll */}
 
         {/* Detail panel */}
-        {selected && (
+        {detail.shouldRender && panelTx && (
           <TxDetailPanel
-            key={selected.id}
-            tx={selected}
+            key={panelTx.id}
+            tx={panelTx}
             accounts={accounts}
+            isExiting={detail.isExiting}
             onClose={() => setSelected(null)}
             onDelete={(id) => {
               setTransactions((prev) => prev.filter((t) => t.id !== id));
@@ -718,12 +741,14 @@ export default function TransactionsPage() {
 function TxDetailPanel({
   tx,
   accounts,
+  isExiting,
   onClose,
   onDelete,
   onUpdate,
 }: {
   tx: Transaction;
   accounts: Account[];
+  isExiting: boolean;
   onClose: () => void;
   onDelete: (id: string) => void;
   onUpdate: (updated: Transaction) => void;
@@ -799,7 +824,8 @@ function TxDetailPanel({
 
   return (
     <aside
-      className="card"
+      className="card anim-slide-in-right"
+      data-exiting={isExiting ? "true" : "false"}
       style={{
         padding: 22,
         alignSelf: "flex-start",
@@ -1055,12 +1081,18 @@ function TxDetailPanel({
         </button>
       </div>
       {saveError && (
-        <div style={{ color: "#e53935", fontSize: 12, marginTop: 6, width: "100%" }}>
+        <div
+          className="anim-slide-down"
+          style={{ color: "#e53935", fontSize: 12, marginTop: 6, width: "100%" }}
+        >
           {saveError}
         </div>
       )}
       {deleteError && (
-        <div style={{ color: "#e53935", fontSize: 12, marginTop: 6 }}>
+        <div
+          className="anim-slide-down"
+          style={{ color: "#e53935", fontSize: 12, marginTop: 6 }}
+        >
           {deleteError}
         </div>
       )}

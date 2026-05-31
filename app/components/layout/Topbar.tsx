@@ -10,6 +10,7 @@ import DarkModeToggle from "@/app/components/ui/DarkModeToggle";
 import HamburgerButton from "@/app/components/layout/HamburgerButton";
 import SearchDropdown from "@/app/components/layout/SearchDropdown";
 import NotificationPanel from "@/app/components/layout/NotificationPanel";
+import { useExitAnimation, MOTION_MS } from "@/app/hooks/useExitAnimation";
 import type { Account, Notification } from "@/contracts/api-contracts";
 
 interface TopbarProps {
@@ -25,6 +26,7 @@ export default function Topbar({ userName, userInitials, accounts }: TopbarProps
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifWrapperRef = useRef<HTMLDivElement>(null);
+  const notif = useExitAnimation(notifOpen, MOTION_MS.fast);
 
   // Fetch notifications once on mount
   useEffect(() => {
@@ -117,10 +119,11 @@ export default function Topbar({ userName, userInitials, accounts }: TopbarProps
           )}
         </button>
 
-        {notifOpen && (
+        {notif.shouldRender && (
           <NotificationPanel
             notifications={notifications}
             onMarkAllRead={handleMarkAllRead}
+            isExiting={notif.isExiting}
           />
         )}
       </div>

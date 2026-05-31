@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import Icon from "@/app/components/ui/Icon";
+import { applyThemeWithTransition } from "@/app/lib/applyThemeWithTransition";
 
 // useSyncExternalStore-based mount detection avoids the
 // useEffect+setState pattern that triggers react-hooks/set-state-in-effect.
@@ -32,7 +33,7 @@ export default function DarkModeToggle() {
     <button
       className="btn btn-icon btn-ghost"
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={() => applyThemeWithTransition(setTheme, isDark ? "light" : "dark")}
     >
       <Icon name={isDark ? "sun" : "moon"} size={16} />
     </button>

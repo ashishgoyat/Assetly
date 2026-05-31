@@ -64,7 +64,38 @@
   --f-sans:    var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
   --f-mono:    var(--font-geist-mono), 'JetBrains Mono', ui-monospace, monospace;
 
-  --t-sm: 175ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* ─── Motion tokens ─────────────────────────────────────────────── */
+  /* Durations */
+  --dur-instant: 120ms;
+  --dur-fast:    220ms;
+  --dur-base:    320ms;
+  --dur-slow:    480ms;
+  /* Easings */
+  --ease-out-quart:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-spring:       cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Legacy alias — kept so any remaining string template literal references
+     resolve to the new tokens instead of being broken. New code should use
+     the explicit tokens above. */
+  --t-sm: var(--dur-fast) var(--ease-out-quart);
+}
+
+/* Tailwind v4 token bridge — exposes our motion tokens as Tailwind
+   utility values so `duration-fast`, `ease-out-quart`, etc. resolve
+   to the variables above. */
+@theme {
+  --animate-duration-instant: var(--dur-instant);
+  --animate-duration-fast:    var(--dur-fast);
+  --animate-duration-base:    var(--dur-base);
+  --animate-duration-slow:    var(--dur-slow);
+  --transition-duration-instant: var(--dur-instant);
+  --transition-duration-fast:    var(--dur-fast);
+  --transition-duration-base:    var(--dur-base);
+  --transition-duration-slow:    var(--dur-slow);
+  --ease-out-quart:    var(--ease-out-quart);
+  --ease-in-out-quart: var(--ease-in-out-quart);
+  --ease-spring:       var(--ease-spring);
 }
 
 /* ─── Dark mode tokens ───────────────────────────────────────────────────────── */
@@ -130,6 +161,23 @@
   }
 }
 
+/* ─── Theme crossfade ──────────────────────────────────────────────────────── */
+/* While `theme-transitioning` is on <html>, every element fades its color /
+   border / fill / stroke between palettes over --dur-base. Class is added by
+   applyThemeWithTransition() right before setTheme() and removed ~350ms later
+   so it doesn't slow subsequent hover transitions. */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition:
+    background-color var(--dur-base) var(--ease-in-out-quart),
+    border-color     var(--dur-base) var(--ease-in-out-quart),
+    color            var(--dur-base) var(--ease-in-out-quart),
+    fill             var(--dur-base) var(--ease-in-out-quart),
+    stroke           var(--dur-base) var(--ease-in-out-quart) !important;
+}
+
 /* ─── Reset ─────────────────────────────────────────────────────────────────── */
 
 *,
@@ -192,7 +240,7 @@ input, textarea {
   grid-template-columns: 232px 1fr;
   height: 100vh;
   background: var(--bg);
-  transition: grid-template-columns 250ms ease;
+  transition: grid-template-columns var(--dur-base) var(--ease-in-out-quart);
 }
 
 @media (min-width: 1280px) {
@@ -206,7 +254,7 @@ input, textarea {
 /* sidebar-desktop wrapper: fills the full grid track, passes height to child sidebar */
 .sidebar-desktop {
   overflow: hidden;
-  transition: opacity 200ms ease;
+  transition: opacity var(--dur-base) var(--ease-out-quart);
 }
 .sidebar-desktop .sidebar {
   height: 100%;
@@ -260,7 +308,7 @@ input, textarea {
   position: fixed; inset: 0; z-index: 40;
   background: rgba(28, 26, 22, 0.5);
   backdrop-filter: blur(2px);
-  animation: fadeIn 200ms ease;
+  animation: anim-fade-in var(--dur-base) var(--ease-out-quart) both;
 }
 
 .drawer {
@@ -269,13 +317,8 @@ input, textarea {
   background: var(--bg);
   border-right: 1px solid var(--border);
   transform: translateX(0);
-  animation: slideInLeft 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: anim-slide-in-left var(--dur-base) var(--ease-out-quart) both;
   overflow-y: auto;
-}
-
-@keyframes slideInLeft {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(0); }
 }
 
 /* ─── Icon-only sidebar for tablet ──────────────────────────────────────────── */
@@ -418,12 +461,19 @@ input, textarea {
 
 .card-hoverable {
   cursor: pointer;
-  transition: transform var(--t-sm), box-shadow var(--t-sm), border-color var(--t-sm);
+  transition:
+    transform   var(--dur-fast) var(--ease-out-quart),
+    box-shadow  var(--dur-fast) var(--ease-out-quart),
+    border-color var(--dur-fast) var(--ease-out-quart);
 }
 .card-hoverable:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.18);
   border-color: var(--ink-4);
+}
+.card-hoverable:active {
+  transform: translateY(-1px) scale(0.99);
+  transition-duration: var(--dur-instant);
 }
 
 .card-flat {
@@ -453,12 +503,16 @@ input, textarea {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--ink);
-  transition: background var(--t-sm), border-color var(--t-sm), transform var(--t-sm);
+  transition:
+    background   var(--dur-fast) var(--ease-out-quart),
+    border-color var(--dur-fast) var(--ease-out-quart),
+    color        var(--dur-fast) var(--ease-out-quart),
+    transform    var(--dur-instant) var(--ease-out-quart);
   white-space: nowrap;
   cursor: pointer;
 }
 .btn:hover { background: var(--surface-hover); border-color: var(--ink-4); }
-.btn:active { transform: translateY(1px); }
+.btn:active { transform: scale(0.97); }
 
 .btn-ghost {
   background: transparent;
@@ -551,7 +605,10 @@ input, textarea {
   border-radius: 9px;
   font-size: 13px;
   color: var(--ink-2);
-  transition: background var(--t-sm), color var(--t-sm);
+  transition:
+    background   var(--dur-fast) var(--ease-out-quart),
+    color        var(--dur-fast) var(--ease-out-quart),
+    border-color var(--dur-fast) var(--ease-out-quart);
   position: relative;
   cursor: pointer;
   text-decoration: none;
@@ -604,7 +661,9 @@ input, textarea {
   border-radius: 999px;
   flex: 1;
   max-width: 360px;
-  transition: border-color var(--t-sm), background var(--t-sm);
+  transition:
+    border-color var(--dur-fast) var(--ease-out-quart),
+    background   var(--dur-fast) var(--ease-out-quart);
 }
 .search:focus-within { border-color: var(--ink-4); }
 .search input { flex: 1; font-size: 13px; }
@@ -698,7 +757,7 @@ input, textarea {
   background: var(--accent);
   border-radius: 999px;
   transform-origin: left center;
-  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--dur-slow) var(--ease-out-quart);
   font-style: normal;
 }
 
@@ -715,7 +774,7 @@ input, textarea {
   align-items: center;
   padding: 10px 14px;
   border-radius: var(--r);
-  transition: background var(--t-sm);
+  transition: background var(--dur-fast) var(--ease-out-quart);
   cursor: pointer;
 }
 .tx-row:hover { background: var(--surface-hover); }
@@ -761,15 +820,170 @@ input, textarea {
 .muted { color: var(--ink-3); }
 .dim   { color: var(--ink-4); }
 
-/* ─── Animations ────────────────────────────────────────────────────────────── */
+/* ─── Centralized motion system ─────────────────────────────────────────────── */
+/*
+ * Keyframes for the .anim-* utility classes below. All animations are governed
+ * by the motion tokens defined in :root. The @media (prefers-reduced-motion: reduce)
+ * block at the very bottom of this file neutralizes every keyframe and transition
+ * so users with the OS-level reduce-motion preference get an instant state change.
+ */
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+@keyframes anim-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes anim-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes anim-slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes anim-slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes anim-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes anim-pop {
+  /* Spring-y pop used for dropdowns, popovers, menus opening near an anchor. */
+  from { opacity: 0; transform: scale(0.94) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* Exit keyframes — mirror of the enter keyframes above. Applied by the
+   [data-exiting="true"] selectors below when the useExitAnimation hook flips
+   isExiting before the consumer unmounts. */
+@keyframes anim-pop-exit {
+  from { opacity: 1; transform: scale(1)    translateY(0); }
+  to   { opacity: 0; transform: scale(0.94) translateY(-4px); }
+}
+
+@keyframes anim-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes anim-scale-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.96); }
+}
+
+@keyframes anim-slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes anim-slide-out-right {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(16px); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* Reusable animation classes — one purpose each.
+   transform-origin: top is set on pop so the scale grows out from the anchor. */
+
+.anim-fade-in {
+  animation: anim-fade-in var(--dur-fast) var(--ease-out-quart) both;
+}
+
+.anim-slide-up {
+  animation: anim-slide-up var(--dur-base) var(--ease-out-quart) both;
+}
+
+.anim-slide-down {
+  animation: anim-slide-down var(--dur-base) var(--ease-out-quart) both;
+}
+
+.anim-scale-in {
+  animation: anim-scale-in var(--dur-base) var(--ease-out-quart) both;
+}
+
+.anim-pop {
+  animation: anim-pop var(--dur-fast) var(--ease-spring) both;
+  transform-origin: top center;
+}
+
+.anim-slide-in-right {
+  animation: anim-slide-in-right var(--dur-base) var(--ease-out-quart) both;
+}
+
+/* Exit overlays — when a consumer flips `data-exiting="true"` on an element
+   that already has one of the enter classes, the same class swaps to its
+   reverse keyframe. Centralized exit pattern; do not introduce parallel
+   .anim-*-exit classes that callers manage manually. */
+[data-exiting="true"].anim-pop {
+  animation: anim-pop-exit var(--dur-fast) var(--ease-out-quart) both;
+}
+[data-exiting="true"].anim-fade-in {
+  animation: anim-fade-out var(--dur-fast) var(--ease-out-quart) both;
+}
+[data-exiting="true"].anim-scale-in {
+  animation: anim-scale-out var(--dur-base) var(--ease-out-quart) both;
+}
+[data-exiting="true"].anim-slide-in-right {
+  animation: anim-slide-out-right var(--dur-base) var(--ease-out-quart) both;
+}
+/* Modal-specific exits: the .modal-overlay and .modal-panel rules set their
+   own animation, so we override here when the data attribute flips. */
+[data-exiting="true"].modal-overlay {
+  animation: anim-fade-out var(--dur-fast) var(--ease-out-quart) both;
+}
+[data-exiting="true"].modal-panel {
+  animation:
+    anim-fade-out  var(--dur-base) var(--ease-out-quart) both,
+    anim-scale-out var(--dur-base) var(--ease-out-quart) both;
+}
+
+/* List item enter — combined fade + slide-up, applied via React on actually
+   new items only (don't replay on every list re-render). */
+.anim-enter {
+  animation:
+    anim-fade-in var(--dur-base) var(--ease-out-quart) both,
+    anim-slide-up var(--dur-base) var(--ease-out-quart) both;
+}
+
+/* Page-level mount animation, used by .page > * (top-level page wrapper). */
 .page > * {
-  animation: fadeIn 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: anim-fade-in var(--dur-slow) var(--ease-out-quart) both;
+}
+
+/* Collapsible region driven by `data-open` attribute on the wrapper.
+   Uses the grid-template-rows: 0fr → 1fr trick which animates intrinsic
+   height with minimal layout jank. The inner element must have min-height: 0
+   to allow the row track to actually collapse. */
+.anim-collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-base) var(--ease-out-quart);
+}
+.anim-collapsible[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.anim-collapsible > .anim-collapsible-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Press-feedback utility — apply to clickable cards or non-.btn primary
+   actions that need an active-press affordance. */
+.press-feedback {
+  transition: transform var(--dur-instant) var(--ease-out-quart);
+}
+.press-feedback:active {
+  transform: scale(0.98);
 }
 
 /* ─── Modal ─────────────────────────────────────────────────────────────────── */
@@ -780,7 +994,7 @@ input, textarea {
   backdrop-filter: blur(3px);
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
-  animation: fadeIn 180ms ease;
+  animation: anim-fade-in var(--dur-fast) var(--ease-out-quart) both;
 }
 
 .modal-panel {
@@ -791,12 +1005,9 @@ input, textarea {
   width: 100%;
   max-width: 480px;
   box-shadow: var(--shadow-lg);
-  animation: slideUp 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  animation:
+    anim-fade-in   var(--dur-base) var(--ease-out-quart) both,
+    anim-scale-in  var(--dur-base) var(--ease-spring) both;
 }
 
 /* ─── Form field styles ──────────────────────────────────────────────────────── */
@@ -812,7 +1023,7 @@ input, textarea {
   font-size: 14px;
   color: var(--ink);
   width: 100%;
-  transition: border-color var(--t-sm);
+  transition: border-color var(--dur-fast) var(--ease-out-quart);
 }
 .field-input:focus { outline: none; border-color: var(--accent); }
 .field-input::placeholder { color: var(--ink-4); }
@@ -832,7 +1043,7 @@ select.field-input { cursor: pointer; }
   position: absolute; inset: 0;
   background: var(--border);
   border-radius: 999px;
-  transition: background var(--t-sm);
+  transition: background var(--dur-fast) var(--ease-out-quart);
   cursor: pointer;
 }
 .toggle input:checked + .toggle-track { background: var(--accent); }
@@ -840,7 +1051,7 @@ select.field-input { cursor: pointer; }
   position: absolute; top: 3px; left: 3px;
   width: 16px; height: 16px;
   background: white; border-radius: 50%;
-  transition: transform var(--t-sm);
+  transition: transform var(--dur-fast) var(--ease-spring);
   pointer-events: none;
 }
 .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
@@ -848,14 +1059,74 @@ select.field-input { cursor: pointer; }
 
 /* ─── Skeleton loading ──────────────────────────────────────────────────────── */
 
-@keyframes shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
-}
-
 .skeleton {
   background: linear-gradient(90deg, var(--border-2) 25%, var(--surface-hover) 50%, var(--border-2) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.4s ease-in-out infinite;
   border-radius: var(--r-sm);
+}
+
+/* ─── Reduced-motion guard ──────────────────────────────────────────────────── */
+/*
+ * Honor the user's OS-level reduce-motion preference. This block neutralizes:
+ *   1. Every .anim-* class and any element using the shared keyframes
+ *   2. Every transition that uses our motion tokens
+ *   3. The skeleton shimmer (kept as a static gradient instead)
+ *   4. The legacy --t-sm alias so older inline `transition: x var(--t-sm)`
+ *      uses also resolve to no-motion.
+ *
+ * Override pattern: set durations to 0.01ms (not 0ms) so transitionend /
+ * animationend events still fire, which some component code relies on.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0.01ms;
+    --dur-fast:    0.01ms;
+    --dur-base:    0.01ms;
+    --dur-slow:    0.01ms;
+    --t-sm: 0.01ms linear;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .anim-fade-in,
+  .anim-slide-up,
+  .anim-slide-down,
+  .anim-scale-in,
+  .anim-pop,
+  .anim-slide-in-right,
+  .anim-enter,
+  .drawer,
+  .drawer-overlay,
+  .modal-overlay,
+  .modal-panel,
+  .page > *,
+  [data-exiting="true"] {
+    animation: none !important;
+  }
+
+  .anim-collapsible,
+  .anim-collapsible[data-open="true"] {
+    transition: none !important;
+  }
+
+  /* Theme crossfade — neutralize the universal transition rule so the swap
+     is instant under reduced-motion. */
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition: none !important;
+  }
+
+  .skeleton {
+    animation: none !important;
+  }
 }

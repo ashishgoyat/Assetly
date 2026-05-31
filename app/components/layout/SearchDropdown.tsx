@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useExitAnimation, MOTION_MS } from "@/app/hooks/useExitAnimation";
 import type { Transaction } from "@/contracts/api-contracts";
 
 interface SearchDropdownProps {
@@ -23,6 +24,7 @@ export default function SearchDropdown({ inputRef }: SearchDropdownProps) {
   const [isLoading, setIsLoading] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdown = useExitAnimation(isOpen, MOTION_MS.fast);
 
   // Debounced search — use setTimeout(fn, 0) for short queries so setState
   // is called asynchronously and does not trigger the react-hooks/set-state-in-effect rule.
@@ -154,11 +156,13 @@ export default function SearchDropdown({ inputRef }: SearchDropdownProps) {
         }}
       />
 
-      {isOpen && (
+      {dropdown.shouldRender && (
         <div
           id={listboxId}
           role="listbox"
           aria-label="Search results"
+          className="anim-pop"
+          data-exiting={dropdown.isExiting ? "true" : "false"}
           style={{
             position: "absolute",
             top: "calc(100% + 12px)",
@@ -171,6 +175,7 @@ export default function SearchDropdown({ inputRef }: SearchDropdownProps) {
             boxShadow: "var(--shadow-lg)",
             zIndex: 50,
             overflow: "hidden",
+            transformOrigin: "top center",
           }}
         >
           {isLoading && (
@@ -219,7 +224,8 @@ export default function SearchDropdown({ inputRef }: SearchDropdownProps) {
                   borderBottom: "1px solid var(--border-2)",
                   cursor: "pointer",
                   textAlign: "left",
-                  transition: "background 175ms ease",
+                  transition:
+                    "background var(--dur-fast) var(--ease-out-quart)",
                   color: "var(--ink)",
                   fontFamily: "var(--f-sans)",
                 }}

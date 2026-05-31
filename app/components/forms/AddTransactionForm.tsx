@@ -156,7 +156,8 @@ export default function AddTransactionForm({ onClose }: AddTransactionFormProps)
                     color: isActive ? "var(--surface)" : "var(--ink-3)",
                     border: "none",
                     cursor: "pointer",
-                    transition: "all var(--t-sm)",
+                    transition:
+                      "background var(--dur-fast) var(--ease-out-quart), color var(--dur-fast) var(--ease-out-quart), font-weight var(--dur-fast) var(--ease-out-quart)",
                     textTransform: "capitalize",
                   }}
                 >

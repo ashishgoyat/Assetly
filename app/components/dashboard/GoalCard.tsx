@@ -102,7 +102,12 @@ export default function GoalCard({ goal: g }: { goal: Goal }) {
         <span style={{ color: "var(--ink-3)" }}>ETA {g.eta}</span>
       </div>
 
-      {expanded && (
+      <div
+        className="anim-collapsible"
+        data-open={expanded ? "true" : "false"}
+        aria-hidden={!expanded}
+      >
+        <div className="anim-collapsible-inner">
         <div
           style={{ marginTop: 10 }}
           onClick={(e) => e.stopPropagation()}
@@ -213,7 +218,8 @@ export default function GoalCard({ goal: g }: { goal: Goal }) {
             </div>
           )}
         </div>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

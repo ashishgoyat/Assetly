@@ -8,6 +8,7 @@ import { signOutAction } from "@/app/components/layout/sign-out-action";
 import Modal from "@/app/components/ui/Modal";
 import AddAccountForm from "@/app/components/forms/AddAccountForm";
 import { useSidebar } from "@/app/components/layout/SidebarContext";
+import { useExitAnimation, MOTION_MS } from "@/app/hooks/useExitAnimation";
 import type { Account } from "@/contracts/api-contracts";
 
 interface SidebarProps {
@@ -47,6 +48,7 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
   const [menuOpen, setMenuOpen] = useState(false);
   const [addAccountOpen, setAddAccountOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menu = useExitAnimation(menuOpen, MOTION_MS.fast);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -142,11 +144,13 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
         )}
       </div>
 
-      {addAccountOpen && (
-        <Modal title="Add account" onClose={() => setAddAccountOpen(false)}>
-          <AddAccountForm onClose={() => setAddAccountOpen(false)} />
-        </Modal>
-      )}
+      <Modal
+        open={addAccountOpen}
+        title="Add account"
+        onClose={() => setAddAccountOpen(false)}
+      >
+        <AddAccountForm onClose={() => setAddAccountOpen(false)} />
+      </Modal>
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
@@ -156,8 +160,10 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
 
       {/* User row with 3-dots menu */}
       <div ref={menuRef} style={{ position: "relative" }}>
-        {menuOpen && (
+        {menu.shouldRender && (
           <div
+            className="anim-pop"
+            data-exiting={menu.isExiting ? "true" : "false"}
             style={{
               position: "absolute",
               bottom: "calc(100% + 4px)",
@@ -169,6 +175,7 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
               padding: 4,
               boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
               zIndex: 50,
+              transformOrigin: "bottom center",
             }}
           >
             <form action={signOutAction}>

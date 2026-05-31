@@ -133,8 +133,13 @@ export default function TransactionRow({ tx: r, onExcluded }: Props) {
         <Icon name={expanded ? "chevd" : "chev"} size={14} color="var(--ink-4)" />
       </button>
 
-      {expanded && (
-        <div style={{ padding: "6px 0 8px 52px" }}>
+      <div
+        className="anim-collapsible"
+        data-open={expanded ? "true" : "false"}
+        aria-hidden={!expanded}
+      >
+        <div className="anim-collapsible-inner">
+        <div style={{ padding: "6px 0 8px 52px" }} onClick={(e) => e.stopPropagation()}>
           {categorizing ? (
             <div
               style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}
@@ -248,7 +253,8 @@ export default function TransactionRow({ tx: r, onExcluded }: Props) {
             </div>
           )}
         </div>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
