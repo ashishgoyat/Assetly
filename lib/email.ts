@@ -1,5 +1,12 @@
 import { Resend } from 'resend'
 import type { Notification } from '@/contracts/api-contracts'
+import {
+  generateNotifications,
+  getEmailedNotifications,
+  recordEmailedNotification,
+  getUserById,
+} from '@/lib/data/store'
+import { getNotificationPrefsServer } from '@/lib/server-prefs'
 
 // Lazy-initialize Resend so the absence of RESEND_API_KEY at build time
 // doesn't throw during static page data collection.
@@ -24,4 +31,31 @@ export async function sendNotificationEmail(notification: Notification, toEmail:
     subject: subjects[notification.type] ?? 'Assetly Notification',
     text: `${notification.title}\n\n${notification.body}${notification.route ? `\n\nOpen: ${notification.route}` : ''}`,
   })
+}
+
+/**
+ * Generates all current notifications for the user, sends emails for any that
+ * haven't been emailed yet, and records them. Silently swallows errors so a
+ * failed email never breaks the calling server action.
+ * Intended to be called inside Next.js `after()` so it runs after the response.
+ */
+export async function sendPendingNotificationEmails(userId: string): Promise<void> {
+  try {
+    const user = await getUserById(userId)
+    if (!user?.email) return
+
+    const prefs = await getNotificationPrefsServer()
+    const notifications = await generateNotifications(userId, prefs)
+    const emailed = await getEmailedNotifications(userId)
+
+    for (const n of notifications) {
+      if (!emailed.has(n.id)) {
+        await sendNotificationEmail(n, user.email)
+        await recordEmailedNotification(userId, n.id)
+      }
+    }
+  } catch (err) {
+    // Intentionally swallowed — email failure must not surface to the user.
+    console.error('[sendPendingNotificationEmails] error:', err)
+  }
 }

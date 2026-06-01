@@ -8,6 +8,7 @@
  */
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { z } from 'zod'
 import {
   getBills,
@@ -22,6 +23,7 @@ import {
   updateSubscription,
 } from '@/lib/data/store'
 import { auth } from '@/auth'
+import { sendPendingNotificationEmails } from '@/lib/email'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -147,6 +149,7 @@ export async function payBill(formData: FormData): Promise<ActionResult> {
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard/budgets')
 
+    after(() => sendPendingNotificationEmails(userId))
     return { success: true, id }
   } catch (err) {
     console.error('[payBill] unexpected error:', err)
@@ -203,6 +206,7 @@ export async function paySubscription(subscriptionId: string): Promise<ActionRes
     revalidatePath('/dashboard/bills')
     revalidatePath('/dashboard/budgets')
 
+    after(() => sendPendingNotificationEmails(userId))
     return { success: true, id }
   } catch (err) {
     console.error('[paySubscription] unexpected error:', err)
@@ -363,6 +367,7 @@ export async function addFundsToGoalAction(
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/goals')
 
+    after(() => sendPendingNotificationEmails(userId))
     return { success: true, id: idParsed.data }
   } catch (err) {
     console.error('[addFundsToGoalAction] unexpected error:', err)
