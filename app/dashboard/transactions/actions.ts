@@ -6,10 +6,12 @@
  */
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { z } from 'zod'
 import { insertTransaction, removeTransaction, updateTransaction } from '@/lib/data/store'
 import type { TransactionCategory, TransactionType } from '@/contracts/api-contracts'
 import { auth } from '@/auth'
+import { sendPendingNotificationEmails } from '@/lib/email'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -133,6 +135,7 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard')
 
+    after(() => sendPendingNotificationEmails(userId))
     return { success: true, id }
   } catch (err) {
     console.error('[createTransaction] unexpected error:', err)

@@ -6,10 +6,12 @@
  */
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { z } from 'zod'
 import { insertBudget, updateBudget, removeBudget } from '@/lib/data/store'
 import type { TransactionCategory } from '@/contracts/api-contracts'
 import { auth } from '@/auth'
+import { sendPendingNotificationEmails } from '@/lib/email'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -106,6 +108,7 @@ export async function createBudget(formData: FormData): Promise<ActionResult> {
     revalidatePath('/dashboard/budgets')
     revalidatePath('/dashboard')
 
+    after(() => sendPendingNotificationEmails(userId))
     return { success: true, id }
   } catch (err) {
     console.error('[createBudget] unexpected error:', err)
@@ -132,6 +135,7 @@ export async function updateBudgetLimit(
     revalidatePath('/dashboard/budgets')
     revalidatePath('/dashboard')
 
+    after(() => sendPendingNotificationEmails(userId))
     return { success: true, id }
   } catch (err) {
     console.error('[updateBudgetLimit] unexpected error:', err)
