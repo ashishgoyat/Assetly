@@ -389,3 +389,27 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed
 - pnpm build: not run
+
+---
+
+## Session 2026-06-01 (active session tracking + email notifications post-mutation)
+
+### What was built / fixed
+- **Active session tracking** (`auth.ts`, `lib/db/schema.ts`, `lib/db/index.ts`, `lib/data/store.ts`): session validity now enforced via `sessionVersion`; JWT callback validates version on every read and returns `null` to force logout on mismatch; `signOutAllSessions` calls `incrementSessionVersion` to revoke all existing JWTs across devices.
+- **Suggestion cards removed** (`app/dashboard/bills/page.tsx`, `app/dashboard/budgets/page.tsx`): deleted `SavingsOpportunityCard.tsx` and `BudgetSuggestionCard.tsx`; replaced with inline fields computed server-side.
+- **Bills API — savings opportunity** (`app/api/bills/route.ts`): computes `savingsOpportunityInCents` and `savingsOpportunityNote` from unused subscriptions; both fields added to `BillsSummary` contract.
+- **Dashboard API — dynamic actions** (`app/api/dashboard/route.ts`): `daysRemainingInMonth` util added to calculations; `actions` array now dynamically derived (most urgent bill, budget status, goal progress) instead of static.
+- **Email notifications post-mutation** (`lib/email.ts`, `app/dashboard/budgets/actions.ts`, `app/dashboard/home-actions.ts`, `app/dashboard/transactions/actions.ts`): `sendPendingNotificationEmails(userId)` added to `lib/email.ts`; generates all current notifications, emails any not yet recorded, swallows errors silently so delivery never blocks the response; wired into `createBudget`, `updateBudgetLimit`, `payBill`, `paySubscription`, `addFundsToGoalAction`, and `createTransaction` via Next.js `after()`.
+- **Worktree cleanup**: merged `alpha` branch (email notifications) into `main` with no conflicts; removed all stale worktrees (`alpha`, `beta`, `gama`, `session-multi-instance`) and their branches.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. Cash on hand period data is mock-only — `cashFlowDataByPeriod` hardcoded; API returns single array
+3. Currency propagation in server components — `app/dashboard/page.tsx` and `app/dashboard/accounts/[id]/page.tsx` still hardcode USD
+4. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+5. Subscription pay button not wired in UI — `paySubscription` exists but has no caller
+6. Cron email endpoint requires external scheduler (cron-job.org / GitHub Actions) — no built-in scheduler
+
+### Last checks
+- pnpm lint: not run
+- pnpm build: not run
