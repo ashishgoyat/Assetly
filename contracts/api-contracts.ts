@@ -164,14 +164,6 @@ export interface DashboardSummary {
     totalAssetsInCents: number
     totalLiabilitiesInCents: number
   }
-  actions: Array<{
-    type: 'bill' | 'insight' | 'todo'
-    title: string
-    sub: string
-    cta: string
-    tone: 'accent' | 'warn' | 'primary'
-    route?: string
-  }>
   recentTransactions: Transaction[]  // Last 7
   upcomingBills: Bill[]              // Next 4
   savingGoals: Goal[]               // Active 3
@@ -218,8 +210,6 @@ export interface BillsSummary {
   totalSubsAnnualInCents: number
   bills: Bill[]                       // filtered to dueInDays <= periodDays
   subscriptions: Subscription[]
-  savingsOpportunityInCents?: number  // From unused subscriptions
-  savingsOpportunityNote?: string
 }
 
 export interface AccountDetail {

@@ -8,7 +8,6 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/app/components/ui/Icon";
 import DonutChart from "@/app/components/charts/DonutChart";
-import BudgetSuggestionCard from "@/app/dashboard/budgets/BudgetSuggestionCard";
 import NewBudgetButton from "@/app/dashboard/budgets/NewBudgetButton";
 import { useExitAnimation, MOTION_MS } from "@/app/hooks/useExitAnimation";
 import type { Budget, BudgetSummary } from "@/contracts/api-contracts";
@@ -612,9 +611,6 @@ export default function BudgetsPage() {
               <span>more</span>
             </div>
           </div>
-
-          {/* AI Suggestion */}
-          <BudgetSuggestionCard />
 
           {/* vs last month */}
           {vsLastMonth.length > 0 && (

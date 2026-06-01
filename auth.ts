@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
-import { upsertGoogleUser, getSessionVersion } from '@/lib/data/store'
+import { upsertGoogleUser, getSessionVersion, insertUserSession } from '@/lib/data/store'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -22,6 +22,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         name: profile.name ?? user.name ?? 'User',
         avatarUrl: (profile as { picture?: string }).picture ?? user.image ?? '',
       })
+      await insertUserSession(dbUser.id)
       user.id = dbUser.id
       user.image = dbUser.avatarUrl ?? ''
       return true

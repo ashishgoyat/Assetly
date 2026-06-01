@@ -162,3 +162,14 @@ export const notificationEmailsSentTable = sqliteTable('notification_emails_sent
   notificationId: text('notification_id').notNull(),
   sentAt:         text('sent_at').notNull(),
 }, (t) => ({ pk: primaryKey({ columns: [t.userId, t.notificationId] }) }))
+
+// ---------------------------------------------------------------------------
+// user sessions
+// ---------------------------------------------------------------------------
+
+export const userSessionsTable = sqliteTable('user_sessions', {
+  id:        text('id').primaryKey(),
+  userId:    text('user_id').notNull(),
+  createdAt: text('created_at').notNull(),  // ISO datetime
+  expiresAt: text('expires_at').notNull(),  // ISO datetime (createdAt + 30 days)
+})

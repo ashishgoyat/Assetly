@@ -15,6 +15,7 @@ import {
   updateUser,
   removeUser,
   incrementSessionVersion,
+  clearUserSessions,
   getTransactions,
   getAccounts,
   getBudgets,
@@ -156,6 +157,7 @@ export async function signOutAllSessions(): Promise<ActionResult> {
       return { success: false, error: 'Not authenticated' }
     }
     await incrementSessionVersion(userId)
+    await clearUserSessions(userId)
     await signOut({ redirect: false })
     return { success: true, message: 'Signed out of all sessions' }
   } catch (error) {

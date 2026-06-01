@@ -47,9 +47,13 @@ function firstName(full: string | null | undefined): string {
 
 async function getDashboardData(): Promise<DashboardSummary> {
   try {
-    // TODO: awaiting backend — expects GET /api/dashboard, see contracts/api-contracts.ts
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ');
     const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-    const res = await fetch(`${base}/api/dashboard`, { cache: "no-store" });
+    const res = await fetch(`${base}/api/dashboard`, {
+      cache: "no-store",
+      headers: { cookie: cookieHeader },
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     if (json.error) throw new Error(json.error.message);
@@ -67,7 +71,7 @@ export default async function DashboardPage() {
     auth(),
     cookies(),
   ]);
-  const { user, today, cashOnHand, actions, recentTransactions, upcomingBills, savingGoals, spendingCategories, totalSpentThisMonthInCents } = data;
+  const { user, today, cashOnHand, recentTransactions, upcomingBills, savingGoals, spendingCategories, totalSpentThisMonthInCents } = data;
 
   const displayName = firstName(session?.user?.name ?? user.name);
   const timezone = cookieStore.get("assetly-timezone")?.value ?? "Asia/Kolkata";
@@ -84,21 +88,8 @@ export default async function DashboardPage() {
           className="serif"
           style={{ fontSize: 40, lineHeight: 1.02, letterSpacing: "-0.02em", margin: 0 }}
         >
-          {greeting}, {displayName}.{" "}
-          <span style={{ color: "var(--ink-3)" }}>
-            {actions.length} things need your attention.
-          </span>
+          {greeting}, {displayName}.
         </h1>
-      </div>
-
-      {/* Action queue */}
-      <div
-        className="grid-3col"
-        style={{ marginBottom: 22 }}
-      >
-        {actions.map((a, i) => (
-          <ActionCard key={i} action={a} />
-        ))}
       </div>
 
       {/* Row 1: Safe-to-spend + Cash flow */}
@@ -342,140 +333,3 @@ export default async function DashboardPage() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// ActionCard — inline server component
-// ---------------------------------------------------------------------------
-
-interface ActionItem {
-  type: "bill" | "insight" | "todo";
-  title: string;
-  sub: string;
-  cta: string;
-  tone: "accent" | "warn" | "primary";
-  route?: string;
-}
-
-function ActionCard({ action: a }: { action: ActionItem }) {
-  const isAccent = a.tone === "accent";
-  const isWarn = a.tone === "warn";
-  const isPrimary = a.tone === "primary";
-  const isBill = a.type === "bill";
-
-  const iconName =
-    a.type === "bill" ? "bill" : a.type === "insight" ? "sparkle" : "check";
-
-  // Bill cards: the whole card is the link to /dashboard/bills, no CTA button.
-  // Other cards (insight, todo): keep their CTA.
-  const ctaEl = isBill
-    ? null
-    : a.route
-      ? (
-          <span className={`btn btn-sm${isPrimary ? " btn-primary" : ""}`}>
-            {a.cta}
-          </span>
-        )
-      : (
-          <button
-            className={`btn btn-sm${isPrimary ? " btn-primary" : ""}`}
-            type="button"
-          >
-            {a.cta}
-          </button>
-        );
-
-  const content = (
-    <div
-      className={`card${a.route ? " card-hoverable" : ""}`}
-      style={{
-        padding: 18,
-        position: "relative",
-        overflow: "hidden",
-        borderColor: isAccent
-          ? "var(--accent-soft)"
-          : isWarn
-            ? "var(--warn-soft)"
-            : "var(--border)",
-        background: isAccent
-          ? "linear-gradient(180deg, var(--accent-tint), var(--surface) 80%)"
-          : isWarn
-            ? "linear-gradient(180deg, var(--warn-soft) 0%, var(--surface) 80%)"
-            : "var(--surface)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 10,
-        }}
-      >
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: 8,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: isAccent
-              ? "var(--accent)"
-              : isWarn
-                ? "var(--warn)"
-                : "var(--ink)",
-            color: "white",
-          }}
-          aria-hidden
-        >
-          <Icon name={iconName} size={13} stroke={2} />
-        </div>
-        <div
-          className="sec-label"
-          style={{
-            color: isAccent
-              ? "var(--accent-2)"
-              : isWarn
-                ? "var(--warn)"
-                : "var(--ink-3)",
-          }}
-        >
-          {a.type === "bill"
-            ? "Due soon"
-            : a.type === "insight"
-              ? "Insight"
-              : "To do"}
-        </div>
-      </div>
-      <div
-        style={{
-          fontSize: 17,
-          fontWeight: 600,
-          letterSpacing: "-0.01em",
-          lineHeight: 1.25,
-          marginBottom: 4,
-        }}
-      >
-        {a.title}
-      </div>
-      <div
-        style={{
-          fontSize: 12.5,
-          color: "var(--ink-3)",
-          marginBottom: ctaEl ? 14 : 0,
-          lineHeight: 1.4,
-        }}
-      >
-        {a.sub}
-      </div>
-      {ctaEl}
-    </div>
-  );
-
-  return a.route ? (
-    <Link href={a.route} style={{ textDecoration: "none", color: "inherit" }}>
-      {content}
-    </Link>
-  ) : (
-    content
-  );
-}

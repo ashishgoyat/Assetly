@@ -7,7 +7,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Icon from "@/app/components/ui/Icon";
-import SavingsOpportunityCard from "@/app/dashboard/bills/SavingsOpportunityCard";
 import AddBillButton from "@/app/dashboard/bills/AddBillButton";
 import {
   updateBillAction,
@@ -1262,16 +1261,6 @@ export default function BillsPage() {
             ) : null}
           </div>
 
-          {/* Savings opportunity */}
-          {!loading &&
-            data?.savingsOpportunityInCents !== undefined &&
-            data.savingsOpportunityInCents > 0 && (
-              <SavingsOpportunityCard
-                savingsOpportunityInCents={data.savingsOpportunityInCents}
-                savingsOpportunityNote={data.savingsOpportunityNote}
-                unusedSubNames={unusedSubs.map((s) => s.name)}
-              />
-            )}
         </div>
       </div>
     </div>

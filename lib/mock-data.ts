@@ -268,32 +268,6 @@ export const MOCK_DASHBOARD: DashboardSummary = {
     totalAssetsInCents: 4263058,
     totalLiabilitiesInCents: 1478758,
   },
-  actions: [
-    {
-      type: "bill",
-      title: "Rent — $1,400",
-      sub: "Due in 2 days · Auto-pay from Chase ✓",
-      cta: "Review",
-      tone: "accent",
-      route: "/dashboard/bills",
-    },
-    {
-      type: "insight",
-      title: "82% of dining used",
-      sub: "15 days left in the month",
-      cta: "See spending",
-      tone: "warn",
-      route: "/dashboard/budgets",
-    },
-    {
-      type: "todo",
-      title: "3 to categorize",
-      sub: "Amazon, Uber, Spotify",
-      cta: "Categorize",
-      tone: "primary",
-      route: "/dashboard/transactions",
-    },
-  ],
   recentTransactions: MOCK_TRANSACTIONS.slice(0, 7),
   upcomingBills: [
     {
@@ -494,9 +468,6 @@ export const MOCK_BILLS: BillsSummary = {
   totalDuePeriodInCents: 189300,
   totalSubsMonthlyInCents: 4897,
   totalSubsAnnualInCents: 58764,
-  savingsOpportunityInCents: 1799,
-  savingsOpportunityNote:
-    "Cancel Figma and iCloud — you haven't used them in 30+ days",
   bills: [
     {
       id: "bill-1",

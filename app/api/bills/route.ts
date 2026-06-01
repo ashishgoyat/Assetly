@@ -38,17 +38,6 @@ export async function GET(request: NextRequest) {
     // Annual = monthly × 12 (integer math)
     const totalSubsAnnualInCents = totalSubsMonthlyInCents * 12
 
-    // Savings opportunity = sum of unused subscription monthly amounts
-    const unusedSubs = subList.filter((s) => !s.isUsed)
-    const savingsOpportunityInCents = unusedSubs.reduce(
-      (sum, s) => sum + s.amountMonthlyInCents,
-      0,
-    )
-    const savingsOpportunityNote =
-      unusedSubs.length > 0
-        ? `Cancel ${unusedSubs.map((s) => s.name).join(' and ')} to save $${(savingsOpportunityInCents / 100).toFixed(2)}/mo`
-        : undefined
-
     const summary: BillsSummary = {
       periodDays: days,
       totalDuePeriodInCents,
@@ -56,8 +45,6 @@ export async function GET(request: NextRequest) {
       totalSubsAnnualInCents,
       bills: filteredBills,
       subscriptions: subList,
-      savingsOpportunityInCents,
-      savingsOpportunityNote,
     }
 
     return ok(summary)

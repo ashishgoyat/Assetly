@@ -13,7 +13,6 @@ import {
   getLatestTransactionDate,
   parseDate,
   daysInMonth,
-  daysRemainingInMonth,
   formatDateLong,
   computeNetMonthlyInCents,
 } from '@/lib/calculations'
@@ -308,56 +307,6 @@ export async function GET() {
       0,
     )
 
-    // --- Actions (dynamically derived) ---
-    const actions: DashboardSummary['actions'] = []
-
-    // 1. Most urgent bill (smallest dueInDays)
-    const urgentBill = [...billList].sort((a, b) => a.dueInDays - b.dueInDays)[0]
-    if (urgentBill) {
-      const dollars = (urgentBill.amountInCents / 100).toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      })
-      actions.push({
-        type: 'bill',
-        title: `${urgentBill.name} — ${dollars}`,
-        sub: `Due in ${urgentBill.dueInDays} day${urgentBill.dueInDays === 1 ? '' : 's'}${urgentBill.isAutoPay ? ' · Auto-pay ✓' : ''}`,
-        cta: 'Review',
-        tone: urgentBill.isUrgent ? 'warn' : 'accent',
-        route: '/dashboard/bills',
-      })
-    }
-
-    // 2. Most over-budget category (highest percentageUsed)
-    const topBudget = [...budgetList].sort(
-      (a, b) => b.percentageUsed - a.percentageUsed,
-    )[0]
-    if (topBudget && topBudget.percentageUsed >= 50) {
-      const daysLeft = daysRemainingInMonth(year, month, day)
-      actions.push({
-        type: 'insight',
-        title: `${topBudget.percentageUsed}% of ${topBudget.name} used`,
-        sub: `${daysLeft} day${daysLeft === 1 ? '' : 's'} left in the month`,
-        cta: 'See spending',
-        tone: topBudget.isOver ? 'warn' : 'primary',
-        route: '/dashboard/budgets',
-      })
-    }
-
-    // 3. Pending transactions (if any)
-    const pendingCount = txList.filter((tx) => tx.status === 'pending').length
-    if (pendingCount > 0) {
-      actions.push({
-        type: 'todo',
-        title: `${pendingCount} pending transaction${pendingCount === 1 ? '' : 's'}`,
-        sub: 'Tap to review',
-        cta: 'Review',
-        tone: 'primary',
-        route: '/dashboard/transactions',
-      })
-    }
-
     const summary: DashboardSummary = {
       user: {
         name: userName,
@@ -384,7 +333,6 @@ export async function GET() {
         totalAssetsInCents: netWorthCalc.totalAssetsInCents,
         totalLiabilitiesInCents: netWorthCalc.totalLiabilitiesInCents,
       },
-      actions,
       recentTransactions,
       upcomingBills,
       savingGoals,

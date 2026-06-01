@@ -17,6 +17,7 @@ import {
   usersTable,
   notificationReadsTable,
   notificationEmailsSentTable,
+  userSessionsTable,
 } from '@/lib/db/schema'
 import { desc, eq, and, gte, gt, isNull, sql } from 'drizzle-orm'
 import type {
@@ -645,6 +646,43 @@ export async function incrementSessionVersion(userId: string): Promise<void> {
   // TODO: replace with DB query
   await ensureDb()
   await db.update(usersTable).set({ sessionVersion: sql`${usersTable.sessionVersion} + 1` }).where(eq(usersTable.id, userId))
+}
+
+// ---------------------------------------------------------------------------
+// User sessions — per-sign-in tracking for active session count
+// ---------------------------------------------------------------------------
+
+export async function insertUserSession(userId: string): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  const now = new Date()
+  await db.insert(userSessionsTable).values({
+    id: crypto.randomUUID(),
+    userId,
+    createdAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  })
+}
+
+export async function countActiveSessions(userId: string): Promise<number> {
+  // TODO: replace with DB query
+  await ensureDb()
+  const rows = await db
+    .select({ id: userSessionsTable.id })
+    .from(userSessionsTable)
+    .where(
+      and(
+        eq(userSessionsTable.userId, userId),
+        gt(userSessionsTable.expiresAt, new Date().toISOString()),
+      ),
+    )
+  return rows.length
+}
+
+export async function clearUserSessions(userId: string): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db.delete(userSessionsTable).where(eq(userSessionsTable.userId, userId))
 }
 
 // ---------------------------------------------------------------------------

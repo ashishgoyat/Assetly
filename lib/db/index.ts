@@ -206,6 +206,13 @@ async function initTables(): Promise<void> {
       sent_at TEXT NOT NULL,
       PRIMARY KEY (user_id, notification_id)
     );
+
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL
+    );
   `)
 
   // Add user_id column to existing tables (safe — ignores if already present)

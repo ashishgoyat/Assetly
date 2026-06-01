@@ -1,6 +1,6 @@
 import { ok, err } from '@/lib/api-response'
 import { auth } from '@/auth'
-import { getUserById } from '@/lib/data/store'
+import { getUserById, countActiveSessions } from '@/lib/data/store'
 import {
   getCurrencyServer,
   getTimezoneServer,
@@ -68,7 +68,7 @@ export async function GET() {
       },
       notifications: notifPrefs,
       security: {
-        activeSessions: 1,
+        activeSessions: userId ? await countActiveSessions(userId) : 1,
         twoFactorEnabled: false,   // Deprecated — always false with Google OAuth
         lastPasswordChange: '',    // Deprecated — always empty with Google OAuth
       },
