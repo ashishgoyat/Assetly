@@ -595,7 +595,9 @@ export default function TransactionsPage() {
         >
           <Icon name="download" size={13} /> Export CSV
         </button>
-        <AddTransactionButton />
+        <AddTransactionButton
+          onCreated={(tx) => setTransactions((prev) => [tx, ...prev])}
+        />
       </div>
 
       {/* Table + Detail panel */}

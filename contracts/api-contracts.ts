@@ -221,6 +221,9 @@ export interface AccountDetail {
     feesInCents: number
     interestInCents: number
   }
+  period: '1W' | '1M' | '3M' | '1Y'
+  balanceHistoryByPeriod: Record<'1W' | '1M' | '3M' | '1Y', number[]>
+  balanceHistoryLabelsByPeriod: Record<'1W' | '1M' | '3M' | '1Y', string[]>
 }
 
 export interface TransactionsSummary {
@@ -252,7 +255,7 @@ export interface TransactionsSummary {
 // GET /api/accounts
 //   → ApiResponse<Account[]>
 //
-// GET /api/accounts/[id]
+// GET /api/accounts/[id]?period=1W|1M|3M|1Y
 //   → ApiResponse<AccountDetail>
 //
 // GET /api/notifications

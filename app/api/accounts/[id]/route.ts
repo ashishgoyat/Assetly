@@ -1,16 +1,29 @@
 import { type NextRequest } from 'next/server'
 import { ok, err } from '@/lib/api-response'
 import { getAccountById, getTransactions } from '@/lib/data/store'
+import { computeCashFlow } from '@/lib/cash-flow'
 import type { AccountDetail } from '@/contracts/api-contracts'
 import { auth } from '@/auth'
 
 type RouteContext = { params: Promise<{ id: string }> }
 
-export async function GET(_req: NextRequest, { params }: RouteContext) {
+const VALID_PERIODS = ['1W', '1M', '3M', '1Y'] as const
+type Period = (typeof VALID_PERIODS)[number]
+
+function parsePeriod(raw: string | null): Period {
+  if (raw !== null && (VALID_PERIODS as readonly string[]).includes(raw)) {
+    return raw as Period
+  }
+  return '1M'
+}
+
+export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const selectedPeriod = parsePeriod(req.nextUrl.searchParams.get('period'))
 
     const account = await getAccountById(id, userId)
     if (account === undefined) {
@@ -24,10 +37,10 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       tx.accountLabel.toLowerCase().includes(account.number.toLowerCase()),
     )
 
-    // Recent transactions for this account (up to 10)
+    // Recent transactions for this account (up to 10, all time, unaffected by period)
     const recentTransactions = accountTransactions.slice(0, 10)
 
-    // Monthly summary
+    // Monthly summary (all time totals, unaffected by period)
     const moneyInInCents = accountTransactions
       .filter((tx) => tx.type === 'income')
       .reduce((sum, tx) => sum + tx.amountInCents, 0)
@@ -37,7 +50,6 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       .reduce((sum, tx) => sum + tx.amountInCents, 0)
 
     // Fees: transactions in category 'Other' with 'fee' in merchant name
-    // For this seed data, no fee transactions exist
     const feesInCents = 0
 
     // Interest: income transactions from 'Interest' merchant
@@ -46,6 +58,13 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         (tx) => tx.type === 'income' && tx.merchant.toLowerCase() === 'interest',
       )
       .reduce((sum, tx) => sum + tx.amountInCents, 0)
+
+    // Balance history — computed from real account transactions for each period
+    const { dataByPeriod, labelsByPeriod } = computeCashFlow(
+      accountTransactions,
+      account.balanceInCents,
+      new Date(),
+    )
 
     const detail: AccountDetail = {
       account,
@@ -56,6 +75,9 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         feesInCents,
         interestInCents,
       },
+      period: selectedPeriod,
+      balanceHistoryByPeriod: dataByPeriod,
+      balanceHistoryLabelsByPeriod: labelsByPeriod,
     }
 
     return ok(detail)

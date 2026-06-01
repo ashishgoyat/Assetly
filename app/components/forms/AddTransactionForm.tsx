@@ -1,16 +1,22 @@
-"use client";
+﻿"use client";
 
 /**
  * AddTransactionForm — form inside the "Add transaction" modal.
  * Submits to the createTransaction server action.
  */
 
-import { useState } from "react";
-import type { TransactionCategory, TransactionType } from "@/contracts/api-contracts";
+import { useState, useEffect } from "react";
+import type {
+  Account,
+  Transaction,
+  TransactionCategory,
+  TransactionType,
+} from "@/contracts/api-contracts";
 import { createTransaction } from "@/app/dashboard/transactions/actions";
 
 interface AddTransactionFormProps {
   onClose: () => void;
+  onCreated?: (tx: Transaction) => void;
 }
 
 const CATEGORIES: TransactionCategory[] = [
@@ -29,20 +35,37 @@ const CATEGORIES: TransactionCategory[] = [
   "Other",
 ];
 
-const ACCOUNTS = [
-  "Chase ··4521",
-  "Ally Savings ··8801",
-  "Brokerage ··2204",
-];
-
-export default function AddTransactionForm({ onClose }: AddTransactionFormProps) {
+export default function AddTransactionForm({
+  onClose,
+  onCreated,
+}: AddTransactionFormProps) {
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<TransactionType>("expense");
   const [category, setCategory] = useState<TransactionCategory>("Groceries");
-  const [accountLabel, setAccountLabel] = useState(ACCOUNTS[0]);
+  const [accountLabel, setAccountLabel] = useState("");
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch real accounts from GET /api/accounts on mount
+  useEffect(() => {
+    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    fetch(`${base}/api/accounts`)
+      .then((r) => r.json())
+      .then((d: { data?: Account[] }) => {
+        if (d.data && d.data.length > 0) {
+          setAccounts(d.data);
+          setAccountLabel(`${d.data[0].name} ${d.data[0].number}`);
+        }
+      })
+      .catch(() => {
+        // Non-critical — the form will show a validation error if the user
+        // submits without a valid account selected.
+      })
+      .finally(() => setAccountsLoading(false));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -59,6 +82,9 @@ export default function AddTransactionForm({ onClose }: AddTransactionFormProps)
 
       const result = await createTransaction(formData);
       if (result.success) {
+        if (result.transaction) {
+          onCreated?.(result.transaction);
+        }
         onClose();
       } else {
         setError(result.error);
@@ -185,7 +211,7 @@ export default function AddTransactionForm({ onClose }: AddTransactionFormProps)
           </select>
         </div>
 
-        {/* Account */}
+        {/* Account — loaded from GET /api/accounts */}
         <div className="field">
           <label htmlFor="tx-account">Account</label>
           <select
@@ -193,23 +219,30 @@ export default function AddTransactionForm({ onClose }: AddTransactionFormProps)
             className="field-input"
             value={accountLabel}
             onChange={(e) => setAccountLabel(e.target.value)}
+            disabled={accountsLoading}
+            aria-busy={accountsLoading}
           >
-            {ACCOUNTS.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
+            {accountsLoading ? (
+              <option value="">Loading accounts…</option>
+            ) : accounts.length === 0 ? (
+              <option value="">No accounts found</option>
+            ) : (
+              accounts.map((a) => {
+                const label = `${a.name} ${a.number}`;
+                return (
+                  <option key={a.id} value={label}>
+                    {label}
+                  </option>
+                );
+              })
+            )}
           </select>
         </div>
       </div>
 
       {/* Inline error */}
       {error !== null && (
-        <div
-          className="field-error"
-          role="alert"
-          style={{ marginTop: 12 }}
-        >
+        <div className="field-error" role="alert" style={{ marginTop: 12 }}>
           {error}
         </div>
       )}

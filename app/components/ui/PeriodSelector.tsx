@@ -4,7 +4,7 @@
  * PeriodSelector — Client Component
  * Renders a row of period toggle buttons (e.g. "1W", "1M", "3M").
  * Tracks the active selection in local state.
- * Currently UI-only — no data refetch until backend endpoints support period params.
+ * Calls onChange when the user picks a period so the parent can re-fetch data.
  */
 
 import { useState } from "react";
@@ -12,13 +12,20 @@ import { useState } from "react";
 interface PeriodSelectorProps {
   periods: string[];
   defaultIndex?: number;
+  onChange?: (period: string) => void;
 }
 
 export default function PeriodSelector({
   periods,
   defaultIndex = 0,
+  onChange,
 }: PeriodSelectorProps) {
   const [active, setActive] = useState(defaultIndex);
+
+  function handleSelect(i: number) {
+    setActive(i);
+    onChange?.(periods[i]);
+  }
 
   return (
     <div style={{ display: "flex", gap: 4 }}>
@@ -32,7 +39,7 @@ export default function PeriodSelector({
           }}
           type="button"
           aria-pressed={active === i}
-          onClick={() => setActive(i)}
+          onClick={() => handleSelect(i)}
         >
           {p}
         </button>

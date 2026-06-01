@@ -9,7 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { after } from 'next/server'
 import { z } from 'zod'
 import { insertTransaction, removeTransaction, updateTransaction } from '@/lib/data/store'
-import type { TransactionCategory, TransactionType } from '@/contracts/api-contracts'
+import type { Transaction, TransactionCategory, TransactionType } from '@/contracts/api-contracts'
 import { auth } from '@/auth'
 import { sendPendingNotificationEmails } from '@/lib/email'
 
@@ -17,7 +17,9 @@ import { sendPendingNotificationEmails } from '@/lib/email'
 // Return type
 // ---------------------------------------------------------------------------
 
-type ActionResult = { success: true; id: string } | { success: false; error: string }
+type ActionResult =
+  | { success: true; id: string; transaction?: Transaction }
+  | { success: false; error: string }
 
 // ---------------------------------------------------------------------------
 // Safe formData reader — converts null/File to undefined so Zod optional schemas
@@ -136,7 +138,22 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
     revalidatePath('/dashboard')
 
     after(() => sendPendingNotificationEmails(userId))
-    return { success: true, id }
+
+    return {
+      success: true as const,
+      id,
+      transaction: {
+        id,
+        date,
+        time,
+        merchant,
+        category,
+        accountLabel,
+        amountInCents: amountDollars,
+        type,
+        status: 'posted' as const,
+      } satisfies Transaction,
+    }
   } catch (err) {
     console.error('[createTransaction] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }

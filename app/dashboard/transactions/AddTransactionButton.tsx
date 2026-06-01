@@ -1,15 +1,22 @@
-"use client";
+﻿"use client";
 
 /**
  * AddTransactionButton — client wrapper that owns the "Add transaction" modal state.
  */
 
 import { useState } from "react";
+import type { Transaction } from "@/contracts/api-contracts";
 import Icon from "@/app/components/ui/Icon";
 import Modal from "@/app/components/ui/Modal";
 import AddTransactionForm from "@/app/components/forms/AddTransactionForm";
 
-export default function AddTransactionButton() {
+interface AddTransactionButtonProps {
+  onCreated?: (tx: Transaction) => void;
+}
+
+export default function AddTransactionButton({
+  onCreated,
+}: AddTransactionButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -23,7 +30,10 @@ export default function AddTransactionButton() {
       </button>
 
       <Modal open={open} title="Add transaction" onClose={() => setOpen(false)}>
-        <AddTransactionForm onClose={() => setOpen(false)} />
+        <AddTransactionForm
+          onClose={() => setOpen(false)}
+          onCreated={onCreated}
+        />
       </Modal>
     </>
   );

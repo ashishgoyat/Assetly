@@ -683,6 +683,39 @@ export const MOCK_ACCOUNT_DETAILS: Record<string, AccountDetail> = {
       feesInCents: 0,
       interestInCents: 0,
     },
+    period: "1M",
+    balanceHistoryByPeriod: {
+      "1W": [303000, 310000, 307000, 315000, 318000, 321000, 324718],
+      "1M": [
+        280000, 300000, 260000, 320000, 280000, 340000, 300000, 360000, 320000,
+        380000, 340000, 400000, 360000, 420000, 380000, 324718,
+      ],
+      "3M": [
+        240000, 255000, 265000, 258000, 272000, 282000, 275000,
+        288000, 298000, 305000, 312000, 318000, 324718,
+      ],
+      "1Y": [
+        200000, 215000, 228000, 245000, 258000, 270000,
+        282000, 291000, 303000, 310000, 318000, 324718,
+      ],
+    },
+    balanceHistoryLabelsByPeriod: {
+      "1W": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Today"],
+      "1M": [
+        "Apr 1", "Apr 4", "Apr 7", "Apr 10", "Apr 13", "Apr 16",
+        "Apr 19", "Apr 22", "Apr 25", "Apr 28", "May 1", "May 4",
+        "May 7", "May 10", "May 13", "Today",
+      ],
+      "3M": [
+        "Mar 1", "Mar 8", "Mar 15", "Mar 22", "Mar 29",
+        "Apr 5", "Apr 12", "Apr 19", "Apr 26",
+        "May 3", "May 10", "May 17", "Today",
+      ],
+      "1Y": [
+        "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
+        "Dec", "Jan", "Feb", "Mar", "Apr", "Today",
+      ],
+    },
   },
   ally: {
     account: MOCK_ACCOUNTS[1],
@@ -693,6 +726,39 @@ export const MOCK_ACCOUNT_DETAILS: Record<string, AccountDetail> = {
       feesInCents: 0,
       interestInCents: 412,
     },
+    period: "1M",
+    balanceHistoryByPeriod: {
+      "1W": [514000, 514500, 515000, 515500, 516000, 516800, 517340],
+      "1M": [
+        470000, 475000, 480000, 482000, 485000, 490000, 495000, 498000, 500000,
+        502000, 505000, 508000, 510000, 512000, 515000, 517340,
+      ],
+      "3M": [
+        440000, 447000, 453000, 458000, 463000, 468000, 472000,
+        477000, 482000, 490000, 498000, 507000, 517340,
+      ],
+      "1Y": [
+        390000, 405000, 418000, 430000, 442000, 453000,
+        462000, 472000, 482000, 493000, 505000, 517340,
+      ],
+    },
+    balanceHistoryLabelsByPeriod: {
+      "1W": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Today"],
+      "1M": [
+        "Apr 1", "Apr 4", "Apr 7", "Apr 10", "Apr 13", "Apr 16",
+        "Apr 19", "Apr 22", "Apr 25", "Apr 28", "May 1", "May 4",
+        "May 7", "May 10", "May 13", "Today",
+      ],
+      "3M": [
+        "Mar 1", "Mar 8", "Mar 15", "Mar 22", "Mar 29",
+        "Apr 5", "Apr 12", "Apr 19", "Apr 26",
+        "May 3", "May 10", "May 17", "Today",
+      ],
+      "1Y": [
+        "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
+        "Dec", "Jan", "Feb", "Mar", "Apr", "Today",
+      ],
+    },
   },
   broker: {
     account: MOCK_ACCOUNTS[2],
@@ -702,6 +768,39 @@ export const MOCK_ACCOUNT_DETAILS: Record<string, AccountDetail> = {
       moneyOutInCents: 0,
       feesInCents: 0,
       interestInCents: 0,
+    },
+    period: "1M",
+    balanceHistoryByPeriod: {
+      "1W": [1413000, 1415000, 1416500, 1418000, 1419000, 1420000, 1421000],
+      "1M": [
+        1300000, 1310000, 1290000, 1320000, 1295000, 1330000, 1305000, 1340000,
+        1315000, 1350000, 1370000, 1360000, 1380000, 1395000, 1410000, 1421000,
+      ],
+      "3M": [
+        1220000, 1235000, 1228000, 1248000, 1260000, 1255000, 1270000,
+        1265000, 1282000, 1295000, 1308000, 1315000, 1421000,
+      ],
+      "1Y": [
+        1100000, 1130000, 1115000, 1150000, 1175000, 1160000,
+        1200000, 1240000, 1285000, 1330000, 1375000, 1421000,
+      ],
+    },
+    balanceHistoryLabelsByPeriod: {
+      "1W": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Today"],
+      "1M": [
+        "Apr 1", "Apr 4", "Apr 7", "Apr 10", "Apr 13", "Apr 16",
+        "Apr 19", "Apr 22", "Apr 25", "Apr 28", "May 1", "May 4",
+        "May 7", "May 10", "May 13", "Today",
+      ],
+      "3M": [
+        "Mar 1", "Mar 8", "Mar 15", "Mar 22", "Mar 29",
+        "Apr 5", "Apr 12", "Apr 19", "Apr 26",
+        "May 3", "May 10", "May 17", "Today",
+      ],
+      "1Y": [
+        "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
+        "Dec", "Jan", "Feb", "Mar", "Apr", "Today",
+      ],
     },
   },
 };

@@ -413,3 +413,29 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: not run
 - pnpm build: not run
+
+---
+
+## Session 2026-06-02
+
+### What was built / fixed
+- **Cash flow helpers extracted** (`lib/cash-flow.ts`, NEW): `buildDailyBalanceHistory`, `sampleWeekly`, `sampleMonthly`, `computeCashFlow`, and all label/date helpers moved from `app/api/dashboard/route.ts` into a shared module; dashboard route now imports from `@/lib/cash-flow`.
+- **Account detail API — period support** (`app/api/accounts/[id]/route.ts`): accepts `?period=1W|1M|3M|1Y` (default `1M`); calls `computeCashFlow` on the account's real transactions to produce `balanceHistoryByPeriod` and `balanceHistoryLabelsByPeriod`; returns all four periods in one response so the client never needs to re-fetch for a different period.
+- **Contract — AccountDetail updated** (`contracts/api-contracts.ts`): added `period`, `balanceHistoryByPeriod`, and `balanceHistoryLabelsByPeriod` fields to `AccountDetail`; endpoint comment updated to show `?period` param.
+- **Account detail page — client component rewrite** (`app/dashboard/accounts/[id]/AccountDetailClient.tsx`, NEW; `app/dashboard/accounts/[id]/page.tsx` thinned): `page.tsx` is now a thin server wrapper; `AccountDetailClient` is a client component that owns `period` state, fetches `/api/accounts/${id}?period=${period}` on mount and on period change, and uses `balanceHistoryByPeriod[period]` for the chart data and Low/High stats; loading skeleton, error state with retry, and not-found state all implemented.
+- **PeriodSelector — onChange callback** (`app/components/ui/PeriodSelector.tsx`): added `onChange?: (period: string) => void` prop; called on every period selection so parent components can react.
+- **Mock data updated** (`lib/mock-data.ts`): `MOCK_ACCOUNT_DETAILS` entries now include `period`, `balanceHistoryByPeriod`, and `balanceHistoryLabelsByPeriod` to satisfy the updated `AccountDetail` type.
+- **Add Transaction form — dynamic account list** (`app/components/forms/AddTransactionForm.tsx`): replaced hardcoded `ACCOUNTS` constant with a `useEffect` that fetches `GET /api/accounts` on mount; the select is populated from real user accounts (`account.name + ' ' + account.number`); disabled with `aria-busy` while loading.
+- **Transactions — immediate list update** (`app/dashboard/transactions/actions.ts`, `AddTransactionButton.tsx`, `AddTransactionForm.tsx`, `page.tsx`): `createTransaction` now returns the full `Transaction` object on success; `AddTransactionForm` accepts `onCreated?: (tx: Transaction) => void` and calls it before closing; `AddTransactionButton` threads the callback through; the transactions page prepends the new transaction to the list with `setTransactions(prev => [tx, ...prev])` — no page reload needed.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. Currency propagation in server components — `app/dashboard/page.tsx` still hardcodes USD (account page now uses `useCurrency()`)
+3. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+4. Subscription pay button not wired in UI — `paySubscription` exists but has no caller
+5. Cron email endpoint requires external scheduler (cron-job.org / GitHub Actions) — no built-in scheduler
+6. Account `monthlySummary` on the detail page aggregates all-time totals, not scoped to the current calendar month
+
+### Last checks
+- pnpm lint: passed (0 errors, 2 pre-existing warnings)
+- pnpm build: not run
