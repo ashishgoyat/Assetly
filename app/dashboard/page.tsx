@@ -286,9 +286,6 @@ export default async function DashboardPage() {
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
               Where it went
             </h2>
-            <Link href="/dashboard/insights" className="btn btn-sm btn-ghost">
-              View insights <Icon name="chev" size={11} />
-            </Link>
           </div>
           <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
             <DonutChart

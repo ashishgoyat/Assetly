@@ -6,6 +6,7 @@
  */
 
 import { cookies } from 'next/headers'
+import type { NotificationPreferences } from '@/contracts/api-contracts'
 
 const VALID_CURRENCIES = ['USD', 'INR', 'EUR'] as const
 export type Currency = (typeof VALID_CURRENCIES)[number]
@@ -26,4 +27,23 @@ export async function getTimezoneServer(): Promise<string> {
 
 export async function getTwoFactorEnabledServer(): Promise<boolean> {
   return (await cookies()).get('assetly-2fa')?.value === 'true'
+}
+
+const DEFAULT_NOTIF_PREFS: NotificationPreferences = {
+  billsDue: true,
+  budgetExceeded: true,
+  largeTransactions: true,
+  weeklyDigest: true,
+  goalMilestones: true,
+}
+
+export async function getNotificationPrefsServer(): Promise<NotificationPreferences> {
+  const raw = (await cookies()).get('assetly-notif-prefs')?.value
+  if (!raw) return DEFAULT_NOTIF_PREFS
+  try {
+    const parsed = JSON.parse(raw) as Partial<NotificationPreferences>
+    return { ...DEFAULT_NOTIF_PREFS, ...parsed }
+  } catch {
+    return DEFAULT_NOTIF_PREFS
+  }
 }

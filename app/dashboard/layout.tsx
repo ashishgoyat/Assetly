@@ -28,6 +28,7 @@ export default async function DashboardLayout({
     .join("")
     .toUpperCase()
     .slice(0, 2);
+  const userAvatarUrl = (session.user as { id?: string; avatarUrl?: string }).avatarUrl ?? "";
 
   return (
     <SidebarProvider>
@@ -36,6 +37,7 @@ export default async function DashboardLayout({
         <Sidebar
           userName={userName}
           userInitials={userInitials}
+          userAvatarUrl={userAvatarUrl}
           accounts={accounts}
         />
       </div>

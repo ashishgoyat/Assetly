@@ -222,6 +222,7 @@ function computeCashFlow(
 export async function GET() {
   try {
     const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
     const userName = session?.user?.name ?? 'You'
     const userInitials = userName
       .split(' ')
@@ -231,11 +232,11 @@ export async function GET() {
       .slice(0, 2)
 
     const [txList, acctList, billList, goalList, budgetList] = await Promise.all([
-      getTransactions(),
-      getAccounts(),
-      getBills(),
-      getGoals(),
-      getBudgets(),
+      getTransactions(userId),
+      getAccounts(userId),
+      getBills(userId),
+      getGoals(userId),
+      getBudgets(userId),
     ])
 
     // --- Reference date: latest transaction date (fall back to today) ---

@@ -1,5 +1,6 @@
 import { ok, err } from '@/lib/api-response'
 import { getGoals, getTransactions } from '@/lib/data/store'
+import { auth } from '@/auth'
 import {
   computeGoalPercentage,
   getLatestTransactionDate,
@@ -11,7 +12,10 @@ import type { GoalSummary } from '@/contracts/api-contracts'
 
 export async function GET() {
   try {
-    const [goalList, txList] = await Promise.all([getGoals(), getTransactions()])
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const [goalList, txList] = await Promise.all([getGoals(userId), getTransactions(userId)])
 
     // --- Reference date: latest transaction date (fall back to today) ---
     const latestDate =

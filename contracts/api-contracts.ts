@@ -42,8 +42,6 @@ export type TransactionCategory =
 
 export type AccountType = 'checking' | 'savings' | 'investment'
 
-export type InsightTone = 'pos' | 'warn' | 'neutral'
-
 // ---------------------------------------------------------------------------
 // Core entities
 // ---------------------------------------------------------------------------
@@ -126,14 +124,14 @@ export interface Subscription {
 
 export interface Insight {
   id: string
-  glyph: string                // Icon name key
-  tag: string                  // "Spotted" | "Heads up" | "Habit" | "Found" | "Win" | "Compare" | "Big news"
-  tone: InsightTone
+  glyph: string
+  tag: string
+  tone: 'pos' | 'warn' | 'neutral'
   title: string
   body: string
   cta: string
   isPinned: boolean
-  sparklineData?: number[]     // Optional chart data for pinned insight
+  sparklineData?: number[]
 }
 
 // ---------------------------------------------------------------------------
@@ -261,9 +259,6 @@ export interface TransactionsSummary {
 // GET /api/bills?days=30|60|90
 //   → ApiResponse<BillsSummary>  (bills filtered to dueInDays <= days, default 30)
 //
-// GET /api/insights
-//   → ApiResponse<Insight[]>
-//
 // GET /api/accounts
 //   → ApiResponse<Account[]>
 //
@@ -318,13 +313,14 @@ export interface UserSettings {
     name: string
     email: string
     initials: string
-    currency: 'USD' | 'INR'
+    avatarUrl?: string
+    currency: 'USD' | 'INR' | 'EUR'
     timezone: string
   }
   notifications: NotificationPreferences
   security: {
-    twoFactorEnabled: boolean
-    lastPasswordChange: string  // ISO date
     activeSessions: number
+    twoFactorEnabled: boolean  // Deprecated — always false with Google OAuth
+    lastPasswordChange: string // Deprecated — always '' with Google OAuth
   }
 }

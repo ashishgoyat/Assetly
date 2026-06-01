@@ -21,6 +21,7 @@ import {
   getSubscriptions,
   updateSubscription,
 } from '@/lib/data/store'
+import { auth } from '@/auth'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -117,7 +118,10 @@ export async function payBill(formData: FormData): Promise<ActionResult> {
     }
     const id = idParsed.data
 
-    const bills = await getBills()
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const bills = await getBills(userId)
     const bill = bills.find((b) => b.id === id)
     if (!bill) return { success: false, error: 'Bill not found' }
 
@@ -134,9 +138,9 @@ export async function payBill(formData: FormData): Promise<ActionResult> {
       amountInCents: bill.amountInCents,
       type: 'expense',
       status: 'posted',
-    })
+    }, userId)
 
-    await removeBill(id)
+    await removeBill(id, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/bills')
@@ -166,7 +170,10 @@ export async function paySubscription(subscriptionId: string): Promise<ActionRes
     }
     const id = idParsed.data
 
-    const subs = await getSubscriptions()
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const subs = await getSubscriptions(userId)
     const sub = subs.find((s) => s.id === id)
     if (!sub) return { success: false, error: 'Subscription not found' }
 
@@ -183,14 +190,14 @@ export async function paySubscription(subscriptionId: string): Promise<ActionRes
       amountInCents: sub.amountMonthlyInCents,
       type: 'expense',
       status: 'posted',
-    })
+    }, userId)
 
     // Advance nextDate by ~1 month (30 days) using the same short-label format
     // as the seed data (e.g. "May 5").
     const nextDate = new Date(now.getTime() + 30 * 86_400_000)
     await updateSubscription(id, {
       nextDate: formatShortDate(nextDate),
-    })
+    }, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/bills')
@@ -211,14 +218,17 @@ export async function skipBill(formData: FormData): Promise<ActionResult> {
     }
     const id = idParsed.data
 
-    const bills = await getBills()
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const bills = await getBills(userId)
     const bill = bills.find((b) => b.id === id)
     if (!bill) return { success: false, error: 'Bill not found' }
 
     await updateBill(id, {
       dueInDays: bill.dueInDays + 30,
       isUrgent: false,
-    })
+    }, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/bills')
@@ -247,7 +257,9 @@ export async function setTransactionCategory(
       return { success: false, error: 'A valid category is required' }
     }
 
-    await updateTransaction(idParsed.data, { category: categoryParsed.data })
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await updateTransaction(idParsed.data, { category: categoryParsed.data }, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/transactions')
@@ -272,7 +284,9 @@ export async function setTransactionNote(formData: FormData): Promise<ActionResu
     }
     const note = noteParsed.data && noteParsed.data.length > 0 ? noteParsed.data : null
 
-    await updateTransaction(idParsed.data, { note })
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await updateTransaction(idParsed.data, { note }, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/transactions')
@@ -291,7 +305,9 @@ export async function excludeTransaction(formData: FormData): Promise<ActionResu
       return { success: false, error: 'Transaction id is required' }
     }
 
-    await removeTransaction(idParsed.data)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await removeTransaction(idParsed.data, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/transactions')
@@ -324,7 +340,10 @@ export async function addFundsToGoalAction(
       return { success: false, error: 'Amount must be a positive number' }
     }
 
-    const goal = await getGoalById(idParsed.data)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const goal = await getGoalById(idParsed.data, userId)
     if (!goal) return { success: false, error: 'Goal not found' }
 
     const newCurrent = goal.currentInCents + amountCents
@@ -339,7 +358,7 @@ export async function addFundsToGoalAction(
       currentInCents: newCurrent,
       percentageComplete: newPercentage,
       eta: newEta,
-    })
+    }, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/goals')
@@ -366,7 +385,10 @@ export async function setGoalMonthly(formData: FormData): Promise<ActionResult> 
       return { success: false, error: 'Monthly amount must be a positive number' }
     }
 
-    const goal = await getGoalById(idParsed.data)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const goal = await getGoalById(idParsed.data, userId)
     if (!goal) return { success: false, error: 'Goal not found' }
 
     const remaining = Math.max(0, goal.targetInCents - goal.currentInCents)
@@ -375,7 +397,7 @@ export async function setGoalMonthly(formData: FormData): Promise<ActionResult> 
     await updateGoal(idParsed.data, {
       monthlyContributionInCents: monthlyCents,
       eta: newEta,
-    })
+    }, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/goals')
@@ -394,10 +416,12 @@ export async function pauseGoal(formData: FormData): Promise<ActionResult> {
       return { success: false, error: 'Goal id is required' }
     }
 
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
     await updateGoal(idParsed.data, {
       monthlyContributionInCents: 0,
       eta: 'Paused',
-    })
+    }, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/goals')

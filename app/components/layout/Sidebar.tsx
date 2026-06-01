@@ -14,6 +14,7 @@ import type { Account } from "@/contracts/api-contracts";
 interface SidebarProps {
   userName: string;
   userInitials: string;
+  userAvatarUrl: string;
   accounts: Account[];
 }
 
@@ -30,7 +31,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/budgets",      label: "Budgets",      icon: "pie"      },
   { href: "/dashboard/goals",        label: "Goals",        icon: "goal"     },
   { href: "/dashboard/bills",        label: "Bills",        icon: "bill"     },
-  { href: "/dashboard/insights",     label: "Insights",     icon: "sparkle"  },
   { href: "/dashboard/settings",     label: "Settings",     icon: "settings" },
 ];
 
@@ -42,7 +42,7 @@ function formatBalance(cents: number): string {
   return `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`
 }
 
-export default function Sidebar({ userName, userInitials, accounts }: SidebarProps) {
+export default function Sidebar({ userName, userInitials, userAvatarUrl, accounts }: SidebarProps) {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -201,17 +201,29 @@ export default function Sidebar({ userName, userInitials, accounts }: SidebarPro
           style={{ width: "100%" }}
           onClick={() => setMenuOpen((o) => !o)}
         >
-          <div
-            className="avatar"
-            style={{ width: 26, height: 26, fontSize: 11 }}
-            aria-hidden
-          >
-            {userInitials}
-          </div>
+          {userAvatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Google profile picture URL is dynamic; next/image requires static domain config
+            <img
+              src={userAvatarUrl}
+              alt={userInitials}
+              width={26}
+              height={26}
+              className="avatar"
+              style={{ objectFit: "cover", borderRadius: "50%" }}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div
+              className="avatar"
+              style={{ width: 26, height: 26, fontSize: 11 }}
+              aria-hidden
+            >
+              {userInitials}
+            </div>
+          )}
           <span style={{ flex: 1, textAlign: "left" }} className="user-name">
             {userName}
           </span>
-          {!collapsed && <Icon name="dots" size={14} color="var(--ink-4)" />}
         </button>
       </div>
     </aside>

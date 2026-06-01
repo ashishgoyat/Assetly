@@ -2,27 +2,34 @@
 
 /**
  * Server actions for the settings page.
- * Profile name/email/password are persisted in the users table.
- * Currency, timezone, 2FA, and last-password-change date are persisted
- * as cookies — no schema migration needed.
+ * Profile name/currency/timezone are persisted in the users table and cookies.
+ * Password/2FA logic removed — authentication is now Google OAuth only.
  */
 
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
-import bcrypt from 'bcryptjs'
 import { auth, signOut } from '@/auth'
 import {
   getUserById,
   updateUser,
   removeUser,
+  incrementSessionVersion,
   getTransactions,
   getAccounts,
   getBudgets,
   getGoals,
   getBills,
   getSubscriptions,
+  generateNotifications,
+  recordEmailedNotification,
 } from '@/lib/data/store'
+import { db, ensureDb } from '@/lib/db/index'
+import { notificationEmailsSentTable } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
+import { sendNotificationEmail } from '@/lib/email'
+import { getNotificationPrefsServer } from '@/lib/server-prefs'
+import type { NotificationPreferences } from '@/contracts/api-contracts'
 
 // ---------------------------------------------------------------------------
 // Shared types and helpers
@@ -107,101 +114,26 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 }
 
 // ---------------------------------------------------------------------------
-// updatePassword — current + new
+// deleteAccount — no password required (Google OAuth account)
 // ---------------------------------------------------------------------------
-
-const UpdatePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z
-    .string()
-    .min(8, 'New password must be at least 8 characters')
-    .max(100, 'New password is too long'),
-})
-
-export async function updatePassword(formData: FormData): Promise<ActionResult> {
-  try {
-    const session = await auth()
-    const userId = getSessionUserId(session)
-    if (!userId) return { success: false, error: 'Not authenticated' }
-
-    const parsed = UpdatePasswordSchema.safeParse({
-      currentPassword: val(formData, 'currentPassword'),
-      newPassword: val(formData, 'newPassword'),
-    })
-
-    if (!parsed.success) {
-      const first = parsed.error.issues[0]
-      return {
-        success: false,
-        error: first?.message ?? 'Invalid password input',
-      }
-    }
-
-    const user = await getUserById(userId)
-    if (!user) return { success: false, error: 'User not found' }
-
-    const valid = await bcrypt.compare(
-      parsed.data.currentPassword,
-      user.passwordHash,
-    )
-    if (!valid) {
-      return { success: false, error: 'Current password is incorrect' }
-    }
-
-    const newHash = await bcrypt.hash(parsed.data.newPassword, 10)
-    await updateUser(userId, { passwordHash: newHash })
-
-    const today = new Date().toISOString().slice(0, 10)
-    await setPrefCookie('assetly-last-password-change', today)
-
-    revalidatePath('/dashboard/settings')
-
-    return { success: true, message: 'Password updated' }
-  } catch (error) {
-    console.error('[updatePassword]', error)
-    return { success: false, error: 'Failed to update password' }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// deleteAccount — requires password confirmation
-// ---------------------------------------------------------------------------
-
-const DeleteAccountSchema = z.object({
-  password: z.string().min(1, 'Password is required'),
-})
 
 export async function deleteAccount(
-  formData: FormData,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _formData: FormData,
 ): Promise<ActionResult> {
   try {
     const session = await auth()
     const userId = getSessionUserId(session)
     if (!userId) return { success: false, error: 'Not authenticated' }
 
-    const parsed = DeleteAccountSchema.safeParse({
-      password: val(formData, 'password'),
-    })
-    if (!parsed.success) {
-      const first = parsed.error.issues[0]
-      return { success: false, error: first?.message ?? 'Invalid input' }
-    }
-
     const user = await getUserById(userId)
     if (!user) return { success: false, error: 'User not found' }
 
-    const valid = await bcrypt.compare(parsed.data.password, user.passwordHash)
-    if (!valid) {
-      return { success: false, error: 'Password is incorrect' }
-    }
-
     await removeUser(userId)
 
-    // Clear all assetly cookies so the next visit starts fresh.
+    // Clear all assetly preference cookies.
     await clearPrefCookie('assetly-currency')
     await clearPrefCookie('assetly-timezone')
-    await clearPrefCookie('assetly-2fa')
-    await clearPrefCookie('assetly-last-password-change')
 
     await signOut({ redirect: false })
 
@@ -213,18 +145,19 @@ export async function deleteAccount(
 }
 
 // ---------------------------------------------------------------------------
-// signOutAllSessions — JWT sessions can't be revoked individually,
-// so we just sign the current session out.
+// signOutAllSessions — increment sessionVersion to invalidate all JWTs
 // ---------------------------------------------------------------------------
 
 export async function signOutAllSessions(): Promise<ActionResult> {
   try {
     const session = await auth()
-    if (!session?.user) {
+    const userId = getSessionUserId(session)
+    if (!userId) {
       return { success: false, error: 'Not authenticated' }
     }
+    await incrementSessionVersion(userId)
     await signOut({ redirect: false })
-    return { success: true, message: 'Signed out' }
+    return { success: true, message: 'Signed out of all sessions' }
   } catch (error) {
     console.error('[signOutAllSessions]', error)
     return { success: false, error: 'Failed to sign out' }
@@ -250,12 +183,12 @@ export async function exportUserData(): Promise<ExportResult> {
 
     const [transactions, accounts, budgets, goals, bills, subscriptions] =
       await Promise.all([
-        getTransactions(),
-        getAccounts(),
-        getBudgets(),
-        getGoals(),
-        getBills(),
-        getSubscriptions(),
+        getTransactions(userId),
+        getAccounts(userId),
+        getBudgets(userId),
+        getGoals(userId),
+        getBills(userId),
+        getSubscriptions(userId),
       ])
 
     const payload = {
@@ -280,38 +213,102 @@ export async function exportUserData(): Promise<ExportResult> {
 }
 
 // ---------------------------------------------------------------------------
-// toggle2FA — cookie-backed flag
+// updateNotificationPrefs — persist notification toggle state as JSON cookie
 // ---------------------------------------------------------------------------
 
-const Toggle2FASchema = z.object({
-  enabled: z.enum(['true', 'false']),
+const NotificationPrefsSchema = z.object({
+  billsDue: z.boolean(),
+  budgetExceeded: z.boolean(),
+  largeTransactions: z.boolean(),
+  weeklyDigest: z.boolean(),
+  goalMilestones: z.boolean(),
 })
 
-export async function toggle2FA(formData: FormData): Promise<ActionResult> {
+export async function updateNotificationPrefs(
+  prefs: NotificationPreferences,
+): Promise<ActionResult> {
   try {
     const session = await auth()
     const userId = getSessionUserId(session)
     if (!userId) return { success: false, error: 'Not authenticated' }
 
-    const parsed = Toggle2FASchema.safeParse({
-      enabled: val(formData, 'enabled'),
-    })
+    const parsed = NotificationPrefsSchema.safeParse(prefs)
     if (!parsed.success) {
-      return { success: false, error: 'Invalid value' }
+      return { success: false, error: 'Invalid notification preferences' }
     }
 
-    await setPrefCookie('assetly-2fa', parsed.data.enabled)
+    const cookieStore = await cookies()
+    cookieStore.set('assetly-notif-prefs', JSON.stringify(parsed.data), {
+      path: '/',
+      maxAge: ONE_YEAR_SECONDS,
+      httpOnly: false, // needs to be readable client-side if needed
+      sameSite: 'lax',
+    })
     revalidatePath('/dashboard/settings')
 
-    return {
-      success: true,
-      message:
-        parsed.data.enabled === 'true'
-          ? 'Two-factor authentication enabled'
-          : 'Two-factor authentication disabled',
-    }
+    return { success: true, message: 'Notification preferences updated' }
   } catch (error) {
-    console.error('[toggle2FA]', error)
-    return { success: false, error: 'Failed to update 2FA' }
+    console.error('[updateNotificationPrefs]', error)
+    return { success: false, error: 'Failed to update notification preferences' }
   }
+}
+
+// ---------------------------------------------------------------------------
+// sendTestNotificationEmail — force-sends all current notifications via email
+// ---------------------------------------------------------------------------
+
+export async function sendTestNotificationEmail(): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    const userId = getSessionUserId(session)
+    if (!userId) return { success: false, error: 'Not authenticated' }
+
+    const toEmail = process.env.NOTIFICATION_EMAIL ?? ''
+    if (!toEmail) return { success: false, error: 'NOTIFICATION_EMAIL not configured' }
+
+    const prefs = await getNotificationPrefsServer()
+    const notifications = await generateNotifications(userId, prefs)
+
+    if (notifications.length === 0) {
+      return { success: false, error: 'No active notifications to send. Try adding a bill due within 3 days, exceeding a budget, or adding a large transaction.' }
+    }
+
+    // Clear emailed history so everything re-sends
+    await ensureDb()
+    await db.delete(notificationEmailsSentTable).where(eq(notificationEmailsSentTable.userId, userId))
+
+    let sent = 0
+    for (const n of notifications) {
+      await sendNotificationEmail(n, toEmail)
+      await recordEmailedNotification(userId, n.id)
+      sent++
+    }
+
+    return { success: true, message: `Sent ${sent} notification email${sent !== 1 ? 's' : ''} to ${toEmail}` }
+  } catch (error) {
+    console.error('[sendTestNotificationEmail]', error)
+    return { success: false, error: 'Failed to send test email' }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// updatePassword — stub: passwords removed, auth is Google OAuth only
+// ---------------------------------------------------------------------------
+
+export async function updatePassword(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _formData: FormData,
+): Promise<ActionResult> {
+  return { success: false, error: 'Password login is no longer supported. Please use Google sign-in.' }
+}
+
+// ---------------------------------------------------------------------------
+// toggle2FA — stub: 2FA removed, auth is Google OAuth only
+// ---------------------------------------------------------------------------
+
+export async function toggle2FA(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _formData: FormData,
+): Promise<ActionResult> {
+  return { success: false, error: 'Two-factor authentication is managed by your Google account.' }
 }

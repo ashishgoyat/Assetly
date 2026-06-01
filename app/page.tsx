@@ -155,11 +155,8 @@ export default function LandingPage() {
           {/* Nav actions */}
           <div className="flex items-center gap-2">
             <DarkModeToggle />
-            <Link href="/login" className="btn">
-              Log in
-            </Link>
-            <Link href="/signup" className="btn btn-accent">
-              Get started free
+            <Link href="/login" className="btn btn-accent">
+              Sign in
             </Link>
           </div>
         </nav>
@@ -209,11 +206,8 @@ export default function LandingPage() {
 
             {/* CTAs */}
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <Link href="/signup" className="btn btn-accent btn-lg">
+              <Link href="/login" className="btn btn-accent btn-lg">
                 Get started free →
-              </Link>
-              <Link href="/login" className="btn btn-lg">
-                Log in
               </Link>
             </div>
           </div>
@@ -318,8 +312,8 @@ export default function LandingPage() {
             >
               Ready to take control of your finances?
             </h2>
-            <Link href="/signup" className="btn btn-accent btn-lg">
-              Create your free account →
+            <Link href="/login" className="btn btn-accent btn-lg">
+              Get started →
             </Link>
           </div>
         </section>
@@ -391,11 +385,11 @@ export default function LandingPage() {
                 <ul className="space-y-2.5">
                   <li>
                     <Link
-                      href="/signup"
+                      href="/login"
                       className="text-[13px] text-[var(--ink-3)] no-underline transition-colors hover:text-[var(--ink)]"
                       style={{ fontFamily: "var(--f-sans)" }}
                     >
-                      Sign up
+                      Sign in
                     </Link>
                   </li>
                 </ul>

@@ -4,7 +4,7 @@
  * Array fields (balanceHistory, sparklineData) are stored as JSON TEXT.
  */
 
-import { integer, sqliteTable, text, real } from 'drizzle-orm/sqlite-core'
+import { integer, sqliteTable, text, real, primaryKey } from 'drizzle-orm/sqlite-core'
 
 // ---------------------------------------------------------------------------
 // transactions
@@ -12,6 +12,7 @@ import { integer, sqliteTable, text, real } from 'drizzle-orm/sqlite-core'
 
 export const transactionsTable = sqliteTable('transactions', {
   id: text('id').primaryKey(),
+  userId: text('user_id'),
   date: text('date').notNull(),       // ISO date "2026-04-23"
   time: text('time').notNull(),       // "11:42 AM"
   merchant: text('merchant').notNull(),
@@ -29,6 +30,7 @@ export const transactionsTable = sqliteTable('transactions', {
 
 export const accountsTable = sqliteTable('accounts', {
   id: text('id').primaryKey(),
+  userId: text('user_id'),
   name: text('name').notNull(),
   number: text('number').notNull(),
   balanceInCents: integer('balance_in_cents').notNull(),
@@ -48,6 +50,7 @@ export const accountsTable = sqliteTable('accounts', {
 
 export const budgetsTable = sqliteTable('budgets', {
   id: text('id').primaryKey(),
+  userId: text('user_id'),
   name: text('name').notNull(),
   category: text('category').notNull(),
   limitInCents: integer('limit_in_cents').notNull(),
@@ -64,6 +67,7 @@ export const budgetsTable = sqliteTable('budgets', {
 
 export const goalsTable = sqliteTable('goals', {
   id: text('id').primaryKey(),
+  userId: text('user_id'),
   name: text('name').notNull(),
   currentInCents: integer('current_in_cents').notNull(),
   targetInCents: integer('target_in_cents').notNull(),
@@ -81,6 +85,7 @@ export const goalsTable = sqliteTable('goals', {
 
 export const billsTable = sqliteTable('bills', {
   id: text('id').primaryKey(),
+  userId: text('user_id'),
   name: text('name').notNull(),
   amountInCents: integer('amount_in_cents').notNull(),
   dueDate: text('due_date').notNull(),
@@ -98,6 +103,7 @@ export const billsTable = sqliteTable('bills', {
 
 export const subscriptionsTable = sqliteTable('subscriptions', {
   id: text('id').primaryKey(),
+  userId: text('user_id'),
   name: text('name').notNull(),
   amountMonthlyInCents: integer('amount_monthly_in_cents').notNull(),
   nextDate: text('next_date').notNull(),
@@ -127,9 +133,32 @@ export const insightsTable = sqliteTable('insights', {
 // ---------------------------------------------------------------------------
 
 export const usersTable = sqliteTable('users', {
-  id:           text('id').primaryKey(),
-  name:         text('name').notNull(),
-  email:        text('email').notNull(),
-  passwordHash: text('password_hash').notNull(),
-  createdAt:    text('created_at').notNull(),
+  id:             text('id').primaryKey(),
+  name:           text('name').notNull(),
+  email:          text('email').notNull(),
+  passwordHash:   text('password_hash'),
+  googleId:       text('google_id'),
+  avatarUrl:      text('avatar_url'),
+  sessionVersion: integer('session_version').notNull().default(0),
+  createdAt:      text('created_at').notNull(),
 })
+
+// ---------------------------------------------------------------------------
+// notification reads
+// ---------------------------------------------------------------------------
+
+export const notificationReadsTable = sqliteTable('notification_reads', {
+  userId:         text('user_id').notNull(),
+  notificationId: text('notification_id').notNull(),
+  readAt:         text('read_at').notNull(),
+}, (t) => ({ pk: primaryKey({ columns: [t.userId, t.notificationId] }) }))
+
+// ---------------------------------------------------------------------------
+// notification emails sent
+// ---------------------------------------------------------------------------
+
+export const notificationEmailsSentTable = sqliteTable('notification_emails_sent', {
+  userId:         text('user_id').notNull(),
+  notificationId: text('notification_id').notNull(),
+  sentAt:         text('sent_at').notNull(),
+}, (t) => ({ pk: primaryKey({ columns: [t.userId, t.notificationId] }) }))

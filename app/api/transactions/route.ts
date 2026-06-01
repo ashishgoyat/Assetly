@@ -4,9 +4,13 @@ import { getTransactions } from '@/lib/data/store'
 import { parseTransactionsQuery } from '@/lib/validations/query-params'
 import { daysInMonth as daysInMonthFn } from '@/lib/calculations'
 import type { TransactionsSummary } from '@/contracts/api-contracts'
+import { auth } from '@/auth'
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const { searchParams } = req.nextUrl
 
     // --- Validate query params ---
@@ -17,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     const { page, pageSize, category, accountId, q } = parsed.data
 
-    const allTransactions = await getTransactions()
+    const allTransactions = await getTransactions(userId)
 
     // --- Apply filters ---
     let filtered = allTransactions

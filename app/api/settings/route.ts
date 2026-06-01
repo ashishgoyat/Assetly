@@ -1,11 +1,10 @@
-import { cookies } from 'next/headers'
 import { ok, err } from '@/lib/api-response'
 import { auth } from '@/auth'
 import { getUserById } from '@/lib/data/store'
 import {
   getCurrencyServer,
   getTimezoneServer,
-  getTwoFactorEnabledServer,
+  getNotificationPrefsServer,
 } from '@/lib/server-prefs'
 import type { UserSettings } from '@/contracts/api-contracts'
 
@@ -36,50 +35,42 @@ export async function GET() {
     // session.user.id. The default NextAuth types don't expose .id, so we cast.
     const userId = (session.user as { id?: string }).id
 
-    // Try to read the latest name/email from the DB so a freshly updated
+    // Read the latest name/email/avatarUrl from the DB so a freshly updated
     // profile shows up immediately, even before the session JWT is refreshed.
     let name = session.user.name ?? 'You'
     let email = session.user.email ?? ''
+    let avatarUrl = (session.user as { avatarUrl?: string }).avatarUrl ?? ''
     if (userId) {
       const row = await getUserById(userId)
       if (row) {
         name = row.name
         email = row.email
+        avatarUrl = row.avatarUrl ?? ''
       }
     }
 
-    const [currency, timezone, twoFactorEnabled] = await Promise.all([
+    const [currency, timezone, notifPrefs] = await Promise.all([
       getCurrencyServer(),
       getTimezoneServer(),
-      getTwoFactorEnabledServer(),
+      getNotificationPrefsServer(),
     ])
-
-    const lastPasswordChange =
-      (await cookies()).get('assetly-last-password-change')?.value ??
-      '2025-01-15'
 
     const settings: UserSettings = {
       profile: {
         name,
         email,
         initials: computeInitials(name),
-        // The cookie may hold 'USD' | 'INR' | 'EUR'; the contract currently
-        // narrows to 'USD' | 'INR'. Cast through unknown so EUR still flows
-        // through to the client without breaking existing consumers.
+        avatarUrl,
+        // The cookie may hold 'USD' | 'INR' | 'EUR'; cast through unknown so
+        // EUR still flows through to the client without breaking consumers.
         currency: currency as unknown as UserSettings['profile']['currency'],
         timezone,
       },
-      notifications: {
-        billsDue: true,
-        budgetExceeded: true,
-        largeTransactions: true,
-        weeklyDigest: true,
-        goalMilestones: true,
-      },
+      notifications: notifPrefs,
       security: {
-        twoFactorEnabled,
-        lastPasswordChange,
         activeSessions: 1,
+        twoFactorEnabled: false,   // Deprecated — always false with Google OAuth
+        lastPasswordChange: '',    // Deprecated — always empty with Google OAuth
       },
     }
 

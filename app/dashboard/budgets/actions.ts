@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { insertBudget, updateBudget, removeBudget } from '@/lib/data/store'
 import type { TransactionCategory } from '@/contracts/api-contracts'
+import { auth } from '@/auth'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -70,6 +71,9 @@ const createBudgetSchema = z.object({
 
 export async function createBudget(formData: FormData): Promise<ActionResult> {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const raw = {
       name: val(formData, 'name'),
       category: val(formData, 'category'),
@@ -97,7 +101,7 @@ export async function createBudget(formData: FormData): Promise<ActionResult> {
       icon,
       color,
       isOver: false,
-    })
+    }, userId)
 
     revalidatePath('/dashboard/budgets')
     revalidatePath('/dashboard')
@@ -121,7 +125,9 @@ export async function updateBudgetLimit(
     if (isNaN(cents)) return { success: false, error: 'Invalid limit value' }
     if (cents <= 0) return { success: false, error: 'Limit must be a positive amount' }
 
-    await updateBudget(id, { limitInCents: cents })
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await updateBudget(id, { limitInCents: cents }, userId)
 
     revalidatePath('/dashboard/budgets')
     revalidatePath('/dashboard')
@@ -137,7 +143,9 @@ export async function deleteBudget(id: string): Promise<ActionResult> {
   if (!id) return { success: false, error: 'Missing budget id' }
 
   try {
-    await removeBudget(id)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await removeBudget(id, userId)
 
     revalidatePath('/dashboard/budgets')
     revalidatePath('/dashboard')

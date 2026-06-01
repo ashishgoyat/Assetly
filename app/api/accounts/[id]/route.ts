@@ -2,19 +2,22 @@ import { type NextRequest } from 'next/server'
 import { ok, err } from '@/lib/api-response'
 import { getAccountById, getTransactions } from '@/lib/data/store'
 import type { AccountDetail } from '@/contracts/api-contracts'
+import { auth } from '@/auth'
 
 type RouteContext = { params: Promise<{ id: string }> }
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
 
-    const account = await getAccountById(id)
+    const account = await getAccountById(id, userId)
     if (account === undefined) {
       return err(`Account '${id}' not found`, 'ACCOUNT_NOT_FOUND', 404)
     }
 
-    const allTransactions = await getTransactions()
+    const allTransactions = await getTransactions(userId)
 
     // Filter transactions that belong to this account by matching accountLabel
     const accountTransactions = allTransactions.filter((tx) =>

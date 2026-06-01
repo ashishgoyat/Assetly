@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { insertGoal, getGoalById, updateGoal, removeGoal } from '@/lib/data/store'
 import { computeGoalPercentage } from '@/lib/calculations'
+import { auth } from '@/auth'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -96,6 +97,9 @@ function computeEta(
 
 export async function createGoal(formData: FormData): Promise<ActionResult> {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const raw = {
       name: val(formData, 'name'),
       targetInCents: val(formData, 'targetInCents'),
@@ -133,7 +137,7 @@ export async function createGoal(formData: FormData): Promise<ActionResult> {
       icon,
       color,
       vibe,
-    })
+    }, userId)
 
     revalidatePath('/dashboard/goals')
     revalidatePath('/dashboard')
@@ -155,7 +159,10 @@ export async function addFundsToGoal(
       return { success: false, error: 'Amount must be a positive number.' }
     }
 
-    const goal = await getGoalById(id)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const goal = await getGoalById(id, userId)
     if (!goal) return { success: false, error: 'Goal not found.' }
 
     const newCurrentInCents = goal.currentInCents + parsedAmount
@@ -169,7 +176,7 @@ export async function addFundsToGoal(
       currentInCents: newCurrentInCents,
       percentageComplete: newPercentage,
       eta: newEta,
-    })
+    }, userId)
 
     revalidatePath('/dashboard/goals')
     revalidatePath('/dashboard')
@@ -190,7 +197,10 @@ export async function updateGoalMonthly(
       return { success: false, error: 'Monthly amount must be a positive number.' }
     }
 
-    const goal = await getGoalById(id)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const goal = await getGoalById(id, userId)
     if (!goal) return { success: false, error: 'Goal not found.' }
 
     const remaining = Math.max(0, goal.targetInCents - goal.currentInCents)
@@ -199,7 +209,7 @@ export async function updateGoalMonthly(
     await updateGoal(id, {
       monthlyContributionInCents: parsedCents,
       eta: newEta,
-    })
+    }, userId)
 
     revalidatePath('/dashboard/goals')
     revalidatePath('/dashboard')
@@ -213,7 +223,9 @@ export async function updateGoalMonthly(
 export async function deleteGoal(id: string): Promise<ActionResult> {
   try {
     if (!id) return { success: false, error: 'Invalid goal ID.' }
-    await removeGoal(id)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await removeGoal(id, userId)
     revalidatePath('/dashboard/goals')
     revalidatePath('/dashboard')
     return { success: true, id }

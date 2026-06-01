@@ -30,7 +30,7 @@ export default function AuthLayout({
 
       {/* Card */}
       <div
-        className="w-full max-w-sm rounded-2xl p-8"
+        className="w-full max-w-md rounded-2xl p-8"
         style={{
           background: "var(--surface)",
           border: "1px solid var(--border)",

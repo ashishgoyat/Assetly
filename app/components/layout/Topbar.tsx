@@ -28,17 +28,16 @@ export default function Topbar({ userName, userInitials, accounts }: TopbarProps
   const notifWrapperRef = useRef<HTMLDivElement>(null);
   const notif = useExitAnimation(notifOpen, MOTION_MS.fast);
 
-  // Fetch notifications once on mount
+  // Re-fetch every time the panel is opened
   useEffect(() => {
+    if (!notifOpen) return;
     fetch("/api/notifications")
       .then((r) => r.json())
       .then((d: { data?: Notification[] }) => {
         if (d.data) setNotifications(d.data);
       })
-      .catch(() => {
-        // Silently fail — notification fetch is non-critical
-      });
-  }, []);
+      .catch(() => {});
+  }, [notifOpen]);
 
   // Click outside notification panel to close
   useEffect(() => {
@@ -59,7 +58,17 @@ export default function Topbar({ userName, userInitials, accounts }: TopbarProps
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   function handleMarkAllRead() {
+    const ids = notifications.map((n) => n.id);
+    // Optimistically mark all as read locally
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    // Persist to API
+    fetch("/api/notifications/read-all", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    }).catch(() => {
+      // Non-critical — local state already updated
+    });
   }
 
   return (

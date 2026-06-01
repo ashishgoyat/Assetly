@@ -15,6 +15,7 @@ import {
   updateSubscription,
   removeSubscription,
 } from '@/lib/data/store'
+import { auth } from '@/auth'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -87,6 +88,9 @@ const createBillSchema = z.object({
 
 export async function createBill(formData: FormData): Promise<ActionResult> {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const raw = {
       name: val(formData, 'name'),
       amountDollars: val(formData, 'amountDollars'),
@@ -121,7 +125,7 @@ export async function createBill(formData: FormData): Promise<ActionResult> {
       category,
       icon,
       color,
-    })
+    }, userId)
 
     revalidatePath('/dashboard/bills')
     revalidatePath('/dashboard')
@@ -167,6 +171,9 @@ const updateBillSchema = z.object({
 
 export async function updateBillAction(formData: FormData): Promise<ActionResult> {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const raw = {
       id: val(formData, 'id'),
       name: val(formData, 'name'),
@@ -194,7 +201,7 @@ export async function updateBillAction(formData: FormData): Promise<ActionResult
       isAutoPay,
       isUrgent,
       category,
-    })
+    }, userId)
 
     revalidatePath('/dashboard/bills')
     revalidatePath('/dashboard')
@@ -217,7 +224,9 @@ export async function deleteBillAction(formData: FormData): Promise<ActionResult
       return { success: false, error: 'Bill id is required' }
     }
 
-    await removeBill(id)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await removeBill(id, userId)
 
     revalidatePath('/dashboard/bills')
     revalidatePath('/dashboard')
@@ -274,6 +283,9 @@ const updateSubscriptionSchema = z.object({
 
 export async function createSubscription(formData: FormData): Promise<ActionResult> {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const raw = {
       name: val(formData, 'name'),
       amountDollars: val(formData, 'amountDollars'),
@@ -300,7 +312,7 @@ export async function createSubscription(formData: FormData): Promise<ActionResu
       isUsed,
       icon,
       color,
-    })
+    }, userId)
 
     revalidatePath('/dashboard/bills')
 
@@ -317,6 +329,9 @@ export async function createSubscription(formData: FormData): Promise<ActionResu
 
 export async function updateSubscriptionAction(formData: FormData): Promise<ActionResult> {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const raw = {
       id: val(formData, 'id'),
       name: val(formData, 'name'),
@@ -338,7 +353,7 @@ export async function updateSubscriptionAction(formData: FormData): Promise<Acti
       amountMonthlyInCents: amountDollars,
       nextDate,
       isUsed,
-    })
+    }, userId)
 
     revalidatePath('/dashboard/bills')
 
@@ -360,7 +375,9 @@ export async function deleteSubscriptionAction(formData: FormData): Promise<Acti
       return { success: false, error: 'Subscription id is required' }
     }
 
-    await removeSubscription(id)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await removeSubscription(id, userId)
 
     revalidatePath('/dashboard/bills')
 

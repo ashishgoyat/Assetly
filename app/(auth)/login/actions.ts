@@ -1,24 +1,28 @@
 'use server'
 
+/**
+ * Login action stub — authentication is now handled by Google OAuth.
+ * This file is kept to satisfy the existing login page import until
+ * the page is updated to use the OAuth sign-in flow.
+ */
+
 import { signIn } from '@/auth'
 import { AuthError } from 'next-auth'
 
-export type ActionResult = { error: string } | undefined
+export type ActionResult = { error?: string } | undefined
 
 export async function login(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _prev: ActionResult,
-  formData: FormData,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _formData: FormData,
 ): Promise<ActionResult> {
   try {
-    await signIn('credentials', {
-      email: formData.get('email') as string,
-      password: formData.get('password') as string,
-      redirectTo: '/dashboard',
-    })
+    await signIn('google', { redirectTo: '/dashboard' })
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: 'Invalid email or password' }
+      return { error: 'Sign in failed. Please try again.' }
     }
-    throw error // NEXT_REDIRECT — must re-throw
+    throw error
   }
 }

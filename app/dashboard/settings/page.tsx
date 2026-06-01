@@ -7,18 +7,18 @@
  * and 2FA action buttons via inline modals and server actions.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useTheme } from "next-themes";
+import SettingsIllustration from "@/app/dashboard/settings/SettingsIllustration";
 import type { ApiResponse, UserSettings } from "@/contracts/api-contracts";
 import SettingsThemeToggle from "@/app/dashboard/settings/SettingsThemeToggle";
 import SettingsNotifications from "@/app/dashboard/settings/SettingsNotifications";
 import Modal from "@/app/components/ui/Modal";
 import {
   updateProfile,
-  updatePassword,
   deleteAccount,
   signOutAllSessions,
   exportUserData,
-  toggle2FA,
 } from "@/app/dashboard/settings/actions";
 import {
   useSetCurrency,
@@ -125,11 +125,6 @@ function SecurityRow({
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function formatPasswordChange(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString("en-US", { month: "short", year: "numeric" });
-}
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -281,15 +276,50 @@ function EditProfileForm({ initial, onSaved, onCancel }: EditProfileFormProps) {
         </div>
         <div className="field">
           <label htmlFor="edit-profile-timezone">Timezone</label>
-          <input
+          <select
             id="edit-profile-timezone"
             name="timezone"
-            type="text"
             className="field-input"
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
-            placeholder="America/New_York"
-          />
+          >
+            <optgroup label="Americas">
+              <option value="America/New_York">Eastern Time — New York</option>
+              <option value="America/Chicago">Central Time — Chicago</option>
+              <option value="America/Denver">Mountain Time — Denver</option>
+              <option value="America/Los_Angeles">Pacific Time — Los Angeles</option>
+              <option value="America/Sao_Paulo">São Paulo</option>
+              <option value="America/Toronto">Toronto</option>
+            </optgroup>
+            <optgroup label="Europe">
+              <option value="Europe/London">London</option>
+              <option value="Europe/Paris">Paris</option>
+              <option value="Europe/Berlin">Berlin</option>
+              <option value="Europe/Rome">Rome</option>
+              <option value="Europe/Moscow">Moscow</option>
+            </optgroup>
+            <optgroup label="Asia">
+              <option value="Asia/Kolkata">India — Kolkata</option>
+              <option value="Asia/Colombo">Sri Lanka — Colombo</option>
+              <option value="Asia/Dhaka">Bangladesh — Dhaka</option>
+              <option value="Asia/Karachi">Pakistan — Karachi</option>
+              <option value="Asia/Dubai">UAE — Dubai</option>
+              <option value="Asia/Bangkok">Bangkok</option>
+              <option value="Asia/Singapore">Singapore</option>
+              <option value="Asia/Tokyo">Tokyo</option>
+              <option value="Asia/Seoul">Seoul</option>
+              <option value="Asia/Shanghai">Shanghai</option>
+            </optgroup>
+            <optgroup label="Africa / Oceania">
+              <option value="Africa/Lagos">Lagos</option>
+              <option value="Africa/Cairo">Cairo</option>
+              <option value="Australia/Sydney">Sydney</option>
+              <option value="Pacific/Auckland">Auckland</option>
+            </optgroup>
+            <optgroup label="UTC">
+              <option value="UTC">UTC</option>
+            </optgroup>
+          </select>
         </div>
       </div>
 
@@ -335,164 +365,6 @@ function EditProfileForm({ initial, onSaved, onCancel }: EditProfileFormProps) {
 }
 
 // ---------------------------------------------------------------------------
-// ChangePasswordForm — used inside the Change Password modal
-// ---------------------------------------------------------------------------
-
-interface ChangePasswordFormProps {
-  onSaved: () => void;
-  onCancel: () => void;
-}
-
-function ChangePasswordForm({ onSaved, onCancel }: ChangePasswordFormProps) {
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-
-    if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("New password and confirmation do not match.");
-      return;
-    }
-
-    setSaving(true);
-    const fd = new FormData();
-    fd.set("currentPassword", currentPassword);
-    fd.set("newPassword", newPassword);
-
-    const result = await updatePassword(fd);
-    setSaving(false);
-    if (result.success) {
-      setSuccess(true);
-      // Close after a brief success message
-      setTimeout(() => {
-        onSaved();
-      }, 1500);
-    } else {
-      setError(result.error);
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} aria-label="Change password">
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-          marginBottom: 14,
-        }}
-      >
-        <div className="field">
-          <label htmlFor="cp-current">Current password</label>
-          <input
-            id="cp-current"
-            name="currentPassword"
-            type="password"
-            className="field-input"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="cp-new">New password</label>
-          <input
-            id="cp-new"
-            name="newPassword"
-            type="password"
-            className="field-input"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-          <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4 }}>
-            Must be at least 8 characters.
-          </div>
-        </div>
-        <div className="field">
-          <label htmlFor="cp-confirm">Confirm new password</label>
-          <input
-            id="cp-confirm"
-            name="confirmPassword"
-            type="password"
-            className="field-input"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-        </div>
-      </div>
-
-      {error && (
-        <div
-          role="alert"
-          style={{
-            color: "var(--neg)",
-            fontSize: 12.5,
-            marginBottom: 10,
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div
-          role="status"
-          style={{
-            color: "var(--pos)",
-            fontSize: 12.5,
-            marginBottom: 10,
-          }}
-        >
-          Password updated.
-        </div>
-      )}
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: 8,
-        }}
-      >
-        <button
-          type="button"
-          className="btn"
-          onClick={onCancel}
-          disabled={saving || success}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={saving || success}
-          aria-busy={saving}
-        >
-          {saving ? "Saving…" : "Update password"}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // DeleteAccountForm — used inside the Delete Account modal
 // ---------------------------------------------------------------------------
 
@@ -502,19 +374,17 @@ interface DeleteAccountFormProps {
 }
 
 function DeleteAccountForm({ onDeleted, onCancel }: DeleteAccountFormProps) {
-  const [password, setPassword] = useState("");
+  const [confirmText, setConfirmText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (confirmText !== "DELETE") return;
     setError(null);
     setSubmitting(true);
 
-    const fd = new FormData();
-    fd.set("password", password);
-
-    const result = await deleteAccount(fd);
+    const result = await deleteAccount(new FormData());
     setSubmitting(false);
     if (result.success) {
       onDeleted();
@@ -542,18 +412,19 @@ function DeleteAccountForm({ onDeleted, onCancel }: DeleteAccountFormProps) {
       </div>
 
       <div className="field" style={{ marginBottom: 14 }}>
-        <label htmlFor="del-account-password">
-          Enter your password to confirm
+        <label htmlFor="del-account-confirm">
+          Type <strong>DELETE</strong> to confirm
         </label>
         <input
-          id="del-account-password"
-          name="password"
-          type="password"
+          id="del-account-confirm"
+          name="confirm"
+          type="text"
           className="field-input"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          placeholder="DELETE"
+          autoComplete="off"
           required
-          autoComplete="current-password"
         />
       </div>
 
@@ -588,12 +459,14 @@ function DeleteAccountForm({ onDeleted, onCancel }: DeleteAccountFormProps) {
         <button
           type="submit"
           className="btn"
-          disabled={submitting}
+          disabled={submitting || confirmText !== "DELETE"}
           aria-busy={submitting}
           style={{
             color: "white",
             background: "var(--neg)",
             borderColor: "var(--neg)",
+            opacity: confirmText !== "DELETE" ? 0.4 : 1,
+            cursor: confirmText !== "DELETE" ? "not-allowed" : "pointer",
           }}
         >
           {submitting ? "Deleting…" : "Delete account"}
@@ -609,6 +482,8 @@ function DeleteAccountForm({ onDeleted, onCancel }: DeleteAccountFormProps) {
 
 export default function SettingsPage() {
   const setGlobalCurrency = useSetCurrency();
+  const { resolvedTheme } = useTheme();
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -616,11 +491,9 @@ export default function SettingsPage() {
 
   // Modal visibility flags
   const [editProfileOpen, setEditProfileOpen] = useState(false);
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
 
   // In-flight states for inline buttons
-  const [twoFAUpdating, setTwoFAUpdating] = useState(false);
   const [signingOutAll, setSigningOutAll] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -656,26 +529,12 @@ export default function SettingsPage() {
   }, [fetchSettings]);
 
   const profile = settings?.profile;
+  const notifications = settings?.notifications;
   const security = settings?.security;
 
   // -------------------------------------------------------------------------
   // Action handlers
   // -------------------------------------------------------------------------
-
-  async function handleToggle2FA() {
-    if (!security) return;
-    setActionError(null);
-    setTwoFAUpdating(true);
-    const fd = new FormData();
-    fd.set("enabled", security.twoFactorEnabled ? "false" : "true");
-    const result = await toggle2FA(fd);
-    setTwoFAUpdating(false);
-    if (result.success) {
-      void fetchSettings();
-    } else {
-      setActionError(result.error);
-    }
-  }
 
   async function handleSignOutAll() {
     if (!window.confirm("Sign out of all sessions?")) return;
@@ -819,18 +678,35 @@ export default function SettingsPage() {
                   marginBottom: 20,
                 }}
               >
-                <div
-                  className="avatar"
-                  style={{
-                    width: 52,
-                    height: 52,
-                    fontSize: 18,
-                    flexShrink: 0,
-                  }}
-                  aria-label={`User avatar — initials ${profile.initials}`}
-                >
-                  {profile.initials}
-                </div>
+                {profile.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- Google profile picture URL is dynamic; next/image requires static domain config
+                  <img
+                    src={profile.avatarUrl}
+                    alt={`User avatar — ${profile.name}`}
+                    width={52}
+                    height={52}
+                    className="avatar"
+                    style={{
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                      flexShrink: 0,
+                    }}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div
+                    className="avatar"
+                    style={{
+                      width: 52,
+                      height: 52,
+                      fontSize: 18,
+                      flexShrink: 0,
+                    }}
+                    aria-label={`User avatar — initials ${profile.initials}`}
+                  >
+                    {profile.initials}
+                  </div>
+                )}
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 600 }}>
                     {profile.name}
@@ -945,7 +821,9 @@ export default function SettingsPage() {
         {/* ------------------------------------------------------------------ */}
         <Section>
           <SectionLabel>Notifications</SectionLabel>
-          <SettingsNotifications />
+          {notifications && (
+            <SettingsNotifications initialPrefs={notifications} />
+          )}
         </Section>
 
         {/* ------------------------------------------------------------------ */}
@@ -955,57 +833,13 @@ export default function SettingsPage() {
           <SectionLabel>Security</SectionLabel>
 
           <SecurityRow
-            label="Two-factor authentication"
-            value={
-              security?.twoFactorEnabled ? (
-                <span
-                  className="pill pill-pos"
-                  style={{ marginTop: 4, display: "inline-flex" }}
-                >
-                  Enabled
-                </span>
-              ) : (
-                <span
-                  className="pill pill-warn"
-                  style={{ marginTop: 4, display: "inline-flex" }}
-                >
-                  Not enabled
-                </span>
-              )
-            }
-            action={security?.twoFactorEnabled ? "Disable" : "Enable"}
-            actionAriaLabel={
-              security?.twoFactorEnabled
-                ? "Disable two-factor authentication"
-                : "Enable two-factor authentication"
-            }
-            onAction={handleToggle2FA}
-            busy={twoFAUpdating}
-          />
-
-          <div className="div" />
-
-          <SecurityRow
-            label="Password"
-            value={
-              security
-                ? `Last changed ${formatPasswordChange(security.lastPasswordChange)}`
-                : "—"
-            }
-            action="Change password"
-            onAction={() => setChangePasswordOpen(true)}
-          />
-
-          <div className="div" />
-
-          <SecurityRow
             label="Active sessions"
             value={
               security
-                ? `${security.activeSessions} session${security.activeSessions === 1 ? "" : "s"}`
+                ? `${security.activeSessions} active session${security.activeSessions === 1 ? "" : "s"}`
                 : "—"
             }
-            action="Sign out all"
+            action="Sign out all devices"
             actionAriaLabel="Sign out all active sessions"
             onAction={handleSignOutAll}
             busy={signingOutAll}
@@ -1059,20 +893,6 @@ export default function SettingsPage() {
       </Modal>
 
       <Modal
-        open={changePasswordOpen}
-        title="Change password"
-        onClose={() => setChangePasswordOpen(false)}
-      >
-        <ChangePasswordForm
-          onSaved={() => {
-            setChangePasswordOpen(false);
-            void fetchSettings();
-          }}
-          onCancel={() => setChangePasswordOpen(false)}
-        />
-      </Modal>
-
-      <Modal
         open={deleteAccountOpen}
         title="Delete account"
         onClose={() => setDeleteAccountOpen(false)}
@@ -1082,6 +902,23 @@ export default function SettingsPage() {
           onCancel={() => setDeleteAccountOpen(false)}
         />
       </Modal>
+
+      {/* Fixed decorative illustration — stays in place while scrolling */}
+      {mounted && (
+        <div
+          style={{
+            position: "fixed",
+            right: 40,
+            bottom: 40,
+            pointerEvents: "none",
+            zIndex: 0,
+            userSelect: "none",
+          }}
+          aria-hidden
+        >
+          <SettingsIllustration dark={resolvedTheme === "dark"} />
+        </div>
+      )}
     </div>
   );
 }

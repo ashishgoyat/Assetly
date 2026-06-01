@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, err } from '@/lib/api-response'
 import { getBills, getSubscriptions } from '@/lib/data/store'
 import type { BillsSummary } from '@/contracts/api-contracts'
+import { auth } from '@/auth'
 
 const VALID_PERIODS = [30, 60, 90] as const
 type PeriodDays = (typeof VALID_PERIODS)[number]
@@ -13,9 +14,12 @@ function parsePeriodDays(raw: string | null): PeriodDays {
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const days = parsePeriodDays(request.nextUrl.searchParams.get('days'))
 
-    const [billList, subList] = await Promise.all([getBills(), getSubscriptions()])
+    const [billList, subList] = await Promise.all([getBills(userId), getSubscriptions(userId)])
 
     // Filter bills to only those due within the selected period
     const filteredBills = billList.filter((b) => b.dueInDays <= days)

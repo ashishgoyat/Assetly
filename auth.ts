@@ -1,28 +1,12 @@
 import NextAuth from 'next-auth'
-import Credentials from 'next-auth/providers/credentials'
-import bcrypt from 'bcryptjs'
-import { getUserByEmail } from '@/lib/data/store'
+import Google from 'next-auth/providers/google'
+import { upsertGoogleUser, getSessionVersion } from '@/lib/data/store'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
-    Credentials({
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-      authorize: async (credentials) => {
-        const email = credentials?.email as string | undefined
-        const password = credentials?.password as string | undefined
-        if (!email || !password) return null
-
-        const user = await getUserByEmail(email)
-        if (!user) return null
-
-        const valid = await bcrypt.compare(password, user.passwordHash)
-        if (!valid) return null
-
-        return { id: user.id, name: user.name, email: user.email }
-      },
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
   pages: {
@@ -30,17 +14,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   session: { strategy: 'jwt' },
   callbacks: {
-    jwt({ token, user }) {
-      if (user) {
+    async signIn({ user, account, profile }) {
+      if (account?.provider !== 'google' || !profile?.email) return false
+      const dbUser = await upsertGoogleUser({
+        googleId: account.providerAccountId,
+        email: profile.email,
+        name: profile.name ?? user.name ?? 'User',
+        avatarUrl: (profile as { picture?: string }).picture ?? user.image ?? '',
+      })
+      user.id = dbUser.id
+      user.image = dbUser.avatarUrl ?? ''
+      return true
+    },
+    async jwt({ token, user, account }) {
+      if (user && account) {
+        // First sign-in — embed DB id and current sessionVersion
         token.id = user.id
-        token.name = user.name
+        token.avatarUrl = user.image
+        const sv = await getSessionVersion(user.id!)
+        token.sessionVersion = sv
+      } else if (token.id) {
+        // Subsequent reads — validate sessionVersion
+        const currentSv = await getSessionVersion(token.id as string)
+        if (currentSv !== token.sessionVersion) {
+          // Session revoked — return null to invalidate
+          return null as never
+        }
       }
       return token
     },
     session({ session, token }) {
       if (session.user) {
         session.user.name = token.name as string
-        ;(session.user as { id?: string }).id = token.id as string
+        ;(session.user as { id?: string; avatarUrl?: string; sessionVersion?: number }).id = token.id as string
+        ;(session.user as { id?: string; avatarUrl?: string; sessionVersion?: number }).avatarUrl = token.avatarUrl as string
+        ;(session.user as { id?: string; avatarUrl?: string; sessionVersion?: number }).sessionVersion = token.sessionVersion as number
       }
       return session
     },

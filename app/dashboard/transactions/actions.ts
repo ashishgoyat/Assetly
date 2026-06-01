@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { insertTransaction, removeTransaction, updateTransaction } from '@/lib/data/store'
 import type { TransactionCategory, TransactionType } from '@/contracts/api-contracts'
+import { auth } from '@/auth'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -92,6 +93,9 @@ function formatTime(date: Date): string {
 
 export async function createTransaction(formData: FormData): Promise<ActionResult> {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const raw = {
       merchant: val(formData, 'merchant'),
       amountDollars: val(formData, 'amountDollars'),
@@ -124,7 +128,7 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
       amountInCents: amountDollars,
       type,
       status: 'posted',
-    })
+    }, userId)
 
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard')
@@ -141,7 +145,9 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
     if (!id || typeof id !== 'string') {
       return { success: false, error: 'Invalid transaction ID.' }
     }
-    await removeTransaction(id)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await removeTransaction(id, userId)
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard')
     return { success: true, id }
@@ -178,7 +184,9 @@ export async function updateTransactionAction(
       return { success: false, error: message }
     }
 
-    await updateTransaction(id, parsed.data)
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    await updateTransaction(id, parsed.data, userId)
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard')
 

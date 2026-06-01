@@ -333,3 +333,59 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed
 - pnpm build: passed (22 routes)
+
+---
+
+## Session 2026-06-01 (Google OAuth, data isolation, notifications, settings overhaul)
+
+### What was built / fixed
+
+**Auth — Google OAuth replacing credentials:**
+- `auth.ts` rewritten: removed Credentials + bcryptjs, added Google provider; `signIn` callback upserts user via `upsertGoogleUser`; JWT callback validates `sessionVersion` on every read (returns `null` to force logout on mismatch); session callback exposes `id` + `avatarUrl`.
+- `lib/db/schema.ts`: added `googleId`, `avatarUrl`, `sessionVersion` columns to `usersTable`; made `passwordHash` nullable; added `notificationReadsTable` and `notificationEmailsSentTable` with composite PKs; added `userId` TEXT to all 6 data tables (transactions, accounts, budgets, goals, bills, subscriptions) for per-user isolation.
+- `lib/db/index.ts`: `migrateUsersTable()` for rename-and-recreate migration; `addColumnIfMissing()` helper; `ensureDb()` now only calls `initTables()` — seed call removed so fresh accounts start empty.
+- `lib/data/store.ts`: added `getUserByGoogleId`, `upsertGoogleUser`, `getSessionVersion`, `incrementSessionVersion`; all query functions filter by `userId`; `computeDueInDays()` computes bill due-days live from `dueDate` string; `generateNotifications(userId, prefs)` produces real `Notification[]` from DB (bill_due, budget_exceeded, large_transaction, goal_milestone, weekly_digest); read/email tracking helpers (`getNotificationReads`, `markNotificationRead`, `markAllNotificationsRead`, `getEmailedNotifications`, `recordEmailedNotification`).
+
+**Notifications — dynamic + email delivery:**
+- `app/api/notifications/route.ts`: replaced static seed with `generateNotifications` + `getNotificationReads`; merges `isRead` state.
+- `app/api/notifications/[id]/read/route.ts` (NEW): PATCH — calls `markNotificationRead`.
+- `app/api/notifications/read-all/route.ts` (NEW): POST — calls `markAllNotificationsRead`.
+- `lib/email.ts` (NEW): Resend client + `sendNotificationEmail(notification, toEmail)` per notification type.
+- `app/api/cron/notifications/route.ts` (NEW): CRON_SECRET-gated GET; generates notifications respecting prefs; skips already-emailed IDs; `?force=true` clears history; returns `{ sent, skipped, generated }`.
+- `app/components/layout/Topbar.tsx`: notification panel re-fetches every time it opens (not just on mount); unread-first sort order.
+
+**Settings overhaul:**
+- `app/dashboard/settings/page.tsx`: removed 2FA section and Change Password modal; Google profile picture in profile section; timezone field replaced with grouped IANA timezone `<select>` (~30 options); delete-account confirmation changed from password input to typing "DELETE" (uppercase enforced); passes `settings.notifications` to `SettingsNotifications` as `initialPrefs`.
+- `app/dashboard/settings/SettingsNotifications.tsx`: rewritten as fully controlled component; each toggle calls `updateNotificationPrefs` fire-and-forget; "Send test email" button calls `sendTestNotificationEmail()` with success/error feedback.
+- `app/dashboard/settings/actions.ts`: added `updateNotificationPrefs` (Zod-validated, writes `assetly-notif-prefs` JSON cookie); added `sendTestNotificationEmail` (clears emailed history, force-sends all current notifications); `signOutAllSessions` now calls `incrementSessionVersion` to revoke all JWTs; `deleteAccount` no longer requires password; removed `updatePassword` and `toggle2FA`.
+- `lib/server-prefs.ts`: added `getNotificationPrefsServer()` reading `assetly-notif-prefs` JSON cookie with `DEFAULT_PREFS` fallback.
+
+**Insights removed:**
+- `app/api/insights/route.ts` deleted.
+- `app/dashboard/insights/page.tsx` deleted.
+- Insights nav item removed from `Sidebar.tsx`.
+- "View insights" link removed from `app/dashboard/page.tsx`.
+
+**Login / landing page:**
+- `app/(auth)/login/page.tsx`: replaced email/password form with single "Continue with Google" button; card widened to `max-w-md`.
+- `app/(auth)/signup/page.tsx`: server component that redirects to `/login`.
+- `app/page.tsx`: removed "Log in" / "Sign in" dual buttons from nav; single "Sign in" → `/login`; hero and CTA buttons point to `/login`.
+
+**Sidebar:**
+- Shows Google profile picture when `userAvatarUrl` is set, falls back to initials.
+- Three-dots icon removed from user row bottom.
+
+**Settings illustration:**
+- `app/dashboard/settings/SettingsIllustration.tsx` (NEW): inline SVG React component rendering a settings card mockup (profile row, 4 toggle rows, buttons, floating mini card, decorative rings/dots); theme-aware palette — light uses white/gray, dark uses warm charcoal-brown (no blue tint); rendered fixed bottom-right, stays in place while scrolling; only mounts client-side to avoid hydration mismatch.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. Cash on hand period data is mock-only — `cashFlowDataByPeriod` hardcoded; API returns single array
+3. Currency propagation in server components — `app/dashboard/page.tsx` and `app/dashboard/accounts/[id]/page.tsx` still hardcode USD
+4. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+5. Subscription pay button not wired in UI — `paySubscription` exists but has no caller
+6. Cron email endpoint requires external scheduler (cron-job.org / GitHub Actions) — no built-in scheduler
+
+### Last checks
+- pnpm lint: passed
+- pnpm build: not run

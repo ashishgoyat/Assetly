@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { insertAccount } from '@/lib/data/store'
+import { auth } from '@/auth'
 
 type ActionResult = { success: true; id: string } | { success: false; error: string }
 
@@ -40,6 +41,9 @@ const createAccountSchema = z.object({
 
 export async function createAccount(formData: FormData): Promise<ActionResult> {
   try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
     const raw = {
       name: val(formData, 'name'),
       type: val(formData, 'type'),
@@ -71,7 +75,7 @@ export async function createAccount(formData: FormData): Promise<ActionResult> {
       linkedSince,
       lastSync: 'Just now',
       balanceHistory: Array(16).fill(balanceDollars),
-    })
+    }, userId)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/accounts')

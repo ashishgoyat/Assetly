@@ -1,6 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { ok, err } from '@/lib/api-response'
 import { getBudgets, getTransactions } from '@/lib/data/store'
+import { auth } from '@/auth'
 import {
   computeBudgetPercentage,
   getLatestTransactionDate,
@@ -14,7 +15,10 @@ import type { BudgetSummary } from '@/contracts/api-contracts'
 
 export async function GET(req: NextRequest) {
   try {
-    const [budgetList, txList] = await Promise.all([getBudgets(), getTransactions()])
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const [budgetList, txList] = await Promise.all([getBudgets(userId), getTransactions(userId)])
 
     // --- Determine reference month ---
     const { searchParams } = req.nextUrl

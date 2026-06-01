@@ -19,7 +19,6 @@ const NAV_ITEMS = [
   { href: "/dashboard/budgets",      label: "Budgets",      icon: "pie"      as const },
   { href: "/dashboard/goals",        label: "Goals",        icon: "goal"     as const },
   { href: "/dashboard/bills",        label: "Bills",        icon: "bill"     as const },
-  { href: "/dashboard/insights",     label: "Insights",     icon: "sparkle"  as const },
   { href: "/dashboard/settings",     label: "Settings",     icon: "settings" as const },
 ];
 
