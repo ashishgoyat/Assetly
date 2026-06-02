@@ -106,7 +106,13 @@ export default function Sidebar({ userName, userInitials, userAvatarUrl, account
       </nav>
 
       {/* Accounts section */}
-      <div className="nav-section-label">Accounts</div>
+      <Link
+        href="/dashboard/accounts"
+        className={`nav-section-label${isActive("/dashboard/accounts") ? " active" : ""}`}
+        style={{ textDecoration: "none" }}
+      >
+        Accounts
+      </Link>
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {accounts.map((account) => (
           <Link

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { formatCompact } from "@/lib/format";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
 import {
   addFundsToGoalAction,
   setGoalMonthly,
@@ -11,7 +12,17 @@ import type { Goal } from "@/contracts/api-contracts";
 
 type Mode = "actions" | "addFunds" | "adjustMonthly";
 
-export default function GoalCard({ goal: g }: { goal: Goal }) {
+interface GoalCardProps {
+  goal: Goal;
+  onUpdated?: (goal: Goal) => void;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+export default function GoalCard({ goal: g, onUpdated }: GoalCardProps) {
+  const currency = useCurrency();
   const [expanded, setExpanded] = useState(false);
   const [mode, setMode] = useState<Mode>("actions");
   const [amountInput, setAmountInput] = useState("");
@@ -39,7 +50,15 @@ export default function GoalCard({ goal: g }: { goal: Goal }) {
       fd.set("amountDollars", amountInput);
       const res = await addFundsToGoalAction(fd);
       if (res.success) {
-        window.location.reload();
+        const addedCents = Math.round(parseFloat(amountInput) * 100);
+        const newCurrent = g.currentInCents + (Number.isFinite(addedCents) ? addedCents : 0);
+        const newPct =
+          g.targetInCents > 0
+            ? clamp(Math.round((newCurrent / g.targetInCents) * 100), 0, 100)
+            : 0;
+        onUpdated?.({ ...g, currentInCents: newCurrent, percentageComplete: newPct });
+        setMode("actions");
+        setAmountInput("");
       } else {
         setError(res.error);
       }
@@ -54,7 +73,13 @@ export default function GoalCard({ goal: g }: { goal: Goal }) {
       fd.set("monthlyDollars", monthlyInput);
       const res = await setGoalMonthly(fd);
       if (res.success) {
-        window.location.reload();
+        const newMonthly = Math.round(parseFloat(monthlyInput) * 100);
+        onUpdated?.({
+          ...g,
+          monthlyContributionInCents: Number.isFinite(newMonthly) ? newMonthly : g.monthlyContributionInCents,
+        });
+        setMode("actions");
+        setMonthlyInput("");
       } else {
         setError(res.error);
       }
@@ -68,7 +93,7 @@ export default function GoalCard({ goal: g }: { goal: Goal }) {
       fd.set("id", g.id);
       const res = await pauseGoal(fd);
       if (res.success) {
-        window.location.reload();
+        onUpdated?.({ ...g, monthlyContributionInCents: 0, eta: "Paused" });
       } else {
         setError(res.error);
       }
@@ -88,10 +113,10 @@ export default function GoalCard({ goal: g }: { goal: Goal }) {
       <div style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6 }}>{g.name}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 8 }}>
         <span className="num serif" style={{ fontSize: 22, lineHeight: 1 }}>
-          {formatCompact(g.currentInCents)}
+          {formatCompact(g.currentInCents, currency)}
         </span>
         <span className="num" style={{ fontSize: 11, color: "var(--ink-3)" }}>
-          / {formatCompact(g.targetInCents)}
+          / {formatCompact(g.targetInCents, currency)}
         </span>
       </div>
       <div className="bar">

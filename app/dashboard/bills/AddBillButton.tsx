@@ -8,8 +8,13 @@ import { useState } from "react";
 import Icon from "@/app/components/ui/Icon";
 import Modal from "@/app/components/ui/Modal";
 import AddBillForm from "@/app/components/forms/AddBillForm";
+import type { Bill } from "@/contracts/api-contracts";
 
-export default function AddBillButton() {
+interface AddBillButtonProps {
+  onCreated?: (bill: Bill) => void;
+}
+
+export default function AddBillButton({ onCreated }: AddBillButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -23,7 +28,13 @@ export default function AddBillButton() {
       </button>
 
       <Modal open={open} title="Add bill" onClose={() => setOpen(false)}>
-        <AddBillForm onClose={() => setOpen(false)} />
+        <AddBillForm
+          onClose={() => setOpen(false)}
+          onCreated={(bill) => {
+            onCreated?.(bill);
+            setOpen(false);
+          }}
+        />
       </Modal>
     </>
   );

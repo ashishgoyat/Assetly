@@ -11,12 +11,14 @@ import { useState } from "react";
 import Icon from "@/app/components/ui/Icon";
 import Modal from "@/app/components/ui/Modal";
 import NewGoalForm from "@/app/components/forms/NewGoalForm";
+import type { Goal } from "@/contracts/api-contracts";
 
 interface NewGoalButtonProps {
   variant?: "default" | "dashed";
+  onCreated?: (goal: Goal) => void;
 }
 
-export default function NewGoalButton({ variant = "default" }: NewGoalButtonProps) {
+export default function NewGoalButton({ variant = "default", onCreated }: NewGoalButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -59,7 +61,7 @@ export default function NewGoalButton({ variant = "default" }: NewGoalButtonProp
       )}
 
       <Modal open={open} title="New goal" onClose={() => setOpen(false)}>
-        <NewGoalForm onClose={() => setOpen(false)} />
+        <NewGoalForm onClose={() => setOpen(false)} onCreated={onCreated} />
       </Modal>
     </>
   );

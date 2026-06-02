@@ -7,16 +7,17 @@
 
 import { useState } from "react";
 import { createBill } from "@/app/dashboard/bills/actions";
+import type { Bill } from "@/contracts/api-contracts";
 
 interface AddBillFormProps {
   onClose: () => void;
+  onCreated?: (bill: Bill) => void;
 }
 
-export default function AddBillForm({ onClose }: AddBillFormProps) {
+export default function AddBillForm({ onClose, onCreated }: AddBillFormProps) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [dueInDays, setDueInDays] = useState("");
   const [autoPay, setAutoPay] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,13 +31,14 @@ export default function AddBillForm({ onClose }: AddBillFormProps) {
       const formData = new FormData();
       formData.set("name", name);
       formData.set("amountDollars", amount);
+      // dueDate is YYYY-MM-DD from <input type="date">; server action converts to display format
       formData.set("dueDate", dueDate);
-      formData.set("dueInDays", dueInDays);
       // The server action checks for the string "true"
       formData.set("isAutoPay", autoPay ? "true" : "false");
 
       const result = await createBill(formData);
       if (result.success) {
+        onCreated?.(result.bill);
         onClose();
       } else {
         setError(result.error);
@@ -101,33 +103,17 @@ export default function AddBillForm({ onClose }: AddBillFormProps) {
           </div>
         </div>
 
-        {/* Due date and days until due — side by side */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div className="field">
-            <label htmlFor="bill-due-date">Due date</label>
-            <input
-              id="bill-due-date"
-              type="text"
-              className="field-input"
-              placeholder="May 30"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              required
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="bill-due-days">Days until due</label>
-            <input
-              id="bill-due-days"
-              type="number"
-              className="field-input"
-              placeholder="0"
-              value={dueInDays}
-              onChange={(e) => setDueInDays(e.target.value)}
-              min="0"
-              required
-            />
-          </div>
+        {/* Due date */}
+        <div className="field">
+          <label htmlFor="bill-due-date">Due date</label>
+          <input
+            id="bill-due-date"
+            type="date"
+            className="field-input"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            required
+          />
         </div>
 
         {/* Auto-pay toggle */}

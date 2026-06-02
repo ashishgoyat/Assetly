@@ -439,3 +439,48 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 2 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-02 (continued — flow completion)
+
+### What was built / fixed
+
+- **Onboarding wizard** (`app/components/onboarding/OnboardingWizard.tsx`, NEW; `app/components/onboarding/OnboardingGate.tsx`, NEW; `app/dashboard/layout.tsx`): 3-step wizard (Welcome → Add Account → Done) appears on first login when `/api/accounts` returns empty; sets `assetly-onboarding-done` cookie on completion or skip; uses existing `.modal-overlay`/`.modal-panel` CSS classes; `AddAccountForm` embedded in step 2; Escape key and Skip close the wizard on steps 2+; body scroll locked while open.
+- **Accounts list page** (`app/dashboard/accounts/page.tsx`, NEW; `app/dashboard/accounts/actions.ts`; `lib/data/store.ts`): `/dashboard/accounts` route listing all accounts with color dot, balance, type badge; inline edit panel (name + balance) calls new `updateAccountAction`; delete via `window.confirm` calls new `deleteAccountAction`; Add Account button opens existing `AddAccountForm` modal; loading skeleton, error, and empty states; `updateAccount` and `removeAccount` helpers added to store.
+- **Subscription Pay button** (`app/dashboard/bills/page.tsx`): "Pay now" button in each subscription's inline edit panel calls `paySubscription` (already existed in `home-actions.ts`); triggers re-fetch on success; loading + error states.
+- **Goal funding → transaction** (`app/dashboard/goals/actions.ts`, `app/dashboard/home-actions.ts`): `addFundsToGoal` and `addFundsToGoalAction` now also call `insertTransaction` with `category: 'Transfers'`, `accountLabel: 'Goal Transfer'`, `merchant: goal.name` so goal contributions appear in the transaction list and count against budgets.
+- **Empty states** (`app/dashboard/goals/page.tsx`, `app/dashboard/budgets/page.tsx`, `app/dashboard/transactions/page.tsx`, `app/dashboard/bills/page.tsx`): all pages now have proper empty states (icon + heading + subtext + CTA); transactions has two variants — "no transactions yet" and "no results after filter" (Clear filters button).
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. Currency propagation in server components — `app/dashboard/page.tsx` still hardcodes USD
+3. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+4. Cron email endpoint requires external scheduler — no built-in scheduler
+5. Account `monthlySummary` on the detail page aggregates all-time totals, not scoped to the current calendar month
+
+### Last checks
+- pnpm lint: passed (0 errors, 2 pre-existing warnings)
+- pnpm build: not run
+
+---
+
+## Session 2026-06-02 (currency propagation everywhere)
+
+### What was built / fixed
+- **`formatCompact` currency param** (`lib/format.ts`): added `currency = "USD"` parameter; replaced hardcoded `$` template literals with `Intl.NumberFormat` so compact values (e.g. `₹1.2k`, `€500`) respect the user-selected currency.
+- **CashOnHandCard currency** (`app/components/dashboard/CashOnHandCard.tsx`): added `useCurrency()`; passes currency to the large total, week-delta pill, and chart hover tooltip calls to `formatCompact`.
+- **GoalCard (home) currency** (`app/components/dashboard/GoalCard.tsx`): added `useCurrency()`; passes currency to both `formatCompact` calls (current / target).
+- **DashboardActivity currency** (`app/components/dashboard/DashboardActivity.tsx`): added `useCurrency()`; passes currency to the "X saved" subtitle `formatCompact` call.
+- **Goals page currency** (`app/dashboard/goals/page.tsx`): `GoalCard` inner component already called `useCurrency()` but never passed it to `formatCompact`; now passed to all 5 calls (current, target, to-go inside GoalCard; total saved and total target in the hero strip and header subtitle).
+- **Dashboard safe-to-spend currency** (`app/dashboard/page.tsx`): server component now imports `getCurrencyServer` from `@/lib/server-prefs`, reads it alongside the other `Promise.all` fetches, and passes it to all three `formatCurrency` calls in the Safe to spend card (safeToSpend, spentToday, dailyAllowance). Resolves the last known currency-in-server-component limitation.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` on the detail page aggregates all-time totals, not scoped to the current calendar month
+
+### Last checks
+- pnpm lint: passed (0 errors, 2 pre-existing warnings)
+- pnpm build: not run

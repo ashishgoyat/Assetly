@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { insertAccount } from '@/lib/data/store'
+import { insertAccount, updateAccount, removeAccount } from '@/lib/data/store'
 import { auth } from '@/auth'
 
 type ActionResult = { success: true; id: string } | { success: false; error: string }
@@ -83,6 +83,66 @@ export async function createAccount(formData: FormData): Promise<ActionResult> {
     return { success: true, id }
   } catch (err) {
     console.error('[createAccount] unexpected error:', err)
+    return { success: false, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+const updateAccountSchema = z.object({
+  id: z.string().min(1, 'Account id is required'),
+  name: z.string().min(1, 'Account name is required').max(80),
+  balanceDollars: dollarsToCents,
+})
+
+export async function updateAccountAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const raw = {
+      id: val(formData, 'id'),
+      name: val(formData, 'name'),
+      balanceDollars: val(formData, 'balanceDollars'),
+    }
+
+    const parsed = updateAccountSchema.safeParse(raw)
+    if (!parsed.success) {
+      const message = parsed.error.issues.map((i) => i.message).join(', ')
+      return { success: false, error: message }
+    }
+
+    const { id, name, balanceDollars } = parsed.data
+
+    await updateAccount(id, { name, balanceInCents: balanceDollars }, userId)
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/accounts')
+    revalidatePath(`/dashboard/accounts/${id}`)
+
+    return { success: true, id }
+  } catch (err) {
+    console.error('[updateAccountAction] unexpected error:', err)
+    return { success: false, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+export async function deleteAccountAction(id: string): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    if (!id || typeof id !== 'string') {
+      return { success: false, error: 'Account id is required' }
+    }
+
+    await removeAccount(id, userId)
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/accounts')
+    revalidatePath(`/dashboard/accounts/${id}`)
+
+    return { success: true, id }
+  } catch (err) {
+    console.error('[deleteAccountAction] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }
   }
 }

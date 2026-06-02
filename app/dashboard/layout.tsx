@@ -10,6 +10,7 @@ import { getAccounts } from "@/lib/data/store";
 import Sidebar from "@/app/components/layout/Sidebar";
 import Topbar from "@/app/components/layout/Topbar";
 import { SidebarProvider } from "@/app/components/layout/SidebarContext";
+import OnboardingGate from "@/app/components/onboarding/OnboardingGate";
 
 export default async function DashboardLayout({
   children,
@@ -32,6 +33,8 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
+      {/* Onboarding wizard — shown to new users with no accounts; self-dismisses */}
+      <OnboardingGate />
       {/* sidebar-desktop is hidden on mobile via CSS; tablet gets icon-only width */}
       <div className="sidebar-desktop">
         <Sidebar

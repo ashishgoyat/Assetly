@@ -15,6 +15,7 @@ import {
   updateSubscriptionAction,
   deleteSubscriptionAction,
 } from "@/app/dashboard/bills/actions";
+import { paySubscription } from "@/app/dashboard/home-actions";
 import { formatCurrency, formatCurrencyExact } from "@/lib/format";
 import { useCurrency } from "@/app/contexts/CurrencyContext";
 import type { BillsSummary, Bill, Subscription } from "@/contracts/api-contracts";
@@ -26,8 +27,19 @@ import type { BillsSummary, Bill, Subscription } from "@/contracts/api-contracts
 type Period = 30 | 60 | 90;
 
 // ---------------------------------------------------------------------------
-// Date label helper
+// Date helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Converts a display date string like "Apr 30" or "Jun 1" to a YYYY-MM-DD
+ * string for use as an <input type="date"> defaultValue.
+ * Assumes the current year; advances to next year if the date is in the past.
+ */
+function dueDateToISO(displayDate: string): string {
+  const d = new Date(`${displayDate} ${new Date().getFullYear()}`)
+  if (d < new Date()) d.setFullYear(d.getFullYear() + 1)
+  return d.toISOString().slice(0, 10)
+}
 
 function timelineLabels(period: number): string[] {
   const today = new Date();
@@ -72,7 +84,7 @@ interface EditPanelProps {
   bill: Bill;
   onClose: () => void;
   onDeleted: (id: string) => void;
-  onSaved: () => void;
+  onSaved: (updated: Bill) => void;
 }
 
 function EditPanel({ bill, onClose, onDeleted, onSaved }: EditPanelProps) {
@@ -86,10 +98,13 @@ function EditPanel({ bill, onClose, onDeleted, onSaved }: EditPanelProps) {
     setError(null);
     const fd = new FormData(e.currentTarget);
     fd.set("id", bill.id);
+    // Pass through existing icon and color so the action can reconstruct the Bill object
+    fd.set("icon", bill.icon);
+    fd.set("color", bill.color);
     const result = await updateBillAction(fd);
     setSaving(false);
     if (result.success) {
-      onSaved();
+      onSaved(result.bill);
       onClose();
     } else {
       setError(result.error);
@@ -158,21 +173,9 @@ function EditPanel({ bill, onClose, onDeleted, onSaved }: EditPanelProps) {
             <input
               id={`edit-duedate-${bill.id}`}
               name="dueDate"
+              type="date"
               className="field-input"
-              defaultValue={bill.dueDate}
-              required
-            />
-          </div>
-          <div className="field">
-            <label htmlFor={`edit-dueindays-${bill.id}`}>Days until due</label>
-            <input
-              id={`edit-dueindays-${bill.id}`}
-              name="dueInDays"
-              type="number"
-              min="0"
-              max="365"
-              className="field-input"
-              defaultValue={bill.dueInDays}
+              defaultValue={dueDateToISO(bill.dueDate)}
               required
             />
           </div>
@@ -275,12 +278,14 @@ interface SubEditPanelProps {
   sub: Subscription;
   onClose: () => void;
   onDeleted: (id: string) => void;
-  onSaved: () => void;
+  onSaved: (updated: Subscription) => void;
+  onPaid: () => void;
 }
 
-function SubEditPanel({ sub, onClose, onDeleted, onSaved }: SubEditPanelProps) {
+function SubEditPanel({ sub, onClose, onDeleted, onSaved, onPaid }: SubEditPanelProps) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
@@ -289,10 +294,13 @@ function SubEditPanel({ sub, onClose, onDeleted, onSaved }: SubEditPanelProps) {
     setError(null);
     const fd = new FormData(e.currentTarget);
     fd.set("id", sub.id);
+    // Pass through existing icon and color so the action can reconstruct the Subscription object
+    fd.set("icon", sub.icon);
+    fd.set("color", sub.color);
     const result = await updateSubscriptionAction(fd);
     setSaving(false);
     if (result.success) {
-      onSaved();
+      onSaved(result.subscription);
       onClose();
     } else {
       setError(result.error);
@@ -308,6 +316,19 @@ function SubEditPanel({ sub, onClose, onDeleted, onSaved }: SubEditPanelProps) {
     setDeleting(false);
     if (result.success) {
       onDeleted(sub.id);
+    } else {
+      setError(result.error);
+    }
+  }
+
+  async function handlePay() {
+    setPaying(true);
+    setError(null);
+    const result = await paySubscription(sub.id);
+    setPaying(false);
+    if (result.success) {
+      onPaid();
+      onClose();
     } else {
       setError(result.error);
     }
@@ -360,9 +381,9 @@ function SubEditPanel({ sub, onClose, onDeleted, onSaved }: SubEditPanelProps) {
             <input
               id={`sub-edit-nextdate-${sub.id}`}
               name="nextDate"
+              type="date"
               className="field-input"
-              defaultValue={sub.nextDate}
-              placeholder="Jun 1"
+              defaultValue={dueDateToISO(sub.nextDate)}
               required
             />
           </div>
@@ -411,16 +432,26 @@ function SubEditPanel({ sub, onClose, onDeleted, onSaved }: SubEditPanelProps) {
           <button
             type="submit"
             className="btn btn-sm btn-primary"
-            disabled={saving}
+            disabled={saving || paying || deleting}
             aria-busy={saving}
           >
             {saving ? "Saving…" : "Save"}
           </button>
           <button
             type="button"
+            className="btn btn-sm btn-primary"
+            onClick={() => void handlePay()}
+            disabled={saving || paying || deleting}
+            aria-busy={paying}
+            aria-label={`Pay ${sub.name} now`}
+          >
+            {paying ? "Paying…" : "Pay now"}
+          </button>
+          <button
+            type="button"
             className="btn btn-sm btn-ghost"
             onClick={onClose}
-            disabled={saving || deleting}
+            disabled={saving || paying || deleting}
           >
             Cancel
           </button>
@@ -428,7 +459,7 @@ function SubEditPanel({ sub, onClose, onDeleted, onSaved }: SubEditPanelProps) {
             type="button"
             className="btn btn-sm"
             onClick={handleDelete}
-            disabled={saving || deleting}
+            disabled={saving || paying || deleting}
             aria-busy={deleting}
             style={{
               marginLeft: "auto",
@@ -453,7 +484,7 @@ function SubEditPanel({ sub, onClose, onDeleted, onSaved }: SubEditPanelProps) {
 
 interface AddSubFormProps {
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (sub: Subscription) => void;
 }
 
 function AddSubForm({ onClose, onSaved }: AddSubFormProps) {
@@ -468,7 +499,7 @@ function AddSubForm({ onClose, onSaved }: AddSubFormProps) {
     const result = await createSubscription(fd);
     setSaving(false);
     if (result.success) {
-      onSaved();
+      onSaved(result.subscription);
       onClose();
     } else {
       setError(result.error);
@@ -527,8 +558,8 @@ function AddSubForm({ onClose, onSaved }: AddSubFormProps) {
             <input
               id="sub-add-nextdate"
               name="nextDate"
+              type="date"
               className="field-input"
-              placeholder="Jun 1"
               required
             />
           </div>
@@ -593,10 +624,11 @@ interface SubRowProps {
   isExpanded: boolean;
   onToggleEdit: (id: string) => void;
   onDeleted: (id: string) => void;
-  onSaved: () => void;
+  onSaved: (updated: Subscription) => void;
+  onPaid: () => void;
 }
 
-function SubRow({ sub, isExpanded, onToggleEdit, onDeleted, onSaved }: SubRowProps) {
+function SubRow({ sub, isExpanded, onToggleEdit, onDeleted, onSaved, onPaid }: SubRowProps) {
   const currency = useCurrency();
   return (
     <div
@@ -665,6 +697,7 @@ function SubRow({ sub, isExpanded, onToggleEdit, onDeleted, onSaved }: SubRowPro
               onClose={() => onToggleEdit(sub.id)}
               onDeleted={onDeleted}
               onSaved={onSaved}
+              onPaid={onPaid}
             />
           )}
         </div>
@@ -682,7 +715,7 @@ interface BillRowProps {
   isExpanded: boolean;
   onToggleEdit: (id: string) => void;
   onDeleted: (id: string) => void;
-  onSaved: () => void;
+  onSaved: (updated: Bill) => void;
 }
 
 function BillRow({ bill, isExpanded, onToggleEdit, onDeleted, onSaved }: BillRowProps) {
@@ -915,7 +948,7 @@ export default function BillsPage() {
                 : null}
           </div>
         </div>
-        <AddBillButton />
+        <AddBillButton onCreated={(bill) => setBills((prev) => [bill, ...prev])} />
       </div>
 
       <div className="grid-2col-bills-alt">
@@ -1110,18 +1143,25 @@ export default function BillsPage() {
             {!loading && !error && bills.length === 0 && (
               <div
                 style={{
-                  padding: "24px 14px",
+                  padding: "32px 14px",
                   textAlign: "center",
                   color: "var(--ink-3)",
                   fontSize: 13,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 8,
                 }}
               >
-                <Icon name="check" size={22} />
-                <div style={{ marginTop: 8, fontWeight: 500 }}>
-                  No bills due in the next {period} days
+                <Icon name="bill" size={28} />
+                <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ink-2)", marginTop: 4 }}>
+                  No bills due
                 </div>
-                <div style={{ fontSize: 12, marginTop: 4 }}>
-                  Try a longer period or add a new bill above.
+                <div style={{ fontSize: 12, maxWidth: 220 }}>
+                  Bills you add will appear here when they&apos;re coming up.
+                </div>
+                <div style={{ marginTop: 4 }}>
+                  <AddBillButton onCreated={(bill) => setBills((prev) => [bill, ...prev])} />
                 </div>
               </div>
             )}
@@ -1136,7 +1176,10 @@ export default function BillsPage() {
                   isExpanded={expandedId === b.id}
                   onToggleEdit={handleToggleEdit}
                   onDeleted={handleDeleted}
-                  onSaved={() => void fetchData()}
+                  onSaved={(updated) => {
+                    setBills((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+                    setExpandedId(null);
+                  }}
                 />
               ))}
           </div>
@@ -1220,9 +1263,9 @@ export default function BillsPage() {
                   {showAddSub && (
                     <AddSubForm
                       onClose={() => setShowAddSub(false)}
-                      onSaved={() => {
+                      onSaved={(sub) => {
+                        setSubs((prev) => [sub, ...prev]);
                         setShowAddSub(false);
-                        void fetchData();
                       }}
                     />
                   )}
@@ -1231,17 +1274,32 @@ export default function BillsPage() {
                   {subs.length === 0 && !showAddSub && (
                     <div
                       style={{
-                        padding: "20px 0",
+                        padding: "28px 0",
                         textAlign: "center",
                         color: "var(--ink-3)",
                         fontSize: 13,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 8,
                       }}
                     >
-                      <Icon name="check" size={20} />
-                      <div style={{ marginTop: 8, fontWeight: 500 }}>No subscriptions yet</div>
-                      <div style={{ fontSize: 12, marginTop: 4 }}>
-                        Use the + button above to add one.
+                      <Icon name="bill" size={26} />
+                      <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ink-2)", marginTop: 4 }}>
+                        No subscriptions yet
                       </div>
+                      <div style={{ fontSize: 12, maxWidth: 200 }}>
+                        Track your recurring services here.
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        onClick={handleShowAddSub}
+                        style={{ marginTop: 4 }}
+                        aria-label="Add first subscription"
+                      >
+                        + Add subscription
+                      </button>
                     </div>
                   )}
 
@@ -1253,7 +1311,11 @@ export default function BillsPage() {
                       isExpanded={expandedSubId === s.id}
                       onToggleEdit={handleToggleSubEdit}
                       onDeleted={handleSubDeleted}
-                      onSaved={() => void fetchData()}
+                      onSaved={(updated) => {
+                        setSubs((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+                        setExpandedSubId(null);
+                      }}
+                      onPaid={() => void fetchData()}
                     />
                   ))}
                 </div>

@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import Icon from "@/app/components/ui/Icon";
 import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/app/contexts/CurrencyContext";
-import { payBill, skipBill } from "@/app/dashboard/home-actions";
+import { payBill, skipBill, toggleBillAutoPay } from "@/app/dashboard/home-actions";
 import type { Bill } from "@/contracts/api-contracts";
 
 interface Props {
@@ -19,6 +18,7 @@ export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [autoPay, setAutoPay] = useState(b.isAutoPay);
 
   function handlePay() {
     setError(null);
@@ -42,6 +42,20 @@ export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
       const res = await skipBill(fd);
       if (res.success) {
         onSkipped?.(b.id);
+      } else {
+        setError(res.error);
+      }
+    });
+  }
+
+  function handleToggleAutoPay() {
+    setError(null);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("id", b.id);
+      const res = await toggleBillAutoPay(fd);
+      if (res.success) {
+        setAutoPay((prev) => !prev);
       } else {
         setError(res.error);
       }
@@ -82,7 +96,7 @@ export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
         <div>
           <div style={{ fontSize: 13.5, fontWeight: 500 }}>{b.name}</div>
           <div style={{ fontSize: 11.5, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
-            {b.isAutoPay ? (
+            {autoPay ? (
               <>
                 <Icon name="check" size={10} color="var(--pos)" />
                 Auto-pay
@@ -111,7 +125,7 @@ export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
               style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}
               aria-busy={isPending}
             >
-              {!b.isAutoPay && (
+              {!autoPay && (
                 <button
                   className="btn btn-sm btn-primary"
                   type="button"
@@ -121,22 +135,14 @@ export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
                   Pay now
                 </button>
               )}
-              {!b.isAutoPay && (
-                <Link href="/dashboard/bills" className="btn btn-sm btn-ghost">
-                  Schedule
-                </Link>
-              )}
-              {b.isAutoPay && (
-                <Link href="/dashboard/bills" className="btn btn-sm btn-ghost">
-                  Edit auto-pay
-                </Link>
-              )}
-              <Link
-                href={`/dashboard/transactions?q=${encodeURIComponent(b.name)}`}
+              <button
                 className="btn btn-sm btn-ghost"
+                type="button"
+                disabled={isPending}
+                onClick={handleToggleAutoPay}
               >
-                View history
-              </Link>
+                {autoPay ? "Disable auto-pay" : "Enable auto-pay"}
+              </button>
               <button
                 className="btn btn-sm btn-ghost"
                 type="button"

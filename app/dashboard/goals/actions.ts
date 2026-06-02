@@ -7,15 +7,17 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { insertGoal, getGoalById, updateGoal, removeGoal } from '@/lib/data/store'
+import { insertGoal, getGoalById, updateGoal, removeGoal, insertTransaction } from '@/lib/data/store'
 import { computeGoalPercentage } from '@/lib/calculations'
 import { auth } from '@/auth'
+import type { Goal } from '@/contracts/api-contracts'
 
 // ---------------------------------------------------------------------------
 // Return type
 // ---------------------------------------------------------------------------
 
 type ActionResult = { success: true; id: string } | { success: false; error: string }
+type CreateGoalResult = { success: true; id: string; goal: Goal } | { success: false; error: string }
 
 // ---------------------------------------------------------------------------
 // Safe formData reader — converts null/File to undefined so Zod optional schemas
@@ -95,7 +97,7 @@ function computeEta(
 // Action
 // ---------------------------------------------------------------------------
 
-export async function createGoal(formData: FormData): Promise<ActionResult> {
+export async function createGoal(formData: FormData): Promise<CreateGoalResult> {
   try {
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
@@ -142,7 +144,20 @@ export async function createGoal(formData: FormData): Promise<ActionResult> {
     revalidatePath('/dashboard/goals')
     revalidatePath('/dashboard')
 
-    return { success: true, id }
+    const goal: Goal = {
+      id,
+      name,
+      currentInCents: 0,
+      targetInCents,
+      monthlyContributionInCents,
+      percentageComplete: 0,
+      eta,
+      icon,
+      color,
+      vibe,
+    }
+
+    return { success: true, id, goal }
   } catch (err) {
     console.error('[createGoal] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }
@@ -178,8 +193,22 @@ export async function addFundsToGoal(
       eta: newEta,
     }, userId)
 
+    const now = new Date()
+    await insertTransaction({
+      id: crypto.randomUUID(),
+      date: now.toISOString().slice(0, 10),
+      time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      merchant: goal.name,
+      category: 'Transfers',
+      accountLabel: 'Goal Transfer',
+      amountInCents: parsedAmount,
+      type: 'expense',
+      status: 'posted',
+    }, userId)
+
     revalidatePath('/dashboard/goals')
     revalidatePath('/dashboard')
+    revalidatePath('/dashboard/transactions')
     return { success: true, id }
   } catch (err) {
     console.error('[addFundsToGoal] unexpected error:', err)

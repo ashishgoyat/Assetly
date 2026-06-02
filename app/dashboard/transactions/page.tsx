@@ -611,24 +611,90 @@ export default function TransactionsPage() {
         {/* Transactions table — wrapped for horizontal scroll on mobile */}
         <div className="table-scroll">
           <div className="card" style={{ padding: 8 }}>
-            {filtered.length === 0 ? (
+            {filtered.length === 0 && transactions.length === 0 ? (
+              /* No transactions at all */
               <div
                 style={{
                   padding: 48,
                   textAlign: "center",
-                  color: "var(--ink-3)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 0,
                 }}
               >
-                <div style={{ fontSize: 32, marginBottom: 12 }}>
-                  <Icon name="list" size={32} color="var(--ink-4)" />
+                <div
+                  style={{ color: "var(--ink-3)", marginBottom: 16 }}
+                  aria-hidden
+                >
+                  <Icon name="list" size={32} />
                 </div>
-                <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                  No transactions
+                <div
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 16,
+                    marginBottom: 8,
+                    color: "var(--ink)",
+                  }}
+                >
+                  No transactions yet
                 </div>
-                <div style={{ fontSize: 12 }}>
-                  No {filter !== "all" ? filter.toLowerCase() : ""} transactions
-                  found this month.
+                <div
+                  className="muted"
+                  style={{ fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}
+                >
+                  Transactions you log will appear here.
                 </div>
+                <AddTransactionButton
+                  onCreated={(tx) => setTransactions((prev) => [tx, ...prev])}
+                />
+              </div>
+            ) : filtered.length === 0 ? (
+              /* Transactions exist but filters produced no results */
+              <div
+                style={{
+                  padding: 48,
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 0,
+                }}
+              >
+                <div
+                  style={{ color: "var(--ink-3)", marginBottom: 16 }}
+                  aria-hidden
+                >
+                  <Icon name="filter" size={32} />
+                </div>
+                <div
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 16,
+                    marginBottom: 8,
+                    color: "var(--ink)",
+                  }}
+                >
+                  No transactions found
+                </div>
+                <div
+                  className="muted"
+                  style={{ fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}
+                >
+                  Try adjusting your filters.
+                </div>
+                <button
+                  className="btn btn-sm"
+                  type="button"
+                  onClick={() => {
+                    setFilter("all");
+                    setTypeFilter("all");
+                    setStatusFilter("all");
+                    setMonthFilter(null);
+                  }}
+                >
+                  Clear filters
+                </button>
               </div>
             ) : (
               <>

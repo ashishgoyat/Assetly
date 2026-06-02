@@ -455,6 +455,35 @@ export async function updateTransaction(
     )
 }
 
+export async function updateAccount(
+  id: string,
+  patch: Partial<Pick<Account, 'name' | 'balanceInCents'>>,
+  userId?: string,
+): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db
+    .update(accountsTable)
+    .set(patch)
+    .where(
+      userId !== undefined
+        ? and(eq(accountsTable.id, id), eq(accountsTable.userId, userId))
+        : eq(accountsTable.id, id),
+    )
+}
+
+export async function removeAccount(id: string, userId?: string): Promise<void> {
+  // TODO: replace with DB query
+  await ensureDb()
+  await db
+    .delete(accountsTable)
+    .where(
+      userId !== undefined
+        ? and(eq(accountsTable.id, id), eq(accountsTable.userId, userId))
+        : eq(accountsTable.id, id),
+    )
+}
+
 export async function insertAccount(account: Account, userId?: string): Promise<void> {
   await ensureDb()
   await db.insert(accountsTable).values({

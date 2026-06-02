@@ -9,9 +9,11 @@ import { useState } from "react";
 import Icon from "@/app/components/ui/Icon";
 import type { IconName } from "@/app/components/ui/Icon";
 import { createGoal } from "@/app/dashboard/goals/actions";
+import type { Goal } from "@/contracts/api-contracts";
 
 interface NewGoalFormProps {
   onClose: () => void;
+  onCreated?: (goal: Goal) => void;
 }
 
 const ICON_OPTIONS: { name: IconName; label: string }[] = [
@@ -23,7 +25,7 @@ const ICON_OPTIONS: { name: IconName; label: string }[] = [
   { name: "goal", label: "Goal" },
 ];
 
-export default function NewGoalForm({ onClose }: NewGoalFormProps) {
+export default function NewGoalForm({ onClose, onCreated }: NewGoalFormProps) {
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
   const [monthly, setMonthly] = useState("");
@@ -48,6 +50,7 @@ export default function NewGoalForm({ onClose }: NewGoalFormProps) {
 
       const result = await createGoal(formData);
       if (result.success) {
+        onCreated?.(result.goal);
         onClose();
       } else {
         setError(result.error);

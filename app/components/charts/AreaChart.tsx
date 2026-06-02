@@ -14,6 +14,8 @@ interface AreaChartProps {
   color?: string;
   axis?: boolean;
   padX?: number;
+  hoveredIndex?: number | null;
+  onHover?: (index: number | null) => void;
 }
 
 export default function AreaChart({
@@ -23,8 +25,19 @@ export default function AreaChart({
   color = "var(--accent)",
   axis = true,
   padX = 4,
+  hoveredIndex,
+  onHover,
 }: AreaChartProps) {
   const gradId = useId().replace(/:/g, "");
+
+  function handleMouseMove(e: React.MouseEvent<SVGRectElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const vx = ((e.clientX - rect.left) / rect.width) * w;
+    const innerW = w - padX * 2;
+    const raw = Math.round((vx - padX) / (innerW / (data.length - 1)));
+    const clamped = Math.max(0, Math.min(data.length - 1, raw));
+    onHover?.(clamped);
+  }
 
   const { pts, path, areaPath } = useMemo(() => {
     const max = Math.max(...data);
@@ -97,6 +110,48 @@ export default function AreaChart({
       {/* End marker */}
       <circle cx={last[0]} cy={last[1]} r="4" fill={color} />
       <circle cx={last[0]} cy={last[1]} r="8" fill={color} opacity="0.18" />
+
+      {/* Crosshair and hovered dot */}
+      {hoveredIndex != null && (
+        <>
+          <line
+            x1={pts[hoveredIndex][0]}
+            x2={pts[hoveredIndex][0]}
+            y1={8}
+            y2={h - 22}
+            stroke="var(--ink-3)"
+            strokeWidth={1}
+            strokeDasharray="3 3"
+            pointerEvents="none"
+          />
+          <circle
+            cx={pts[hoveredIndex][0]}
+            cy={pts[hoveredIndex][1]}
+            r={5}
+            fill={color}
+            pointerEvents="none"
+          />
+          <circle
+            cx={pts[hoveredIndex][0]}
+            cy={pts[hoveredIndex][1]}
+            r={10}
+            fill={color}
+            opacity={0.2}
+            pointerEvents="none"
+          />
+        </>
+      )}
+
+      {/* Transparent overlay for mouse tracking */}
+      <rect
+        x={0}
+        y={0}
+        width={w}
+        height={h}
+        fill="transparent"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => onHover?.(null)}
+      />
     </svg>
   );
 }

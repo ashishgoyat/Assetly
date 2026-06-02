@@ -164,10 +164,10 @@ function GoalCard({
       >
         <div>
           <span className="serif num" style={{ fontSize: 32 }}>
-            {formatCompact(goal.currentInCents)}
+            {formatCompact(goal.currentInCents, currency)}
           </span>
           <span className="muted" style={{ marginLeft: 4 }}>
-            of {formatCompact(goal.targetInCents)}
+            of {formatCompact(goal.targetInCents, currency)}
           </span>
         </div>
         <span
@@ -219,7 +219,7 @@ function GoalCard({
             className="num"
             style={{ fontWeight: 600, color: "var(--ink-2)" }}
           >
-            {formatCompact(goal.targetInCents - goal.currentInCents)}
+            {formatCompact(goal.targetInCents - goal.currentInCents, currency)}
           </span>{" "}
           to go
         </span>
@@ -367,6 +367,30 @@ export default function GoalsPage() {
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
+  function handleGoalCreated(goal: Goal) {
+    setData((prev) => {
+      if (!prev) {
+        return {
+          totalSavedInCents: 0,
+          totalTargetInCents: goal.targetInCents,
+          totalMonthlyContributionInCents: goal.monthlyContributionInCents,
+          savingsRatePercent: 0,
+          savingsRateDeltaPoints: 0,
+          activeTransfers: 1,
+          goals: [goal],
+        };
+      }
+      return {
+        ...prev,
+        totalTargetInCents: prev.totalTargetInCents + goal.targetInCents,
+        totalMonthlyContributionInCents:
+          prev.totalMonthlyContributionInCents + goal.monthlyContributionInCents,
+        activeTransfers: prev.activeTransfers + 1,
+        goals: [goal, ...prev.goals],
+      };
+    });
+  }
+
   function retry() {
     setRetryCount((c) => c + 1);
   }
@@ -483,7 +507,7 @@ export default function GoalsPage() {
               No goals yet
             </div>
           </div>
-          <NewGoalButton />
+          <NewGoalButton onCreated={handleGoalCreated} />
         </div>
         <div
           className="card"
@@ -492,35 +516,28 @@ export default function GoalsPage() {
             textAlign: "center",
             maxWidth: 480,
             margin: "0 auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 0,
           }}
         >
           <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 16,
-              background: "var(--accent-soft)",
-              color: "var(--accent)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 16px",
-            }}
+            style={{ color: "var(--ink-3)", marginBottom: 16 }}
             aria-hidden
           >
-            <Icon name="goal" size={28} />
+            <Icon name="goal" size={32} />
           </div>
-          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
-            Set your first savings goal
+          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "var(--ink)" }}>
+            No savings goals yet
           </div>
           <div
             className="muted"
             style={{ marginBottom: 24, fontSize: 13, lineHeight: 1.6 }}
           >
-            Track your progress toward anything — an emergency fund, a vacation,
-            or a major purchase.
+            Set a target and track your progress month by month.
           </div>
-          <NewGoalButton />
+          <NewGoalButton onCreated={handleGoalCreated} />
         </div>
       </div>
     );
@@ -530,8 +547,6 @@ export default function GoalsPage() {
     totalSavedInCents,
     totalTargetInCents,
     totalMonthlyContributionInCents,
-    savingsRatePercent,
-    savingsRateDeltaPoints,
     activeTransfers,
     goals,
   } = data;
@@ -555,11 +570,11 @@ export default function GoalsPage() {
             Goals
           </h1>
           <div className="muted" style={{ marginTop: 4 }}>
-            {formatCompact(totalSavedInCents)} saved across {goals.length}{" "}
+            {formatCompact(totalSavedInCents, currency)} saved across {goals.length}{" "}
             goals
           </div>
         </div>
-        <NewGoalButton />
+        <NewGoalButton onCreated={handleGoalCreated} />
       </div>
 
       {/* Hero strip */}
@@ -572,19 +587,19 @@ export default function GoalsPage() {
           overflow: "hidden",
         }}
       >
-        <div className="grid-3col" style={{ gap: 32, alignItems: "center" }}>
+        <div className="grid-2col" style={{ gap: 32, alignItems: "center" }}>
           <div>
             <div className="sec-label">Total saved</div>
             <div
               className="serif num"
               style={{ fontSize: 54, lineHeight: 1, marginTop: 8 }}
             >
-              {formatCompact(totalSavedInCents)}
+              {formatCompact(totalSavedInCents, currency)}
             </div>
             <div className="muted" style={{ marginTop: 6 }}>
               of{" "}
               <span className="num">
-                {formatCompact(totalTargetInCents)}
+                {formatCompact(totalTargetInCents, currency)}
               </span>{" "}
               ·{" "}
               {formatPercent(
@@ -609,27 +624,6 @@ export default function GoalsPage() {
             </div>
             <div className="muted" style={{ marginTop: 6 }}>
               {activeTransfers} active transfers
-            </div>
-          </div>
-          <div>
-            <div className="sec-label">Savings rate</div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-end",
-                gap: 10,
-                marginTop: 8,
-              }}
-            >
-              <span className="serif num" style={{ fontSize: 36, lineHeight: 1 }}>
-                {savingsRatePercent}%
-              </span>
-              <span className="pill pill-pos" style={{ marginBottom: 4 }}>
-                <Icon name="arrowUp" size={10} /> +{savingsRateDeltaPoints}pts
-              </span>
-            </div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              up from {savingsRatePercent - savingsRateDeltaPoints}% last month
             </div>
           </div>
         </div>

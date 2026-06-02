@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import Icon from "@/app/components/ui/Icon";
 import MerchantIcon from "@/app/components/ui/MerchantIcon";
 import { formatCurrency } from "@/lib/format";
@@ -233,9 +232,6 @@ export default function TransactionRow({ tx: r, onExcluded }: Props) {
               >
                 <Icon name="info" size={11} /> Add note
               </button>
-              <Link href="/dashboard/transactions" className="btn btn-sm btn-ghost">
-                Split
-              </Link>
               <button
                 className="btn btn-sm btn-ghost"
                 type="button"

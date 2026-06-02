@@ -214,6 +214,33 @@ export async function paySubscription(subscriptionId: string): Promise<ActionRes
   }
 }
 
+export async function toggleBillAutoPay(formData: FormData): Promise<ActionResult> {
+  try {
+    const idParsed = idSchema.safeParse(val(formData, 'id'))
+    if (!idParsed.success) {
+      return { success: false, error: 'Bill id is required' }
+    }
+    const id = idParsed.data
+
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const bills = await getBills(userId)
+    const bill = bills.find((b) => b.id === id)
+    if (!bill) return { success: false, error: 'Bill not found' }
+
+    await updateBill(id, { isAutoPay: !bill.isAutoPay }, userId)
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/bills')
+
+    return { success: true, id }
+  } catch (err) {
+    console.error('[toggleBillAutoPay] unexpected error:', err)
+    return { success: false, error: 'Failed to update auto-pay. Please try again.' }
+  }
+}
+
 export async function skipBill(formData: FormData): Promise<ActionResult> {
   try {
     const idParsed = idSchema.safeParse(val(formData, 'id'))
@@ -364,8 +391,22 @@ export async function addFundsToGoalAction(
       eta: newEta,
     }, userId)
 
+    const now = new Date()
+    await insertTransaction({
+      id: crypto.randomUUID(),
+      date: now.toISOString().slice(0, 10),
+      time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      merchant: goal.name,
+      category: 'Transfers',
+      accountLabel: 'Goal Transfer',
+      amountInCents: amountCents,
+      type: 'expense',
+      status: 'posted',
+    }, userId)
+
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/goals')
+    revalidatePath('/dashboard/transactions')
 
     after(() => sendPendingNotificationEmails(userId))
     return { success: true, id: idParsed.data }

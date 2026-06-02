@@ -16,12 +16,17 @@ import {
   removeSubscription,
 } from '@/lib/data/store'
 import { auth } from '@/auth'
+import type { Bill, Subscription } from '@/contracts/api-contracts'
 
 // ---------------------------------------------------------------------------
-// Return type
+// Return types
 // ---------------------------------------------------------------------------
 
 type ActionResult = { success: true; id: string } | { success: false; error: string }
+type BillActionResult = { success: true; bill: Bill } | { success: false; error: string }
+type SubActionResult =
+  | { success: true; subscription: Subscription }
+  | { success: false; error: string }
 
 // ---------------------------------------------------------------------------
 // Safe formData reader — converts null/File to undefined so Zod optional schemas
@@ -32,6 +37,31 @@ type ActionResult = { success: true; id: string } | { success: false; error: str
 function val(fd: FormData, key: string): string | undefined {
   const v = fd.get(key)
   return typeof v === 'string' ? v : undefined
+}
+
+// ---------------------------------------------------------------------------
+// Date conversion helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Converts an ISO date string (YYYY-MM-DD from <input type="date">) to a
+ * display format like "Jun 1". The date is parsed at midnight local time to
+ * avoid UTC-offset day-shift bugs.
+ */
+function isoToDisplay(iso: string): string {
+  const d = new Date(iso + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+/**
+ * Computes the number of calendar days between today (midnight local) and the
+ * date represented by the ISO string. May be negative if the date is in the past.
+ */
+function computeDueInDaysFromISO(iso: string): number {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(iso + 'T00:00:00')
+  return Math.round((due.getTime() - today.getTime()) / 86400000)
 }
 
 // ---------------------------------------------------------------------------
@@ -53,17 +83,8 @@ const createBillSchema = z.object({
     .min(1, 'Bill name is required')
     .max(80, 'Bill name must be 80 characters or fewer'),
   amountDollars: dollarsToCents,
-  dueDate: z.string().min(1, 'Due date is required'),
-  dueInDays: z
-    .string()
-    .transform((v) => parseInt(v, 10))
-    .pipe(
-      z
-        .number()
-        .int()
-        .min(0, 'dueInDays must be 0 or more')
-        .max(365, 'dueInDays must be 365 or fewer'),
-    ),
+  // dueDate arrives as YYYY-MM-DD from <input type="date">
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Due date must be in YYYY-MM-DD format'),
   isAutoPay: z
     .string()
     .optional()
@@ -86,7 +107,7 @@ const createBillSchema = z.object({
 // Create bill
 // ---------------------------------------------------------------------------
 
-export async function createBill(formData: FormData): Promise<ActionResult> {
+export async function createBill(formData: FormData): Promise<BillActionResult> {
   try {
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
@@ -95,7 +116,6 @@ export async function createBill(formData: FormData): Promise<ActionResult> {
       name: val(formData, 'name'),
       amountDollars: val(formData, 'amountDollars'),
       dueDate: val(formData, 'dueDate'),
-      dueInDays: val(formData, 'dueInDays'),
       isAutoPay: val(formData, 'isAutoPay'),
       category: val(formData, 'category'),
       icon: val(formData, 'icon'),
@@ -108,17 +128,19 @@ export async function createBill(formData: FormData): Promise<ActionResult> {
       return { success: false, error: message }
     }
 
-    const { name, amountDollars, dueDate, dueInDays, isAutoPay, category, icon, color } =
+    const { name, amountDollars, dueDate: dueDateISO, isAutoPay, category, icon, color } =
       parsed.data
 
-    const id = crypto.randomUUID()
+    const displayDueDate = isoToDisplay(dueDateISO)
+    const dueInDays = computeDueInDaysFromISO(dueDateISO)
     const isUrgent = dueInDays <= 3
+    const id = crypto.randomUUID()
 
     await insertBill({
       id,
       name,
       amountInCents: amountDollars,
-      dueDate,
+      dueDate: displayDueDate,
       dueInDays,
       isAutoPay,
       isUrgent,
@@ -130,7 +152,20 @@ export async function createBill(formData: FormData): Promise<ActionResult> {
     revalidatePath('/dashboard/bills')
     revalidatePath('/dashboard')
 
-    return { success: true, id }
+    const bill: Bill = {
+      id,
+      name,
+      amountInCents: amountDollars,
+      dueDate: displayDueDate,
+      dueInDays,
+      isAutoPay,
+      isUrgent,
+      category,
+      icon,
+      color,
+    }
+
+    return { success: true, bill }
   } catch (err) {
     console.error('[createBill] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }
@@ -148,17 +183,8 @@ const updateBillSchema = z.object({
     .min(1, 'Bill name is required')
     .max(80, 'Bill name must be 80 characters or fewer'),
   amountDollars: dollarsToCents,
-  dueDate: z.string().min(1, 'Due date is required'),
-  dueInDays: z
-    .string()
-    .transform((v) => parseInt(v, 10))
-    .pipe(
-      z
-        .number()
-        .int()
-        .min(0, 'dueInDays must be 0 or more')
-        .max(365, 'dueInDays must be 365 or fewer'),
-    ),
+  // dueDate arrives as YYYY-MM-DD from <input type="date">
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Due date must be in YYYY-MM-DD format'),
   isAutoPay: z
     .string()
     .optional()
@@ -167,9 +193,17 @@ const updateBillSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v && v.length > 0 ? v : 'Bills')),
+  icon: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : 'bill')),
+  color: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : 'var(--cat-1)')),
 })
 
-export async function updateBillAction(formData: FormData): Promise<ActionResult> {
+export async function updateBillAction(formData: FormData): Promise<BillActionResult> {
   try {
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
@@ -179,9 +213,10 @@ export async function updateBillAction(formData: FormData): Promise<ActionResult
       name: val(formData, 'name'),
       amountDollars: val(formData, 'amountDollars'),
       dueDate: val(formData, 'dueDate'),
-      dueInDays: val(formData, 'dueInDays'),
       isAutoPay: val(formData, 'isAutoPay'),
       category: val(formData, 'category'),
+      icon: val(formData, 'icon'),
+      color: val(formData, 'color'),
     }
 
     const parsed = updateBillSchema.safeParse(raw)
@@ -190,13 +225,17 @@ export async function updateBillAction(formData: FormData): Promise<ActionResult
       return { success: false, error: message }
     }
 
-    const { id, name, amountDollars, dueDate, dueInDays, isAutoPay, category } = parsed.data
+    const { id, name, amountDollars, dueDate: dueDateISO, isAutoPay, category, icon, color } =
+      parsed.data
+
+    const displayDueDate = isoToDisplay(dueDateISO)
+    const dueInDays = computeDueInDaysFromISO(dueDateISO)
     const isUrgent = dueInDays <= 3
 
     await updateBill(id, {
       name,
       amountInCents: amountDollars,
-      dueDate,
+      dueDate: displayDueDate,
       dueInDays,
       isAutoPay,
       isUrgent,
@@ -206,7 +245,20 @@ export async function updateBillAction(formData: FormData): Promise<ActionResult
     revalidatePath('/dashboard/bills')
     revalidatePath('/dashboard')
 
-    return { success: true, id }
+    const bill: Bill = {
+      id,
+      name,
+      amountInCents: amountDollars,
+      dueDate: displayDueDate,
+      dueInDays,
+      isAutoPay,
+      isUrgent,
+      category,
+      icon,
+      color,
+    }
+
+    return { success: true, bill }
   } catch (err) {
     console.error('[updateBillAction] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }
@@ -248,7 +300,8 @@ const createSubscriptionSchema = z.object({
     .min(1, 'Subscription name is required')
     .max(80, 'Subscription name must be 80 characters or fewer'),
   amountDollars: dollarsToCents,
-  nextDate: z.string().min(1, 'Next date is required'),
+  // nextDate arrives as YYYY-MM-DD from <input type="date">
+  nextDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Next date must be in YYYY-MM-DD format'),
   isUsed: z
     .string()
     .optional()
@@ -270,18 +323,27 @@ const updateSubscriptionSchema = z.object({
     .min(1, 'Subscription name is required')
     .max(80, 'Subscription name must be 80 characters or fewer'),
   amountDollars: dollarsToCents,
-  nextDate: z.string().min(1, 'Next date is required'),
+  // nextDate arrives as YYYY-MM-DD from <input type="date">
+  nextDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Next date must be in YYYY-MM-DD format'),
   isUsed: z
     .string()
     .optional()
     .transform((v) => v === 'true'),
+  icon: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : 'star')),
+  color: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : 'var(--cat-1)')),
 })
 
 // ---------------------------------------------------------------------------
 // Create subscription
 // ---------------------------------------------------------------------------
 
-export async function createSubscription(formData: FormData): Promise<ActionResult> {
+export async function createSubscription(formData: FormData): Promise<SubActionResult> {
   try {
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
@@ -301,14 +363,15 @@ export async function createSubscription(formData: FormData): Promise<ActionResu
       return { success: false, error: message }
     }
 
-    const { name, amountDollars, nextDate, isUsed, icon, color } = parsed.data
+    const { name, amountDollars, nextDate: nextDateISO, isUsed, icon, color } = parsed.data
+    const displayNextDate = isoToDisplay(nextDateISO)
     const id = crypto.randomUUID()
 
     await insertSubscription({
       id,
       name,
       amountMonthlyInCents: amountDollars,
-      nextDate,
+      nextDate: displayNextDate,
       isUsed,
       icon,
       color,
@@ -316,7 +379,17 @@ export async function createSubscription(formData: FormData): Promise<ActionResu
 
     revalidatePath('/dashboard/bills')
 
-    return { success: true, id }
+    const subscription: Subscription = {
+      id,
+      name,
+      amountMonthlyInCents: amountDollars,
+      nextDate: displayNextDate,
+      isUsed,
+      icon,
+      color,
+    }
+
+    return { success: true, subscription }
   } catch (err) {
     console.error('[createSubscription] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }
@@ -327,7 +400,7 @@ export async function createSubscription(formData: FormData): Promise<ActionResu
 // Update subscription
 // ---------------------------------------------------------------------------
 
-export async function updateSubscriptionAction(formData: FormData): Promise<ActionResult> {
+export async function updateSubscriptionAction(formData: FormData): Promise<SubActionResult> {
   try {
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
@@ -338,6 +411,8 @@ export async function updateSubscriptionAction(formData: FormData): Promise<Acti
       amountDollars: val(formData, 'amountDollars'),
       nextDate: val(formData, 'nextDate'),
       isUsed: val(formData, 'isUsed'),
+      icon: val(formData, 'icon'),
+      color: val(formData, 'color'),
     }
 
     const parsed = updateSubscriptionSchema.safeParse(raw)
@@ -346,18 +421,29 @@ export async function updateSubscriptionAction(formData: FormData): Promise<Acti
       return { success: false, error: message }
     }
 
-    const { id, name, amountDollars, nextDate, isUsed } = parsed.data
+    const { id, name, amountDollars, nextDate: nextDateISO, isUsed, icon, color } = parsed.data
+    const displayNextDate = isoToDisplay(nextDateISO)
 
     await updateSubscription(id, {
       name,
       amountMonthlyInCents: amountDollars,
-      nextDate,
+      nextDate: displayNextDate,
       isUsed,
     }, userId)
 
     revalidatePath('/dashboard/bills')
 
-    return { success: true, id }
+    const subscription: Subscription = {
+      id,
+      name,
+      amountMonthlyInCents: amountDollars,
+      nextDate: displayNextDate,
+      isUsed,
+      icon,
+      color,
+    }
+
+    return { success: true, subscription }
   } catch (err) {
     console.error('[updateSubscriptionAction] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }

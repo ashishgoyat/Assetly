@@ -2,18 +2,14 @@
  * Dashboard / Home page — Server Component
  */
 
-import Link from "next/link";
 import { auth } from "@/auth";
 import { cookies } from "next/headers";
-import Icon from "@/app/components/ui/Icon";
-import DonutChart from "@/app/components/charts/DonutChart";
 import CashOnHandCard from "@/app/components/dashboard/CashOnHandCard";
-import BillRow from "@/app/components/dashboard/BillRow";
-import TransactionRow from "@/app/components/dashboard/TransactionRow";
-import GoalCard from "@/app/components/dashboard/GoalCard";
+import DashboardActivity from "@/app/components/dashboard/DashboardActivity";
 import type { DashboardSummary } from "@/contracts/api-contracts";
 import { MOCK_DASHBOARD } from "@/lib/mock-data";
-import { formatCurrency, formatCompact } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { getCurrencyServer } from "@/lib/server-prefs";
 
 function getHourInTimezone(timezone: string): number {
   try {
@@ -66,12 +62,13 @@ async function getDashboardData(): Promise<DashboardSummary> {
 }
 
 export default async function DashboardPage() {
-  const [data, session, cookieStore] = await Promise.all([
+  const [data, session, cookieStore, currency] = await Promise.all([
     getDashboardData(),
     auth(),
     cookies(),
+    getCurrencyServer(),
   ]);
-  const { user, today, cashOnHand, recentTransactions, upcomingBills, savingGoals, spendingCategories, totalSpentThisMonthInCents } = data;
+  const { user, today, cashOnHand, recentTransactions, upcomingBills, savingGoals } = data;
 
   const displayName = firstName(session?.user?.name ?? user.name);
   const timezone = cookieStore.get("assetly-timezone")?.value ?? "Asia/Kolkata";
@@ -127,14 +124,14 @@ export default async function DashboardPage() {
               letterSpacing: "-0.04em",
             }}
           >
-            {formatCurrency(today.safeToSpendInCents)}
+            {formatCurrency(today.safeToSpendInCents, currency)}
           </div>
           <div style={{ marginTop: 14, color: "var(--ink-2)" }}>
             <span className="num" style={{ fontWeight: 500 }}>
-              {formatCurrency(today.spentTodayInCents)}
+              {formatCurrency(today.spentTodayInCents, currency)}
             </span>{" "}
             <span className="muted">
-              of {formatCurrency(today.dailyAllowanceInCents)} daily allowance
+              of {formatCurrency(today.dailyAllowanceInCents, currency)} daily allowance
             </span>
           </div>
           <div
@@ -173,162 +170,11 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Row 2: Upcoming bills + Recent activity */}
-      <div
-        className="grid-2col-bills"
-        style={{ marginBottom: 14 }}
-      >
-        {/* Upcoming bills */}
-        <div className="card" style={{ padding: 22 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 16,
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
-              Upcoming bills
-            </h2>
-            <Link href="/dashboard/bills" className="btn btn-sm btn-ghost">
-              See all <Icon name="chev" size={11} />
-            </Link>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {upcomingBills.map((b) => (
-              <BillRow key={b.id} bill={b} />
-            ))}
-          </div>
-        </div>
-
-        {/* Recent activity */}
-        <div className="card" style={{ padding: 22 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 16,
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
-              Recent activity
-            </h2>
-            <Link
-              href="/dashboard/transactions"
-              className="btn btn-sm btn-ghost"
-            >
-              All transactions <Icon name="chev" size={11} />
-            </Link>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {recentTransactions.slice(0, 6).map((r) => (
-              <TransactionRow key={r.id} tx={r} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Row 3: Saving goals + Where it went */}
-      <div className="grid-2col-goals">
-        {/* Goals */}
-        <div className="card" style={{ padding: 22 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 16,
-            }}
-          >
-            <div>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
-                Saving goals
-              </h2>
-              <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
-                {formatCompact(
-                  savingGoals.reduce((s, g) => s + g.currentInCents, 0)
-                )}{" "}
-                saved
-              </div>
-            </div>
-            <Link href="/dashboard/goals" className="btn btn-sm btn-ghost">
-              See all <Icon name="chev" size={11} />
-            </Link>
-          </div>
-          <div className="grid-3col" style={{ gap: 12 }}>
-            {savingGoals.map((g) => (
-              <GoalCard key={g.id} goal={g} />
-            ))}
-          </div>
-        </div>
-
-        {/* Where it went */}
-        <div className="card" style={{ padding: 22 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 16,
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
-              Where it went
-            </h2>
-          </div>
-          <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-            <DonutChart
-              size={120}
-              strokeW={16}
-              label={formatCompact(totalSpentThisMonthInCents)}
-              sub="this month"
-              segs={spendingCategories.map((c) => ({
-                v: c.amountInCents,
-                c: c.color,
-                label: c.name,
-              }))}
-            />
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                gap: 7,
-              }}
-            >
-              {spendingCategories.map((c, i) => (
-                <div
-                  key={i}
-                  style={{ display: "flex", alignItems: "center", gap: 8 }}
-                >
-                  <span
-                    className="dot"
-                    style={{ background: c.color }}
-                    aria-hidden
-                  />
-                  <span
-                    style={{
-                      flex: 1,
-                      fontSize: 12,
-                      color: "var(--ink-2)",
-                    }}
-                  >
-                    {c.name}
-                  </span>
-                  <span
-                    className="num"
-                    style={{ fontSize: 12, fontWeight: 600 }}
-                  >
-                    {formatCompact(c.amountInCents)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <DashboardActivity
+        initialBills={upcomingBills}
+        initialTransactions={recentTransactions}
+        initialGoals={savingGoals}
+      />
     </div>
   );
 }

@@ -215,7 +215,7 @@ export default function BudgetsPage() {
   }
 
   // ---------------------------------------------------------------------------
-  // Empty state
+  // Error state (fetch failed)
   // ---------------------------------------------------------------------------
 
   if (!data) {
@@ -267,6 +267,78 @@ export default function BudgetsPage() {
     dailySpendHistory,
     vsLastMonth,
   } = data;
+
+  // ---------------------------------------------------------------------------
+  // Empty state (data loaded but no budgets)
+  // ---------------------------------------------------------------------------
+
+  if (budgets.length === 0) {
+    return (
+      <div className="page-content">
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            marginBottom: 22,
+          }}
+        >
+          <div>
+            <h1
+              className="serif"
+              style={{ fontSize: 40, margin: 0, lineHeight: 1.05 }}
+            >
+              Budgets
+            </h1>
+            <div className="muted" style={{ marginTop: 4 }}>
+              {month}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <NewBudgetButton />
+          </div>
+        </div>
+        <div
+          className="card"
+          style={{
+            padding: 48,
+            textAlign: "center",
+            maxWidth: 480,
+            margin: "0 auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 0,
+          }}
+        >
+          <div
+            style={{ color: "var(--ink-3)", marginBottom: 16 }}
+            aria-hidden
+          >
+            <Icon name="pie" size={32} />
+          </div>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 600,
+              marginBottom: 8,
+              color: "var(--ink)",
+            }}
+          >
+            No budgets set
+          </div>
+          <div
+            className="muted"
+            style={{ marginBottom: 24, fontSize: 13, lineHeight: 1.6 }}
+          >
+            Create spending budgets to track where your money goes.
+          </div>
+          <NewBudgetButton />
+        </div>
+      </div>
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Render
@@ -430,50 +502,34 @@ export default function BudgetsPage() {
           </div>
 
           {/* Budget cards */}
-          {budgets.length === 0 ? (
-            <div
-              className="card"
-              style={{
-                padding: 32,
-                textAlign: "center",
-                color: "var(--ink-3)",
-              }}
-            >
-              <Icon name="pie" size={28} color="var(--ink-4)" />
-              <div style={{ marginTop: 12, fontSize: 13 }}>
-                No budgets yet. Create one to start tracking.
-              </div>
-            </div>
-          ) : (
-            budgets.map((b) => (
-              <BudgetCard
-                key={b.id}
-                budget={b}
-                onUpdate={(updated) =>
-                  setData((d) =>
-                    d
-                      ? {
-                          ...d,
-                          budgets: d.budgets.map((x) =>
-                            x.id === updated.id ? updated : x
-                          ),
-                        }
-                      : d
-                  )
-                }
-                onDelete={(id) =>
-                  setData((d) =>
-                    d
-                      ? {
-                          ...d,
-                          budgets: d.budgets.filter((x) => x.id !== id),
-                        }
-                      : d
-                  )
-                }
-              />
-            ))
-          )}
+          {budgets.map((b) => (
+            <BudgetCard
+              key={b.id}
+              budget={b}
+              onUpdate={(updated) =>
+                setData((d) =>
+                  d
+                    ? {
+                        ...d,
+                        budgets: d.budgets.map((x) =>
+                          x.id === updated.id ? updated : x
+                        ),
+                      }
+                    : d
+                )
+              }
+              onDelete={(id) =>
+                setData((d) =>
+                  d
+                    ? {
+                        ...d,
+                        budgets: d.budgets.filter((x) => x.id !== id),
+                      }
+                    : d
+                )
+              }
+            />
+          ))}
         </div>
 
         {/* Right column */}
