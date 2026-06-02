@@ -17,9 +17,11 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [session, accounts] = await Promise.all([auth(), getAccounts()]);
-
+  const session = await auth();
   if (!session?.user) redirect("/login");
+
+  const userId = (session.user as { id?: string }).id ?? '';
+  const accounts = await getAccounts(userId);
 
   const userName = session.user.name ?? "You";
   const userInitials = userName

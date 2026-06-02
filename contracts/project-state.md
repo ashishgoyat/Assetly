@@ -484,3 +484,21 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 2 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-02 (cross-account data isolation fix)
+
+### What was built / fixed
+- **Dashboard layout data isolation bug** (`app/dashboard/layout.tsx`): `getAccounts()` was called without a `userId` argument; Drizzle drops the WHERE clause when `userId` is `undefined`, returning every account from every user in the database. Fixed by reading the session first, extracting `userId`, then calling `getAccounts(userId)` so the sidebar and topbar only receive the current user's accounts.
+- **Stale null-userId seed rows deleted** (database): removed the 3 hardcoded seed accounts (`chase`, `ally`, `broker`) that had `user_id = NULL` — they had no owner and would have surfaced to any user if the isolation guard were ever bypassed again.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` on the detail page aggregates all-time totals, not scoped to the current calendar month
+
+### Last checks
+- pnpm lint: passed (0 errors, 2 pre-existing warnings)
+- pnpm build: not run
