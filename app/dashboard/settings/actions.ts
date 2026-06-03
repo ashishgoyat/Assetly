@@ -24,6 +24,7 @@ import {
   getSubscriptions,
   generateNotifications,
   recordEmailedNotification,
+  clearAllUserData,
 } from '@/lib/data/store'
 import { db, ensureDb } from '@/lib/db/index'
 import { notificationEmailsSentTable } from '@/lib/db/schema'
@@ -211,6 +212,26 @@ export async function exportUserData(): Promise<ExportResult> {
   } catch (error) {
     console.error('[exportUserData]', error)
     return { success: false, error: 'Failed to export data' }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// clearAllData — wipe transactions, bills, subscriptions, and goals
+// ---------------------------------------------------------------------------
+
+export async function clearAllData(): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    const userId = getSessionUserId(session)
+    if (!userId) return { success: false, error: 'Not authenticated' }
+
+    await clearAllUserData(userId)
+    revalidatePath('/dashboard', 'layout')
+
+    return { success: true, message: 'All data cleared' }
+  } catch (error) {
+    console.error('[clearAllData]', error)
+    return { success: false, error: 'Failed to clear data' }
   }
 }
 

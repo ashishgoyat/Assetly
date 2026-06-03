@@ -502,3 +502,23 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 2 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-04
+
+### What was built / fixed
+- **`clearAllUserData` store helper** (`lib/data/store.ts`): new function deletes all rows in `transactionsTable`, `billsTable`, `subscriptionsTable`, and `goalsTable` scoped to the given `userId`; accounts, budgets, and user profile are left intact.
+- **`clearAllData` server action** (`app/dashboard/settings/actions.ts`): reads session, calls `clearAllUserData(userId)`, revalidates `/dashboard` layout, returns `ActionResult`.
+- **Settings — Clear all data modal** (`app/dashboard/settings/page.tsx`): added `ClearDataForm` client component with a destructive-action warning box and a "Type CLEAR to confirm" text input; submit button disabled until confirmation matches exactly; calls `clearAllData` on submit; on success closes the modal and re-fetches settings. Added "Clear all data" button in the data section; added `clearDataOpen` state and `<Modal>` wrapper.
+- **pnpm-workspace.yaml — `allowBuilds`** (`pnpm-workspace.yaml`): added `allowBuilds` list (`better-sqlite3`, `esbuild`, `sharp`, `unrs-resolver`) to permit native postinstall scripts that pnpm v10 blocks by default.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` on the detail page aggregates all-time totals, not scoped to the current calendar month
+
+### Last checks
+- pnpm lint: not run
+- pnpm build: not run

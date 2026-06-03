@@ -19,6 +19,7 @@ import {
   deleteAccount,
   signOutAllSessions,
   exportUserData,
+  clearAllData,
 } from "@/app/dashboard/settings/actions";
 import {
   useSetCurrency,
@@ -477,6 +478,108 @@ function DeleteAccountForm({ onDeleted, onCancel }: DeleteAccountFormProps) {
 }
 
 // ---------------------------------------------------------------------------
+// ClearDataForm — used inside the Clear all data modal
+// ---------------------------------------------------------------------------
+
+interface ClearDataFormProps {
+  onCleared: () => void;
+  onCancel: () => void;
+}
+
+function ClearDataForm({ onCleared, onCancel }: ClearDataFormProps) {
+  const [confirmText, setConfirmText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (confirmText !== "CLEAR") return;
+    setError(null);
+    setSubmitting(true);
+    const result = await clearAllData();
+    setSubmitting(false);
+    if (result.success) {
+      onCleared();
+    } else {
+      setError(result.error ?? null);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} aria-label="Clear all data">
+      <div
+        role="alert"
+        style={{
+          background: "var(--neg-soft)",
+          color: "var(--neg)",
+          padding: 12,
+          borderRadius: 10,
+          fontSize: 13,
+          marginBottom: 14,
+          lineHeight: 1.5,
+        }}
+      >
+        This will permanently delete all your transactions, bills, subscriptions,
+        and goals. Your account, bank accounts, and budgets will remain. This
+        cannot be undone.
+      </div>
+
+      <div className="field" style={{ marginBottom: 14 }}>
+        <label htmlFor="clear-data-confirm">
+          Type <strong>CLEAR</strong> to confirm
+        </label>
+        <input
+          id="clear-data-confirm"
+          name="confirm"
+          type="text"
+          className="field-input"
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          placeholder="CLEAR"
+          autoComplete="off"
+          required
+        />
+      </div>
+
+      {error && (
+        <div
+          role="alert"
+          style={{ color: "var(--neg)", fontSize: 12.5, marginBottom: 10 }}
+        >
+          {error}
+        </div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <button
+          type="button"
+          className="btn"
+          onClick={onCancel}
+          disabled={submitting}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="btn"
+          disabled={submitting || confirmText !== "CLEAR"}
+          aria-busy={submitting}
+          style={{
+            color: "white",
+            background: "var(--neg)",
+            borderColor: "var(--neg)",
+            opacity: confirmText !== "CLEAR" ? 0.4 : 1,
+            cursor: confirmText !== "CLEAR" ? "not-allowed" : "pointer",
+          }}
+        >
+          {submitting ? "Clearing…" : "Clear all data"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -492,6 +595,7 @@ export default function SettingsPage() {
   // Modal visibility flags
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [clearDataOpen, setClearDataOpen] = useState(false);
 
   // In-flight states for inline buttons
   const [signingOutAll, setSigningOutAll] = useState(false);
@@ -867,6 +971,16 @@ export default function SettingsPage() {
             <button
               className="btn btn-sm"
               type="button"
+              aria-label="Clear all transactions, bills, and goals"
+              style={{ color: "var(--neg)", borderColor: "var(--neg-soft)" }}
+              onClick={() => setClearDataOpen(true)}
+            >
+              Clear all data
+            </button>
+
+            <button
+              className="btn btn-sm"
+              type="button"
               aria-label="Delete your account permanently"
               style={{ color: "var(--neg)", borderColor: "var(--neg-soft)" }}
               onClick={() => setDeleteAccountOpen(true)}
@@ -900,6 +1014,20 @@ export default function SettingsPage() {
         <DeleteAccountForm
           onDeleted={handleDeleted}
           onCancel={() => setDeleteAccountOpen(false)}
+        />
+      </Modal>
+
+      <Modal
+        open={clearDataOpen}
+        title="Clear all data"
+        onClose={() => setClearDataOpen(false)}
+      >
+        <ClearDataForm
+          onCleared={() => {
+            setClearDataOpen(false);
+            void fetchSettings();
+          }}
+          onCancel={() => setClearDataOpen(false)}
         />
       </Modal>
 

@@ -597,6 +597,14 @@ export async function updateUser(
   await db.update(usersTable).set(updates).where(eq(usersTable.id, id))
 }
 
+export async function clearAllUserData(userId: string): Promise<void> {
+  await ensureDb()
+  await db.delete(transactionsTable).where(eq(transactionsTable.userId, userId))
+  await db.delete(billsTable).where(eq(billsTable.userId, userId))
+  await db.delete(subscriptionsTable).where(eq(subscriptionsTable.userId, userId))
+  await db.delete(goalsTable).where(eq(goalsTable.userId, userId))
+}
+
 export async function removeUser(id: string): Promise<void> {
   await ensureDb()
   await db.delete(transactionsTable).where(eq(transactionsTable.userId, id))
