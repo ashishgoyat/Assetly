@@ -522,3 +522,21 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: not run
 - pnpm build: not run
+
+---
+
+## Session 2026-06-04 (readme + git config)
+
+### What was built / fixed
+- **README.md rewritten** (`README.md`): updated stack table (added SQLite/Drizzle, NextAuth.js v5, Resend); rewrote features list to reflect all built pages and capabilities; added full routes table; added `.env.local` template with required env vars; added Known Limitations section; removed outdated Insights entry.
+- **Git author config fixed**: global git user email on new MacBook was defaulting to `ashishgoyat@Ashishs-MacBook-Air.local`; set to `ashishgoyat.official@gmail.com`; last commit author amended and force-pushed.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` on the detail page aggregates all-time totals, not scoped to the current calendar month
+
+### Last checks
+- pnpm lint: not run
+- pnpm build: not run
