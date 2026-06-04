@@ -30,10 +30,11 @@ import {
 // ---------------------------------------------------------------------------
 
 async function isEmpty(tableName: string): Promise<boolean> {
-  const result = await db.get<{ count: number }>(
-    sql`SELECT COUNT(*) as count FROM ${sql.identifier(tableName)}`,
+  const rows = await db.execute(
+    sql`SELECT COUNT(*) AS count FROM ${sql.identifier(tableName)}`,
   )
-  return (result?.count ?? 0) === 0
+  const count = Number((rows.rows[0] as { count: string })?.count ?? 0)
+  return count === 0
 }
 
 // ---------------------------------------------------------------------------
