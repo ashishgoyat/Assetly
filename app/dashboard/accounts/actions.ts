@@ -322,3 +322,57 @@ export async function setupAutoSaveAction(raw: {
     return { success: false, error: 'Auto-save setup failed. Please try again.' }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Add funds from cash
+// ---------------------------------------------------------------------------
+
+export async function addFundsFromCashAction(raw: {
+  accountId: string
+  amountDollars: string
+  note?: string
+}): Promise<ActionResult & { newBalanceInCents?: number }> {
+  try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    if (!userId) return { success: false, error: 'Not authenticated' }
+
+    const amountInCents = Math.round(parseFloat(raw.amountDollars) * 100)
+    if (!Number.isFinite(amountInCents) || amountInCents <= 0) {
+      return { success: false, error: 'Enter a valid amount greater than 0' }
+    }
+
+    const account = await getAccountById(raw.accountId, userId)
+    if (!account) return { success: false, error: 'Account not found' }
+
+    const now = new Date()
+    const date = now.toISOString().slice(0, 10)
+    const h = now.getHours(), m = now.getMinutes()
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const time = `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`
+
+    await insertTransaction({
+      id: crypto.randomUUID(),
+      date, time,
+      merchant: raw.note?.trim() || 'Cash Deposit',
+      category: 'Income',
+      accountLabel: `${account.name} ${account.number}`,
+      amountInCents,
+      type: 'income',
+      status: 'posted',
+      paymentMethod: 'cash',
+    }, userId)
+
+    await adjustAccountBalance(raw.accountId, userId, amountInCents)
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/accounts')
+    revalidatePath(`/dashboard/accounts/${raw.accountId}`)
+    revalidatePath('/dashboard/transactions')
+
+    return { success: true, id: raw.accountId, newBalanceInCents: account.balanceInCents + amountInCents }
+  } catch (err) {
+    console.error('[addFundsFromCashAction]', err)
+    return { success: false, error: 'Could not add funds. Please try again.' }
+  }
+}

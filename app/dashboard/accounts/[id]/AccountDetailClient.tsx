@@ -21,6 +21,7 @@ import {
   setupAutoSaveAction,
   updateAccountAction,
   deleteAccountAction,
+  addFundsFromCashAction,
 } from "@/app/dashboard/accounts/actions";
 
 type Period = "1W" | "1M" | "3M" | "1Y";
@@ -73,6 +74,13 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
 
   // Export state
   const [exporting, setExporting] = useState(false);
+
+  // Add funds from cash state
+  const [addFundsOpen, setAddFundsOpen] = useState(false);
+  const [addFundsAmount, setAddFundsAmount] = useState('');
+  const [addFundsNote, setAddFundsNote] = useState('');
+  const [addFundsPending, setAddFundsPending] = useState(false);
+  const [addFundsError, setAddFundsError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -261,6 +269,31 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
       URL.revokeObjectURL(url);
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function handleAddFunds() {
+    if (!detail) return;
+    setAddFundsPending(true);
+    setAddFundsError(null);
+    const result = await addFundsFromCashAction({
+      accountId: detail.account.id,
+      amountDollars: addFundsAmount,
+      note: addFundsNote,
+    });
+    setAddFundsPending(false);
+    if (result.success) {
+      setAddFundsOpen(false);
+      setAddFundsAmount('');
+      setAddFundsNote('');
+      // Refresh detail to show updated balance
+      setDetail((prev) =>
+        prev && result.newBalanceInCents !== undefined
+          ? { ...prev, account: { ...prev.account, balanceInCents: result.newBalanceInCents! } }
+          : prev
+      );
+    } else {
+      setAddFundsError(result.error);
     }
   }
 
@@ -746,6 +779,14 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
                 className="btn"
                 style={{ width: "100%", justifyContent: "flex-start" }}
                 type="button"
+                onClick={() => setAddFundsOpen(true)}
+              >
+                <Icon name="plus" size={14} /> Add funds from cash
+              </button>
+              <button
+                className="btn"
+                style={{ width: "100%", justifyContent: "flex-start" }}
+                type="button"
                 onClick={() => setTransferOpen(true)}
               >
                 <Icon name="arrowR" size={14} /> Transfer money
@@ -771,6 +812,77 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
           </div>
         </div>
       </div>
+
+      {/* Add funds from cash modal */}
+      {addFundsOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setAddFundsOpen(false); }}
+        >
+          <div
+            style={{
+              background: 'var(--surface)', borderRadius: 16, padding: 28,
+              width: '100%', maxWidth: 400, border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+            }}
+          >
+            <h2 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 600 }}>Add funds from cash</h2>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--ink-3)' }}>
+              Records a cash deposit into <strong>{detail?.account.name}</strong>.
+            </p>
+            {addFundsError && (
+              <div style={{ color: 'var(--neg)', fontSize: 12, marginBottom: 12 }}>{addFundsError}</div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="field">
+                <label>Amount</label>
+                <input
+                  type="number"
+                  className="field-input"
+                  placeholder="0.00"
+                  min="0.01"
+                  step="any"
+                  value={addFundsAmount}
+                  onChange={(e) => setAddFundsAmount(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="field">
+                <label>Note <span style={{ color: 'var(--ink-3)', fontWeight: 400 }}>(optional)</span></label>
+                <input
+                  type="text"
+                  className="field-input"
+                  placeholder="e.g. ATM withdrawal, sold item…"
+                  maxLength={100}
+                  value={addFundsNote}
+                  onChange={(e) => setAddFundsNote(e.target.value)}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+                onClick={handleAddFunds}
+                disabled={addFundsPending || !addFundsAmount}
+                aria-busy={addFundsPending}
+              >
+                {addFundsPending ? 'Adding…' : 'Add funds'}
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() => { setAddFundsOpen(false); setAddFundsError(null); }}
+                disabled={addFundsPending}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Transfer modal */}
       {transferOpen && (

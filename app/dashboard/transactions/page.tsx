@@ -1052,42 +1052,44 @@ function TxDetailPanel({
         </div>
 
         {/* Account */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "10px 0",
-            borderTop: "1px solid var(--border-2)",
-          }}
-        >
-          <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Account</span>
-          <select
-            value={form.accountLabel}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, accountLabel: e.target.value }))
-            }
-            aria-label="Account"
+        {form.paymentMethod !== "cash" && (
+          <div
             style={{
-              fontSize: 13,
-              padding: "4px 8px",
-              borderRadius: 8,
-              border: "1px solid var(--border)",
-              background: "var(--surface-2)",
-              color: "var(--ink)",
-              width: "60%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "10px 0",
+              borderTop: "1px solid var(--border-2)",
             }}
           >
-            {accounts.length > 0
-              ? accounts.map((a) => (
-                  <option key={a.id} value={a.name}>
-                    {a.name}
-                  </option>
-                ))
-              : <option value={form.accountLabel}>{form.accountLabel}</option>
-            }
-          </select>
-        </div>
+            <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Account</span>
+            <select
+              value={form.accountLabel}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, accountLabel: e.target.value }))
+              }
+              aria-label="Account"
+              style={{
+                fontSize: 13,
+                padding: "4px 8px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                background: "var(--surface-2)",
+                color: "var(--ink)",
+                width: "60%",
+              }}
+            >
+              {accounts.length > 0
+                ? accounts.map((a) => (
+                    <option key={a.id} value={a.name}>
+                      {a.name}
+                    </option>
+                  ))
+                : <option value={form.accountLabel}>{form.accountLabel}</option>
+              }
+            </select>
+          </div>
+        )}
 
         {/* Status */}
         <div
@@ -1134,9 +1136,14 @@ function TxDetailPanel({
           <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Payment</span>
           <select
             value={form.paymentMethod}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, paymentMethod: e.target.value as PaymentMethod | "" }))
-            }
+            onChange={(e) => {
+              const pm = e.target.value as PaymentMethod | "";
+              setForm((f) => ({
+                ...f,
+                paymentMethod: pm,
+                ...(pm === "cash" ? { accountLabel: "Cash" } : {}),
+              }));
+            }}
             aria-label="Payment method"
             style={{
               fontSize: 13,
@@ -1154,7 +1161,6 @@ function TxDetailPanel({
             <option value="cash">Cash</option>
             <option value="bank_transfer">Bank Transfer</option>
             <option value="net_banking">Net Banking</option>
-            <option value="other">Other</option>
           </select>
         </div>
 
