@@ -101,6 +101,8 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
     const userId = (session?.user as { id?: string })?.id ?? ''
 
     const paymentMethod = (val(formData, 'paymentMethod') as PaymentMethod | undefined) ?? undefined
+    const chargePercentRaw = val(formData, 'chargePercent')
+    const chargePercent = chargePercentRaw ? parseFloat(chargePercentRaw) : undefined
 
     const raw = {
       merchant: val(formData, 'merchant'),
@@ -157,10 +159,13 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
       type,
       status: 'posted',
       ...(paymentMethod !== undefined ? { paymentMethod } : {}),
+      ...(chargePercent !== undefined ? { chargePercent } : {}),
     }, userId)
 
-    // Adjust account balance: expenses subtract, income adds
-    const delta = type === 'income' ? amountDollars : -amountDollars
+    // Adjust account balance: income adds net (gross minus charge), expenses subtract gross
+    const chargeInCents = chargePercent ? Math.round(amountDollars * chargePercent / 100) : 0
+    const netInCents = amountDollars - chargeInCents
+    const delta = type === 'income' ? netInCents : -netInCents
     await adjustAccountBalanceByLabel(accountLabel, userId, delta)
 
     revalidatePath('/dashboard/transactions')
@@ -183,6 +188,7 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
         type,
         status: 'posted' as const,
         ...(paymentMethod !== undefined ? { paymentMethod } : {}),
+        ...(chargePercent !== undefined ? { chargePercent } : {}),
       } satisfies Transaction,
     }
   } catch (err) {
@@ -217,6 +223,7 @@ const updateTransactionSchema = z.object({
   status: z.enum(['posted', 'pending'] as const),
   note: z.string().max(500).nullable().optional(),
   paymentMethod: z.enum(PAYMENT_METHODS).nullable().optional(),
+  chargePercent: z.coerce.number().min(0).max(100).nullable().optional(),
 })
 
 export async function updateTransactionAction(
@@ -228,6 +235,7 @@ export async function updateTransactionAction(
     status: string
     note: string | null
     paymentMethod?: string | null
+    chargePercent?: number | null
   },
 ): Promise<ActionResult> {
   try {
@@ -244,6 +252,7 @@ export async function updateTransactionAction(
     await updateTransaction(id, {
       ...parsed.data,
       paymentMethod: parsed.data.paymentMethod ?? null,
+      chargePercent: parsed.data.chargePercent ?? null,
     }, userId)
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard')

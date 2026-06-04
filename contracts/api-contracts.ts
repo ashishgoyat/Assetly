@@ -60,6 +60,7 @@ export interface Transaction {
   status: 'posted' | 'pending'
   note?: string
   paymentMethod?: PaymentMethod
+  chargePercent?: number        // Optional fee/commission %, e.g. 11.5 means 11.5%
 }
 
 export interface Account {

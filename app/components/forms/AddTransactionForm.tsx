@@ -46,6 +46,7 @@ export default function AddTransactionForm({
   const [category, setCategory] = useState<TransactionCategory>("Groceries");
   const [accountLabel, setAccountLabel] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const [chargePercent, setChargePercent] = useState("");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -82,6 +83,7 @@ export default function AddTransactionForm({
       formData.set("category", category);
       formData.set("accountLabel", paymentMethod === "cash" ? "Cash" : accountLabel);
       formData.set("paymentMethod", paymentMethod);
+      if (chargePercent) formData.set("chargePercent", chargePercent);
 
       const result = await createTransaction(formData);
       if (result.success) {
@@ -295,6 +297,34 @@ export default function AddTransactionForm({
             })}
           </div>
         </div>
+
+        {/* Charge / Fee % (optional) */}
+        <div className="field">
+          <label htmlFor="tx-charge">
+            Charge / Fee <span style={{ color: "var(--ink-3)", fontWeight: 400 }}>(optional %)</span>
+          </label>
+          <input
+            id="tx-charge"
+            type="number"
+            className="field-input"
+            placeholder="e.g. 11.5"
+            value={chargePercent}
+            onChange={(e) => setChargePercent(e.target.value)}
+            min="0"
+            max="100"
+            step="any"
+          />
+        </div>
+
+        {/* Live net preview */}
+        {amount && chargePercent && parseFloat(chargePercent) > 0 && (
+          <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: -8, paddingLeft: 2 }}>
+            Net after {chargePercent}% charge:{" "}
+            <strong style={{ color: "var(--ink)" }}>
+              ${(parseFloat(amount) * (1 - parseFloat(chargePercent) / 100)).toFixed(2)}
+            </strong>
+          </div>
+        )}
       </div>
 
       {/* Inline error */}

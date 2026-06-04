@@ -17,6 +17,7 @@ export const transactionsTable = pgTable('transactions', {
   status: text('status').notNull(),   // 'posted' | 'pending'
   note: text('note'),
   paymentMethod: text('payment_method'),
+  chargePercent: real('charge_percent'),
 })
 
 // ---------------------------------------------------------------------------

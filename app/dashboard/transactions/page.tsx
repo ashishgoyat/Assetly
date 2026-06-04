@@ -878,6 +878,7 @@ function TxDetailPanel({
     status: tx.status as string,
     note: tx.note ?? "",
     paymentMethod: (tx.paymentMethod ?? "") as PaymentMethod | "",
+    chargePercent: tx.chargePercent ?? 0,
   });
 
   async function handleDelete() {
@@ -902,6 +903,7 @@ function TxDetailPanel({
       status: form.status,
       note: form.note || null,
       paymentMethod: form.paymentMethod || null,
+      chargePercent: form.chargePercent || null,
     });
     if (result.success) {
       const updated: Transaction = {
@@ -912,6 +914,7 @@ function TxDetailPanel({
         status: form.status as Transaction["status"],
         note: form.note || undefined,
         ...(form.paymentMethod ? { paymentMethod: form.paymentMethod as PaymentMethod } : { paymentMethod: undefined }),
+        ...(form.chargePercent ? { chargePercent: form.chargePercent } : { chargePercent: undefined }),
       };
       onUpdate(updated);
     } else {
@@ -1010,6 +1013,14 @@ function TxDetailPanel({
           {tx.type === "income" ? "+" : "−"}
           {fmtExact(tx.amountInCents)}
         </div>
+        {tx.chargePercent && tx.chargePercent > 0 && (
+          <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
+            Net after {tx.chargePercent}% charge:{" "}
+            <span style={{ color: "var(--ink)", fontWeight: 600 }}>
+              {fmtExact(Math.round(tx.amountInCents * (1 - tx.chargePercent / 100)))}
+            </span>
+          </div>
+        )}
         <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
           {tx.date} · {tx.time}
         </div>
@@ -1162,6 +1173,23 @@ function TxDetailPanel({
             <option value="bank_transfer">Bank Transfer</option>
             <option value="net_banking">Net Banking</option>
           </select>
+        </div>
+
+        {/* Charge percent */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--border-2)" }}>
+          <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Charge</span>
+          <input
+            type="number"
+            value={form.chargePercent || ""}
+            onChange={(e) => setForm((f) => ({ ...f, chargePercent: parseFloat(e.target.value) || 0 }))}
+            placeholder="0"
+            min="0"
+            max="100"
+            step="any"
+            aria-label="Charge percent"
+            style={{ fontSize: 13, padding: "4px 8px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", color: "var(--ink)", width: "60%", textAlign: "right" }}
+          />
+          <span style={{ fontSize: 12, color: "var(--ink-3)", marginLeft: 4 }}>%</span>
         </div>
 
       </div>
