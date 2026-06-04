@@ -620,3 +620,29 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 3 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-04 (cash payment UX + charge percent)
+
+### What was built / fixed
+- **Edit transaction panel — cash payment** (`app/dashboard/transactions/page.tsx`): removed "Other" from payment options; Account row hidden when paymentMethod is "cash"; switching to cash auto-sets accountLabel to "Cash"
+- **Add funds from cash on account detail** (`app/dashboard/accounts/actions.ts`, `app/dashboard/accounts/[id]/AccountDetailClient.tsx`): new "Add funds from cash" button in Quick Actions; modal with Amount + optional Note; `addFundsFromCashAction` inserts income transaction (paymentMethod: cash, category: Income) and adjusts account balance; balance updates optimistically in UI
+- **Transaction charge percent** (`contracts/api-contracts.ts`, `lib/db/schema.ts`, `lib/data/store.ts`, `app/dashboard/transactions/actions.ts`, `app/components/forms/AddTransactionForm.tsx`, `app/dashboard/transactions/page.tsx`): optional `chargePercent` field on transactions; `charge_percent REAL` column + migration `drizzle/0002_add_charge_percent.sql`; AddTransactionForm shows Charge/Fee % input with live net preview; account balance adjusted by net amount (gross − charge) for income; detail panel shows and edits charge %, displays net-after-charge
+
+### Action required (before production)
+- Apply `drizzle/0002_add_charge_percent.sql` on Supabase: `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS charge_percent REAL;`
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge (adding charge to debit) not implemented
+
+### Last checks
+- pnpm lint: passed (0 errors, 3 pre-existing warnings)
+- pnpm build: not run
