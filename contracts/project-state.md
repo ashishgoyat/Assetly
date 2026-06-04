@@ -589,3 +589,34 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 2 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-04 (user feedback — currency, quick add, payment method, responsiveness)
+
+### What was built / fixed
+
+- **Onboarding — currency step added** (`app/components/onboarding/OnboardingWizard.tsx`): wizard is now 4 steps: Welcome → Choose Currency → Add Account → All Set. Step 2 shows 3 selectable currency cards (USD/INR/EUR); on Next, saves choice to `assetly-currency` cookie. ProgressDots updated to 4 dots.
+- **Real exchange rate conversion** (`app/contexts/CurrencyContext.tsx`, `lib/format.ts`): `CurrencyProvider` now fetches live rates from `open.er-api.com/v6/latest/USD` on mount; falls back to `{ USD: 1, INR: 84, EUR: 0.92 }` on failure. `formatCurrency`, `formatCurrencyExact`, `formatCompact` each gained an optional `rate = 1` parameter. New `useExchangeRate()` hook exported.
+- **Sidebar account balances — currency-aware** (`app/components/layout/Sidebar.tsx`): removed hardcoded `formatBalance`; now calls `useCurrency()` + `useExchangeRate()` and passes both to `formatCurrency`.
+- **Quick Add FAB** (`app/components/dashboard/QuickAddFab.tsx` NEW; `app/dashboard/layout.tsx`): fixed bottom-right `+` button; animated menu with 5 options (Transaction, Goal, Bill, Budget, Subscription); each opens the appropriate form in a Modal.
+- **Responsive + mobile fixes** (`app/globals.css`, `app/dashboard/transactions/page.tsx`): `.page-content` capped at `max-width: 1400px` for large screens; mobile block with 44px touch targets, bottom-sheet modals, search constrained, tx-detail stacks single-column, padding tightened.
+- **Payment method on transactions** (`lib/db/schema.ts`, `lib/data/store.ts`, `app/dashboard/transactions/actions.ts`, `app/components/forms/AddTransactionForm.tsx`, `app/dashboard/transactions/page.tsx`): nullable `payment_method` column; migration `drizzle/0001_add_payment_method.sql`; segmented selector (UPI/Card/Cash/Bank/Other) in AddTransactionForm; detail panel shows and edits payment method.
+- **Cash account type** (`app/components/forms/AddAccountForm.tsx`, `contracts/api-contracts.ts`): `AccountType` widened to `'cash'`; AddAccountForm type select includes "Cash (Physical Wallet)".
+- **Contract update** (`contracts/api-contracts.ts`): added `PaymentMethod` type, `paymentMethod?: PaymentMethod` to `Transaction`, `'cash'` to `AccountType`.
+
+### Action required (before production)
+- Apply `drizzle/0001_add_payment_method.sql` on Supabase: `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS payment_method TEXT;`
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+
+### Last checks
+- pnpm lint: passed (0 errors, 3 pre-existing warnings)
+- pnpm build: not run

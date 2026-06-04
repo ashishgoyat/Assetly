@@ -195,6 +195,7 @@ html, body {
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 html, body, #root {
@@ -379,6 +380,10 @@ input, textarea {
 
 .page-content {
   padding: 8px 28px 36px;
+  /* Large screen: constrain content width so it doesn't stretch on ultra-wides */
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 @media (max-width: 767px) {
   .page-content {
@@ -428,6 +433,69 @@ input, textarea {
   .grid-3col-insights { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ─── Mobile (< 768px) touch & layout fixes ─────────────────────────────────── */
+
+/* Touch-target minimum height (44px) for all interactive rows and buttons */
+@media (max-width: 767px) {
+  .tx-row,
+  .nav-item,
+  .btn,
+  .btn-sm,
+  .btn-lg {
+    min-height: 44px;
+  }
+
+  /* Modal: native-sheet look on mobile */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal-panel {
+    margin: 12px;
+    max-height: calc(100dvh - 24px);
+    border-radius: var(--r-lg);
+    overflow-y: auto;
+    width: calc(100% - 24px);
+    max-width: 100%;
+  }
+
+  /* Topbar search: shrink or collapse gracefully */
+  .search {
+    max-width: 180px;
+    flex-shrink: 1;
+  }
+
+  /* Tables / wide panels: allow horizontal scroll instead of overflowing the page */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Topbar padding reduction */
+  .topbar {
+    padding: 14px 16px 0;
+    gap: 8px;
+  }
+  .page-head {
+    padding: 16px 16px 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .page-head .h-title {
+    font-size: 28px;
+  }
+
+  /* Transactions: detail panel stacks below the list on mobile */
+  .tx-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Transaction detail panel: remove sticky on mobile so it flows naturally */
+  .tx-detail-grid aside {
+    position: static !important;
+  }
+}
+
 .main {
   position: relative;
   overflow: hidden;
@@ -458,6 +526,7 @@ input, textarea {
   border-radius: var(--r-lg);
   position: relative;
 }
+
 
 .card-hoverable {
   cursor: pointer;

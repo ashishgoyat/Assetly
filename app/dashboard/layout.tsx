@@ -11,6 +11,7 @@ import Sidebar from "@/app/components/layout/Sidebar";
 import Topbar from "@/app/components/layout/Topbar";
 import { SidebarProvider } from "@/app/components/layout/SidebarContext";
 import OnboardingGate from "@/app/components/onboarding/OnboardingGate";
+import QuickAddFab from "@/app/components/dashboard/QuickAddFab";
 
 export default async function DashboardLayout({
   children,
@@ -54,6 +55,7 @@ export default async function DashboardLayout({
         />
         <main className="page">{children}</main>
       </div>
+      <QuickAddFab />
     </SidebarProvider>
   );
 }

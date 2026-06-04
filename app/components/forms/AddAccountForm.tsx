@@ -9,7 +9,7 @@ interface AddAccountFormProps {
 
 export default function AddAccountForm({ onClose }: AddAccountFormProps) {
   const [name, setName] = useState("");
-  const [type, setType] = useState<"checking" | "savings" | "investment">("checking");
+  const [type, setType] = useState<"checking" | "savings" | "investment" | "cash">("checking");
   const [balance, setBalance] = useState("");
   const [lastFour, setLastFour] = useState("");
   const [pending, setPending] = useState(false);
@@ -73,6 +73,7 @@ export default function AddAccountForm({ onClose }: AddAccountFormProps) {
             <option value="checking">Checking</option>
             <option value="savings">Savings</option>
             <option value="investment">Investment</option>
+            <option value="cash">Cash (Physical Wallet)</option>
           </select>
         </div>
 

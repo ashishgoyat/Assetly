@@ -11,6 +11,7 @@ import type {
   Transaction,
   TransactionCategory,
   TransactionType,
+  PaymentMethod,
 } from "@/contracts/api-contracts";
 import { createTransaction } from "@/app/dashboard/transactions/actions";
 
@@ -44,6 +45,7 @@ export default function AddTransactionForm({
   const [type, setType] = useState<TransactionType>("expense");
   const [category, setCategory] = useState<TransactionCategory>("Groceries");
   const [accountLabel, setAccountLabel] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -79,6 +81,7 @@ export default function AddTransactionForm({
       formData.set("type", type);
       formData.set("category", category);
       formData.set("accountLabel", accountLabel);
+      formData.set("paymentMethod", paymentMethod);
 
       const result = await createTransaction(formData);
       if (result.success) {
@@ -238,6 +241,58 @@ export default function AddTransactionForm({
               })
             )}
           </select>
+        </div>
+
+        {/* Payment method toggle */}
+        <div className="field">
+          <span className="field-group-label">Payment</span>
+          <div
+            role="radiogroup"
+            aria-label="Payment method"
+            style={{
+              display: "flex",
+              gap: 0,
+              borderRadius: "var(--r)",
+              border: "1px solid var(--border)",
+              overflow: "hidden",
+              background: "var(--surface-2)",
+            }}
+          >
+            {(
+              [
+                { value: "upi", label: "UPI" },
+                { value: "card", label: "Card" },
+                { value: "cash", label: "Cash" },
+                { value: "bank_transfer", label: "Bank" },
+                { value: "other", label: "Other" },
+              ] as { value: PaymentMethod; label: string }[]
+            ).map(({ value, label }) => {
+              const isActive = paymentMethod === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  onClick={() => setPaymentMethod(value)}
+                  style={{
+                    flex: 1,
+                    padding: "9px 0",
+                    fontSize: 12,
+                    fontWeight: isActive ? 600 : 400,
+                    background: isActive ? "var(--ink)" : "transparent",
+                    color: isActive ? "var(--surface)" : "var(--ink-3)",
+                    border: "none",
+                    cursor: "pointer",
+                    transition:
+                      "background var(--dur-fast) var(--ease-out-quart), color var(--dur-fast) var(--ease-out-quart), font-weight var(--dur-fast) var(--ease-out-quart)",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

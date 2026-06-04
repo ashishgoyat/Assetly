@@ -9,6 +9,8 @@ import Modal from "@/app/components/ui/Modal";
 import AddAccountForm from "@/app/components/forms/AddAccountForm";
 import { useSidebar } from "@/app/components/layout/SidebarContext";
 import { useExitAnimation, MOTION_MS } from "@/app/hooks/useExitAnimation";
+import { useCurrency, useExchangeRate } from "@/app/contexts/CurrencyContext";
+import { formatCurrency } from "@/lib/format";
 import type { Account } from "@/contracts/api-contracts";
 
 interface SidebarProps {
@@ -34,16 +36,10 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/settings",     label: "Settings",     icon: "settings" },
 ];
 
-function formatBalance(cents: number): string {
-  if (Math.abs(cents) >= 10_000_000)
-    return `$${(cents / 10_000_000).toFixed(1)}Cr`
-  if (Math.abs(cents) >= 100_000)
-    return `$${(cents / 100_000).toFixed(1)}k`
-  return `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`
-}
-
 export default function Sidebar({ userName, userInitials, userAvatarUrl, accounts }: SidebarProps) {
   const pathname = usePathname();
+  const currency = useCurrency();
+  const rate = useExchangeRate();
   const { collapsed, toggle } = useSidebar();
   const [menuOpen, setMenuOpen] = useState(false);
   const [addAccountOpen, setAddAccountOpen] = useState(false);
@@ -169,7 +165,7 @@ export default function Sidebar({ userName, userInitials, userAvatarUrl, account
               className="account-label num"
               style={{ fontSize: 11, color: "var(--ink-3)", flexShrink: 0 }}
             >
-              {formatBalance(account.balanceInCents)}
+              {formatCurrency(account.balanceInCents, currency, rate)}
             </span>
           </Link>
         ))}

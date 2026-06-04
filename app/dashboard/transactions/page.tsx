@@ -16,6 +16,7 @@ import type {
   Transaction,
   TransactionCategory,
   TransactionsSummary,
+  PaymentMethod,
 } from "@/contracts/api-contracts";
 import { MOCK_TRANSACTIONS, MOCK_TX_SUMMARY } from "@/lib/mock-data";
 import { formatCurrency, formatCurrencyExact } from "@/lib/format";
@@ -643,6 +644,7 @@ export default function TransactionsPage() {
 
       {/* Table + Detail panel */}
       <div
+        className={detail.shouldRender ? "tx-detail-grid" : undefined}
         style={{
           display: "grid",
           gridTemplateColumns: detail.shouldRender ? "1fr 360px" : "1fr",
@@ -876,6 +878,7 @@ function TxDetailPanel({
     accountLabel: tx.accountLabel,
     status: tx.status as string,
     note: tx.note ?? "",
+    paymentMethod: (tx.paymentMethod ?? "") as PaymentMethod | "",
   });
 
   async function handleDelete() {
@@ -899,6 +902,7 @@ function TxDetailPanel({
       accountLabel: form.accountLabel,
       status: form.status,
       note: form.note || null,
+      paymentMethod: form.paymentMethod || null,
     });
     if (result.success) {
       const updated: Transaction = {
@@ -908,6 +912,7 @@ function TxDetailPanel({
         accountLabel: form.accountLabel,
         status: form.status as Transaction["status"],
         note: form.note || undefined,
+        ...(form.paymentMethod ? { paymentMethod: form.paymentMethod as PaymentMethod } : { paymentMethod: undefined }),
       };
       onUpdate(updated);
     } else {
@@ -1114,6 +1119,43 @@ function TxDetailPanel({
           >
             <option value="posted">Posted</option>
             <option value="pending">Pending</option>
+          </select>
+        </div>
+
+        {/* Payment method */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px 0",
+            borderTop: "1px solid var(--border-2)",
+          }}
+        >
+          <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Payment</span>
+          <select
+            value={form.paymentMethod}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, paymentMethod: e.target.value as PaymentMethod | "" }))
+            }
+            aria-label="Payment method"
+            style={{
+              fontSize: 13,
+              padding: "4px 8px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--surface-2)",
+              color: "var(--ink)",
+              width: "60%",
+            }}
+          >
+            <option value="">— none —</option>
+            <option value="upi">UPI</option>
+            <option value="card">Card</option>
+            <option value="cash">Cash</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="net_banking">Net Banking</option>
+            <option value="other">Other</option>
           </select>
         </div>
 

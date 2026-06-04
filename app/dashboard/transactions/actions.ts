@@ -9,7 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { after } from 'next/server'
 import { z } from 'zod'
 import { insertTransaction, removeTransaction, updateTransaction, adjustAccountBalanceByLabel, getAccounts } from '@/lib/data/store'
-import type { Transaction, TransactionCategory, TransactionType } from '@/contracts/api-contracts'
+import type { Transaction, TransactionCategory, TransactionType, PaymentMethod } from '@/contracts/api-contracts'
 import { auth } from '@/auth'
 import { sendPendingNotificationEmails } from '@/lib/email'
 
@@ -100,6 +100,8 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
 
+    const paymentMethod = (val(formData, 'paymentMethod') as PaymentMethod | undefined) ?? undefined
+
     const raw = {
       merchant: val(formData, 'merchant'),
       amountDollars: val(formData, 'amountDollars'),
@@ -154,6 +156,7 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
       amountInCents: amountDollars,
       type,
       status: 'posted',
+      ...(paymentMethod !== undefined ? { paymentMethod } : {}),
     }, userId)
 
     // Adjust account balance: expenses subtract, income adds
@@ -179,6 +182,7 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
         amountInCents: amountDollars,
         type,
         status: 'posted' as const,
+        ...(paymentMethod !== undefined ? { paymentMethod } : {}),
       } satisfies Transaction,
     }
   } catch (err) {
@@ -204,12 +208,15 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
   }
 }
 
+const PAYMENT_METHODS = ['upi', 'card', 'cash', 'bank_transfer', 'net_banking', 'other'] as const
+
 const updateTransactionSchema = z.object({
   merchant: z.string().min(1, 'Merchant is required').max(100),
   category: z.enum(TRANSACTION_CATEGORIES),
   accountLabel: z.string().min(1, 'Account is required'),
   status: z.enum(['posted', 'pending'] as const),
   note: z.string().max(500).nullable().optional(),
+  paymentMethod: z.enum(PAYMENT_METHODS).nullable().optional(),
 })
 
 export async function updateTransactionAction(
@@ -220,6 +227,7 @@ export async function updateTransactionAction(
     accountLabel: string
     status: string
     note: string | null
+    paymentMethod?: string | null
   },
 ): Promise<ActionResult> {
   try {
@@ -233,7 +241,10 @@ export async function updateTransactionAction(
 
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
-    await updateTransaction(id, parsed.data, userId)
+    await updateTransaction(id, {
+      ...parsed.data,
+      paymentMethod: parsed.data.paymentMethod ?? null,
+    }, userId)
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard')
 

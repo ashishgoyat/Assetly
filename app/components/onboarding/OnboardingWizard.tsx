@@ -6,7 +6,7 @@
  * Detection (on mount):
  *   1. Read the `assetly-onboarding-done` cookie — if set, render nothing.
  *   2. Fetch GET /api/accounts — if the array is non-empty, render nothing.
- *   3. Otherwise show the 3-step wizard modal.
+ *   3. Otherwise show the 4-step wizard modal.
  *
  * Cookie helpers live here because this is the only place that needs them.
  */
@@ -34,7 +34,7 @@ function markOnboardingDone(): void {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 type WizardStatus = "checking" | "show" | "hidden";
 
@@ -47,10 +47,10 @@ function ProgressDots({ step }: { step: Step }) {
       role="progressbar"
       aria-valuenow={step}
       aria-valuemin={1}
-      aria-valuemax={3}
-      aria-label={`Step ${step} of 3`}
+      aria-valuemax={4}
+      aria-label={`Step ${step} of 4`}
     >
-      {([1, 2, 3] as Step[]).map((n) => (
+      {([1, 2, 3, 4] as Step[]).map((n) => (
         <span
           key={n}
           style={{
@@ -120,7 +120,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           }}
         >
           Track your money, hit your goals, and stay on top of bills. Let&apos;s
-          get you set up in 3 steps.
+          get you set up in 4 steps.
         </p>
       </div>
 
@@ -138,7 +138,136 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ─── Step 2 — Add first account ──────────────────────────────────────────────
+// ─── Step 2 — Choose currency ────────────────────────────────────────────────
+
+type CurrencyCode = "USD" | "INR" | "EUR";
+
+const CURRENCIES: { code: CurrencyCode; symbol: string; name: string }[] = [
+  { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "INR", symbol: "₹", name: "Indian Rupee" },
+  { code: "EUR", symbol: "€", name: "Euro" },
+];
+
+const CURRENCY_COOKIE = "assetly-currency";
+const CURRENCY_MAX_AGE = 31536000; // 1 year in seconds
+
+function saveCurrencyCookie(currency: CurrencyCode): void {
+  document.cookie = `${CURRENCY_COOKIE}=${currency}; path=/; max-age=${CURRENCY_MAX_AGE}; samesite=lax`;
+}
+
+function StepChooseCurrency({ onNext }: { onNext: (currency: CurrencyCode) => void }) {
+  const [selected, setSelected] = useState<CurrencyCode>("USD");
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 20,
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            color: "var(--ink)",
+          }}
+        >
+          Choose your currency
+        </h2>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 14,
+            color: "var(--ink-3)",
+            lineHeight: 1.6,
+          }}
+        >
+          This will be used as the default currency across your dashboard.
+        </p>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {CURRENCIES.map(({ code, symbol, name }) => {
+          const isSelected = selected === code;
+          return (
+            <button
+              key={code}
+              type="button"
+              onClick={() => setSelected(code)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                padding: "14px 18px",
+                borderRadius: 12,
+                border: isSelected
+                  ? "2px solid var(--accent)"
+                  : "2px solid var(--border)",
+                background: isSelected ? "var(--accent-soft)" : "var(--surface)",
+                cursor: "pointer",
+                textAlign: "left",
+                transition: "border-color var(--dur-fast) var(--ease-out-quart), background var(--dur-fast) var(--ease-out-quart)",
+              }}
+              aria-pressed={isSelected}
+            >
+              <span
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: isSelected ? "var(--accent)" : "var(--border-2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: isSelected ? "#fff" : "var(--ink)",
+                  flexShrink: 0,
+                  transition: "background var(--dur-fast) var(--ease-out-quart), color var(--dur-fast) var(--ease-out-quart)",
+                }}
+                aria-hidden="true"
+              >
+                {symbol}
+              </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: "var(--ink)",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {name}
+                </span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: "var(--ink-3)",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {code}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 8, width: "100%" }}>
+        <button
+          type="button"
+          className="btn btn-primary btn-lg"
+          style={{ width: "100%" }}
+          onClick={() => onNext(selected)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 3 — Add first account ──────────────────────────────────────────────
 
 function StepAddAccount({
   onAccountAdded,
@@ -175,7 +304,7 @@ function StepAddAccount({
 
       {/*
        * AddAccountForm calls onClose when the account is successfully created.
-       * We forward that to onAccountAdded so the wizard advances to step 3.
+       * We forward that to onAccountAdded so the wizard advances to step 4.
        */}
       <AddAccountForm onClose={onAccountAdded} />
 
@@ -201,7 +330,7 @@ function StepAddAccount({
   );
 }
 
-// ─── Step 3 — All set ────────────────────────────────────────────────────────
+// ─── Step 4 — All set ────────────────────────────────────────────────────────
 
 function StepAllSet({ onDone }: { onDone: () => void }) {
   return (
@@ -350,11 +479,16 @@ export default function OnboardingWizard() {
   }, []);
 
   const handleNext = useCallback(() => {
-    setStep((s) => (s < 3 ? ((s + 1) as Step) : s));
+    setStep((s) => (s < 4 ? ((s + 1) as Step) : s));
+  }, []);
+
+  const handleCurrencyNext = useCallback((currency: CurrencyCode) => {
+    saveCurrencyCookie(currency);
+    setStep(3);
   }, []);
 
   const handleAccountAdded = useCallback(() => {
-    setStep(3);
+    setStep(4);
   }, []);
 
   // Lock body scroll while the wizard is visible
@@ -408,8 +542,10 @@ export default function OnboardingWizard() {
           step === 1
             ? "Welcome to Assetly"
             : step === 2
-              ? "Add your first account"
-              : "You're all set"
+              ? "Choose your currency"
+              : step === 3
+                ? "Add your first account"
+                : "You're all set"
         }
         style={{
           maxWidth: 520,
@@ -430,14 +566,16 @@ export default function OnboardingWizard() {
         {/* Step content */}
         {step === 1 && <StepWelcome onNext={handleNext} />}
 
-        {step === 2 && (
+        {step === 2 && <StepChooseCurrency onNext={handleCurrencyNext} />}
+
+        {step === 3 && (
           <StepAddAccount
             onAccountAdded={handleAccountAdded}
             onSkip={handleSkip}
           />
         )}
 
-        {step === 3 && <StepAllSet onDone={handleDone} />}
+        {step === 4 && <StepAllSet onDone={handleDone} />}
 
         {/* Skip setup — shown on steps 2 and 3 via the individual step
             components; step 1 shows "Get started" only so no skip here */}

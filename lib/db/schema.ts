@@ -16,6 +16,7 @@ export const transactionsTable = pgTable('transactions', {
   type: text('type').notNull(),       // 'income' | 'expense'
   status: text('status').notNull(),   // 'posted' | 'pending'
   note: text('note'),
+  paymentMethod: text('payment_method'),
 })
 
 // ---------------------------------------------------------------------------

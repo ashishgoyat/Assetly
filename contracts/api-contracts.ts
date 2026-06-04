@@ -40,7 +40,9 @@ export type TransactionCategory =
   | 'Fitness'
   | 'Other'
 
-export type AccountType = 'checking' | 'savings' | 'investment'
+export type AccountType = 'checking' | 'savings' | 'investment' | 'cash'
+
+export type PaymentMethod = 'upi' | 'card' | 'cash' | 'bank_transfer' | 'net_banking' | 'other'
 
 // ---------------------------------------------------------------------------
 // Core entities
@@ -57,6 +59,7 @@ export interface Transaction {
   type: TransactionType
   status: 'posted' | 'pending'
   note?: string
+  paymentMethod?: PaymentMethod
 }
 
 export interface Account {

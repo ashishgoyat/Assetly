@@ -64,6 +64,7 @@ function mapTransaction(row: TransactionRow): Transaction {
     type: row.type as Transaction['type'],
     status: row.status as Transaction['status'],
     ...(row.note != null ? { note: row.note } : {}),
+    ...(row.paymentMethod != null ? { paymentMethod: row.paymentMethod as Transaction['paymentMethod'] } : {}),
   }
 }
 
@@ -253,6 +254,7 @@ export async function insertTransaction(tx: Transaction, userId?: string): Promi
     type: tx.type,
     status: tx.status,
     note: tx.note ?? null,
+    paymentMethod: tx.paymentMethod ?? null,
   })
 }
 
@@ -435,6 +437,7 @@ export async function updateTransaction(
     accountLabel?: string
     status?: string
     note?: string | null
+    paymentMethod?: string | null
   },
   userId?: string,
 ): Promise<void> {
@@ -447,6 +450,7 @@ export async function updateTransaction(
       ...(updates.accountLabel !== undefined ? { accountLabel: updates.accountLabel } : {}),
       ...(updates.status !== undefined ? { status: updates.status } : {}),
       ...(updates.note !== undefined ? { note: updates.note } : {}),
+      ...(updates.paymentMethod !== undefined ? { paymentMethod: updates.paymentMethod } : {}),
     })
     .where(
       userId !== undefined
