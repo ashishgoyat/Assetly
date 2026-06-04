@@ -2,8 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Icon from "@/app/components/ui/Icon";
-import { formatCurrency } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import { payBill, skipBill, toggleBillAutoPay } from "@/app/dashboard/home-actions";
 import type { Bill } from "@/contracts/api-contracts";
 
@@ -14,7 +13,7 @@ interface Props {
 }
 
 export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
-  const currency = useCurrency();
+  const { fmt } = useFormatCurrency();
   const [expanded, setExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +108,7 @@ export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="num" style={{ fontSize: 15, fontWeight: 600 }}>{formatCurrency(b.amountInCents, currency)}</span>
+          <span className="num" style={{ fontSize: 15, fontWeight: 600 }}>{fmt(b.amountInCents)}</span>
           <Icon name={expanded ? "chevd" : "chev"} size={12} color="var(--ink-4)" />
         </div>
       </button>

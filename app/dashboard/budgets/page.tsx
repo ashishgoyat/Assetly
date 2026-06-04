@@ -11,8 +11,8 @@ import DonutChart from "@/app/components/charts/DonutChart";
 import NewBudgetButton from "@/app/dashboard/budgets/NewBudgetButton";
 import { useExitAnimation, MOTION_MS } from "@/app/hooks/useExitAnimation";
 import type { Budget, BudgetSummary } from "@/contracts/api-contracts";
-import { formatCurrency, formatPercent } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { formatPercent } from "@/lib/format";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import {
   updateBudgetLimit,
   deleteBudget,
@@ -62,7 +62,7 @@ const heatmapIntensityColors = [
 // ---------------------------------------------------------------------------
 
 export default function BudgetsPage() {
-  const currency = useCurrency();
+  const { fmt } = useFormatCurrency();
   const [data, setData] = useState<BudgetSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
@@ -461,7 +461,7 @@ export default function BudgetsPage() {
                 className="sec-label"
                 style={{ color: "var(--accent-2)" }}
               >
-                Spent of {formatCurrency(totalLimitInCents, currency)} monthly budget
+                Spent of {fmt(totalLimitInCents)} monthly budget
               </div>
               <div
                 style={{
@@ -475,10 +475,10 @@ export default function BudgetsPage() {
                   className="serif num"
                   style={{ fontSize: 44, lineHeight: 1 }}
                 >
-                  {formatCurrency(totalSpentInCents, currency)}
+                  {fmt(totalSpentInCents)}
                 </span>
                 <span style={{ color: "var(--ink-3)" }}>
-                  · {formatCurrency(remainingInCents, currency)} left
+                  · {fmt(remainingInCents)} left
                 </span>
               </div>
               <div
@@ -495,7 +495,7 @@ export default function BudgetsPage() {
               <div style={{ marginTop: 10, fontSize: 12, color: "var(--ink-2)" }}>
                 You&apos;re on track — daily limit going forward:{" "}
                 <span className="num" style={{ fontWeight: 600 }}>
-                  {formatCurrency(dailyLimitGoingForwardInCents, currency)}
+                  {fmt(dailyLimitGoingForwardInCents)}
                 </span>
               </div>
             </div>
@@ -710,7 +710,7 @@ export default function BudgetsPage() {
                     }}
                   >
                     {item.deltaInCents > 0 ? "+" : "−"}
-                    {formatCurrency(Math.abs(item.deltaInCents), currency)}
+                    {fmt(Math.abs(item.deltaInCents))}
                   </span>
                 </div>
               ))}
@@ -733,7 +733,7 @@ interface BudgetCardProps {
 }
 
 function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
-  const currency = useCurrency();
+  const { fmt } = useFormatCurrency();
   const [expanded, setExpanded] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -822,8 +822,8 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
             }}
           >
             {b.isOver
-              ? `Over by ${formatCurrency(b.spentInCents - b.limitInCents, currency)}`
-              : `${formatCurrency(b.limitInCents - b.spentInCents, currency)} left`}
+              ? `Over by ${fmt(b.spentInCents - b.limitInCents)}`
+              : `${fmt(b.limitInCents - b.spentInCents)} left`}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -834,12 +834,12 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
               fontWeight: 600,
               color: b.isOver ? "var(--neg)" : "var(--ink)",
             }}
-            aria-label={`Spent ${formatCurrency(b.spentInCents, currency)} of ${formatCurrency(b.limitInCents, currency)}`}
+            aria-label={`Spent ${fmt(b.spentInCents)} of ${fmt(b.limitInCents)}`}
           >
-            {formatCurrency(b.spentInCents, currency)}
+            {fmt(b.spentInCents)}
           </div>
           <div className="num muted" style={{ fontSize: 11 }}>
-            of {formatCurrency(b.limitInCents, currency)}
+            of {fmt(b.limitInCents)}
           </div>
         </div>
       </div>

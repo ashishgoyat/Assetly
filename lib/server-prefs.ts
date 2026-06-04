@@ -37,6 +37,19 @@ const DEFAULT_NOTIF_PREFS: NotificationPreferences = {
   goalMilestones: true,
 }
 
+const FALLBACK_RATES: Record<string, number> = { USD: 1, INR: 84, EUR: 0.92 };
+
+export async function getExchangeRateServer(currency: Currency): Promise<number> {
+  const raw = (await cookies()).get('assetly-exchange-rates')?.value;
+  if (!raw) return FALLBACK_RATES[currency] ?? 1;
+  try {
+    const rates = JSON.parse(decodeURIComponent(raw)) as Record<string, number>;
+    return rates[currency] ?? FALLBACK_RATES[currency] ?? 1;
+  } catch {
+    return FALLBACK_RATES[currency] ?? 1;
+  }
+}
+
 export async function getNotificationPrefsServer(): Promise<NotificationPreferences> {
   const raw = (await cookies()).get('assetly-notif-prefs')?.value
   if (!raw) return DEFAULT_NOTIF_PREFS

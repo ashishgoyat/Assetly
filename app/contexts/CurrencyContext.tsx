@@ -13,6 +13,7 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { formatCurrency, formatCurrencyExact, formatCompact } from "@/lib/format";
 
 export type Currency = "USD" | "INR" | "EUR";
 
@@ -35,22 +36,32 @@ export function CurrencyProvider({ children, initialCurrency }: ProviderProps) {
   const [currency, setCurrencyState] = useState<Currency>(initialCurrency);
   const [rates, setRates] = useState<Record<Currency, number>>(FALLBACK_RATES);
 
+  const persistRatesToCookie = useCallback((r: Record<Currency, number>) => {
+    const ratesJson = JSON.stringify({ USD: r.USD, INR: r.INR, EUR: r.EUR });
+    document.cookie = `assetly-exchange-rates=${encodeURIComponent(ratesJson)}; path=/; max-age=86400; samesite=lax`;
+  }, []);
+
   useEffect(() => {
+    // Persist initial (fallback) rates immediately so the server has something to read.
+    persistRatesToCookie(FALLBACK_RATES);
+
     fetch("https://open.er-api.com/v6/latest/USD")
       .then((res) => res.json())
       .then((data: { result: string; rates: Record<string, number> }) => {
         if (data.result === "success") {
-          setRates({
+          const liveRates: Record<Currency, number> = {
             USD: data.rates["USD"] ?? 1,
             INR: data.rates["INR"] ?? FALLBACK_RATES.INR,
             EUR: data.rates["EUR"] ?? FALLBACK_RATES.EUR,
-          });
+          };
+          setRates(liveRates);
+          persistRatesToCookie(liveRates);
         }
       })
       .catch(() => {
         // Keep fallback rates already set in initial state.
       });
-  }, []);
+  }, [persistRatesToCookie]);
 
   const setCurrency = useCallback(
     (c: Currency) => {
@@ -82,4 +93,14 @@ export function useSetCurrency(): (c: Currency) => void {
 export function useExchangeRate(): number {
   const ctx = useContext(CurrencyContext);
   return ctx?.exchangeRate ?? 1;
+}
+
+export function useFormatCurrency() {
+  const currency = useCurrency();
+  const rate = useExchangeRate();
+  return {
+    fmt:       (cents: number) => formatCurrency(cents, currency, rate),
+    fmtExact:  (cents: number) => formatCurrencyExact(cents, currency, rate),
+    fmtCompact:(cents: number) => formatCompact(cents, currency, rate),
+  };
 }

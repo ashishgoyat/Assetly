@@ -11,8 +11,7 @@ import Icon from "@/app/components/ui/Icon";
 import Modal from "@/app/components/ui/Modal";
 import AddAccountForm from "@/app/components/forms/AddAccountForm";
 import type { Account } from "@/contracts/api-contracts";
-import { formatCurrency } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import { updateAccountAction, deleteAccountAction } from "@/app/dashboard/accounts/actions";
 
 // ---------------------------------------------------------------------------
@@ -35,7 +34,7 @@ function AccountCard({
   onUpdate: (updated: Account) => void;
   onDelete: (id: string) => void;
 }) {
-  const currency = useCurrency();
+  const { fmt } = useFormatCurrency();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(account.name);
   const [editBalance, setEditBalance] = useState(
@@ -155,7 +154,7 @@ function AccountCard({
         style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em" }}
         className="serif num"
       >
-        {formatCurrency(account.balanceInCents, currency)}
+        {fmt(account.balanceInCents)}
       </div>
 
       {/* Inline edit panel */}

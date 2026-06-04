@@ -3,8 +3,7 @@
 import { useState, useTransition } from "react";
 import Icon from "@/app/components/ui/Icon";
 import MerchantIcon from "@/app/components/ui/MerchantIcon";
-import { formatCurrency } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import {
   setTransactionCategory,
   setTransactionNote,
@@ -34,7 +33,7 @@ interface Props {
 }
 
 export default function TransactionRow({ tx: r, onExcluded }: Props) {
-  const currency = useCurrency();
+  const { fmt } = useFormatCurrency();
   const [expanded, setExpanded] = useState(false);
   const [categorizing, setCategorizing] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
@@ -127,7 +126,7 @@ export default function TransactionRow({ tx: r, onExcluded }: Props) {
           }}
         >
           {r.type === "income" ? "+" : "−"}
-          {formatCurrency(r.amountInCents, currency)}
+          {fmt(r.amountInCents)}
         </div>
         <Icon name={expanded ? "chevd" : "chev"} size={14} color="var(--ink-4)" />
       </button>

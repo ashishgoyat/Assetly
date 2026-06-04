@@ -3,8 +3,7 @@
 import { useState } from "react";
 import AreaChart from "@/app/components/charts/AreaChart";
 import Icon from "@/app/components/ui/Icon";
-import { formatCompact } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 
 type Period = "1W" | "1M" | "3M" | "1Y";
 
@@ -23,7 +22,7 @@ export default function CashOnHandCard({
   cashFlowDataByPeriod,
   cashFlowLabelsByPeriod,
 }: Props) {
-  const currency = useCurrency();
+  const { fmtCompact } = useFormatCurrency();
   const [period, setPeriod] = useState<Period>("1M");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -34,11 +33,11 @@ export default function CashOnHandCard({
           <div className="sec-label">Cash on hand</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 6 }}>
             <span className="serif num" style={{ fontSize: 44, lineHeight: 1 }}>
-              {formatCompact(totalInCents, currency)}
+              {fmtCompact(totalInCents)}
             </span>
             <span className="pill pill-pos">
               <Icon name="arrowUp" size={11} />
-              {formatCompact(weekDeltaInCents, currency)} this week
+              {fmtCompact(weekDeltaInCents)} this week
             </span>
           </div>
         </div>
@@ -64,7 +63,7 @@ export default function CashOnHandCard({
         <div style={{ height: 20, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
           {hoveredIndex != null ? (
             <span className="num" style={{ fontSize: 13.5, fontWeight: 600 }}>
-              {formatCompact(cashFlowDataByPeriod[period][hoveredIndex], currency)}
+              {fmtCompact(cashFlowDataByPeriod[period][hoveredIndex])}
             </span>
           ) : null}
         </div>

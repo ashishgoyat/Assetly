@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { formatCompact } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import {
   addFundsToGoalAction,
   setGoalMonthly,
@@ -22,7 +21,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export default function GoalCard({ goal: g, onUpdated }: GoalCardProps) {
-  const currency = useCurrency();
+  const { fmtCompact } = useFormatCurrency();
   const [expanded, setExpanded] = useState(false);
   const [mode, setMode] = useState<Mode>("actions");
   const [amountInput, setAmountInput] = useState("");
@@ -113,10 +112,10 @@ export default function GoalCard({ goal: g, onUpdated }: GoalCardProps) {
       <div style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6 }}>{g.name}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 8 }}>
         <span className="num serif" style={{ fontSize: 22, lineHeight: 1 }}>
-          {formatCompact(g.currentInCents, currency)}
+          {fmtCompact(g.currentInCents)}
         </span>
         <span className="num" style={{ fontSize: 11, color: "var(--ink-3)" }}>
-          / {formatCompact(g.targetInCents, currency)}
+          / {fmtCompact(g.targetInCents)}
         </span>
       </div>
       <div className="bar">

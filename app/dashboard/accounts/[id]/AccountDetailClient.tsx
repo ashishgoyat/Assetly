@@ -14,8 +14,7 @@ import AreaChart from "@/app/components/charts/AreaChart";
 import PeriodSelector from "@/app/components/ui/PeriodSelector";
 import type { AccountDetail, Account, Goal, Transaction } from "@/contracts/api-contracts";
 import { MOCK_ACCOUNT_DETAILS } from "@/lib/mock-data";
-import { formatCurrency, formatCurrencyExact } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import {
   syncAccountAction,
   transferMoneyAction,
@@ -35,7 +34,7 @@ interface AccountDetailClientProps {
 }
 
 export default function AccountDetailClient({ id }: AccountDetailClientProps) {
-  const currency = useCurrency();
+  const { fmt, fmtExact } = useFormatCurrency();
   const [period, setPeriod] = useState<Period>(DEFAULT_PERIOD);
   const [detail, setDetail] = useState<AccountDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -508,11 +507,11 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
                 className="serif num"
                 style={{ fontSize: 52, lineHeight: 1 }}
               >
-                {formatCurrencyExact(a.balanceInCents, currency)}
+                {fmtExact(a.balanceInCents)}
               </span>
               <span className="pill pill-pos">
                 <Icon name="arrowUp" size={11} />
-                {formatCurrency(a.weekDeltaInCents, currency)} this week
+                {fmt(a.weekDeltaInCents)} this week
               </span>
             </div>
             <div style={{ marginTop: 18 }}>
@@ -546,14 +545,14 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   Low{" "}
                   <span className="num" style={{ color: "var(--ink-2)" }}>
-                    {formatCurrency(periodMin, currency)}
+                    {fmt(periodMin)}
                   </span>
                 </span>
                 <span className="dim">·</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   High{" "}
                   <span className="num" style={{ color: "var(--ink-2)" }}>
-                    {formatCurrency(periodMax, currency)}
+                    {fmt(periodMax)}
                   </span>
                 </span>
               </div>
@@ -632,7 +631,7 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
                     }}
                   >
                     {r.type === "income" ? "+" : "−"}
-                    {formatCurrencyExact(r.amountInCents, currency)}
+                    {fmtExact(r.amountInCents)}
                   </div>
                   <Icon name="chev" size={13} color="var(--ink-4)" />
                 </div>
@@ -650,10 +649,10 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
             </div>
             {(
               [
-                ["Money in",  formatCurrencyExact(monthlySummary.moneyInInCents, currency),   "pos"],
-                ["Money out", `−${formatCurrencyExact(monthlySummary.moneyOutInCents, currency)}`, undefined],
-                ["Fees",      monthlySummary.feesInCents === 0 ? "$0" : formatCurrencyExact(monthlySummary.feesInCents, currency), "muted"],
-                ["Interest",  monthlySummary.interestInCents > 0 ? `+${formatCurrencyExact(monthlySummary.interestInCents, currency)}` : "$0", monthlySummary.interestInCents > 0 ? "pos" : undefined],
+                ["Money in",  fmtExact(monthlySummary.moneyInInCents),   "pos"],
+                ["Money out", `−${fmtExact(monthlySummary.moneyOutInCents)}`, undefined],
+                ["Fees",      monthlySummary.feesInCents === 0 ? fmtExact(0) : fmtExact(monthlySummary.feesInCents), "muted"],
+                ["Interest",  monthlySummary.interestInCents > 0 ? `+${fmtExact(monthlySummary.interestInCents)}` : fmtExact(0), monthlySummary.interestInCents > 0 ? "pos" : undefined],
               ] as [string, string, string | undefined][]
             ).map(([label, value, tone], i) => (
               <div

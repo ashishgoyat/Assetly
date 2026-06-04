@@ -6,8 +6,7 @@ import Icon from "@/app/components/ui/Icon";
 import BillRow from "@/app/components/dashboard/BillRow";
 import TransactionRow from "@/app/components/dashboard/TransactionRow";
 import GoalCard from "@/app/components/dashboard/GoalCard";
-import { formatCompact } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import type { Bill, Transaction, Goal } from "@/contracts/api-contracts";
 
 interface Props {
@@ -21,7 +20,7 @@ export default function DashboardActivity({
   initialTransactions,
   initialGoals,
 }: Props) {
-  const currency = useCurrency();
+  const { fmtCompact } = useFormatCurrency();
   const [bills, setBills] = useState<Bill[]>(initialBills);
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
@@ -141,7 +140,7 @@ export default function DashboardActivity({
                 Saving goals
               </h2>
               <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
-                {formatCompact(totalSaved, currency)} saved
+                {fmtCompact(totalSaved)} saved
               </div>
             </div>
             <Link href="/dashboard/goals" className="btn btn-sm btn-ghost">

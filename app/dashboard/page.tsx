@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import CashOnHandCard from "@/app/components/dashboard/CashOnHandCard";
 import DashboardActivity from "@/app/components/dashboard/DashboardActivity";
 import { formatCurrency } from "@/lib/format";
-import { getCurrencyServer } from "@/lib/server-prefs";
+import { getCurrencyServer, getExchangeRateServer } from "@/lib/server-prefs";
 import {
   getTransactions,
   getAccounts,
@@ -50,10 +50,11 @@ function firstName(full: string | null | undefined): string {
 }
 
 export default async function DashboardPage() {
-  const [session, cookieStore, currency] = await Promise.all([
+  const currency = await getCurrencyServer();
+  const [session, cookieStore, rate] = await Promise.all([
     auth(),
     cookies(),
-    getCurrencyServer(),
+    getExchangeRateServer(currency),
   ]);
 
   const userId = (session?.user as { id?: string })?.id ?? "";
@@ -143,14 +144,14 @@ export default async function DashboardPage() {
               letterSpacing: "-0.04em",
             }}
           >
-            {formatCurrency(safeToSpendInCents, currency)}
+            {formatCurrency(safeToSpendInCents, currency, rate)}
           </div>
           <div style={{ marginTop: 14, color: "var(--ink-2)" }}>
             <span className="num" style={{ fontWeight: 500 }}>
-              {formatCurrency(spentTodayInCents, currency)}
+              {formatCurrency(spentTodayInCents, currency, rate)}
             </span>{" "}
             <span className="muted">
-              of {formatCurrency(dailyAllowanceInCents, currency)} daily allowance
+              of {formatCurrency(dailyAllowanceInCents, currency, rate)} daily allowance
             </span>
           </div>
           <div

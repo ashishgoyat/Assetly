@@ -16,8 +16,7 @@ import {
   deleteSubscriptionAction,
 } from "@/app/dashboard/bills/actions";
 import { paySubscription } from "@/app/dashboard/home-actions";
-import { formatCurrency, formatCurrencyExact } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import type { BillsSummary, Bill, Subscription } from "@/contracts/api-contracts";
 
 // ---------------------------------------------------------------------------
@@ -629,7 +628,7 @@ interface SubRowProps {
 }
 
 function SubRow({ sub, isExpanded, onToggleEdit, onDeleted, onSaved, onPaid }: SubRowProps) {
-  const currency = useCurrency();
+  const { fmtExact } = useFormatCurrency();
   return (
     <div
       style={{
@@ -681,7 +680,7 @@ function SubRow({ sub, isExpanded, onToggleEdit, onDeleted, onSaved, onPaid }: S
           </div>
         </div>
         <div className="num" style={{ fontSize: 13, fontWeight: 600 }}>
-          {formatCurrencyExact(sub.amountMonthlyInCents, currency)}
+          {fmtExact(sub.amountMonthlyInCents)}
         </div>
       </button>
 
@@ -719,7 +718,7 @@ interface BillRowProps {
 }
 
 function BillRow({ bill, isExpanded, onToggleEdit, onDeleted, onSaved }: BillRowProps) {
-  const currency = useCurrency();
+  const { fmt } = useFormatCurrency();
   return (
     <div
       style={{
@@ -810,7 +809,7 @@ function BillRow({ bill, isExpanded, onToggleEdit, onDeleted, onSaved }: BillRow
 
         {/* Amount */}
         <div className="num" style={{ fontSize: 17, fontWeight: 600 }}>
-          {formatCurrency(bill.amountInCents, currency)}
+          {fmt(bill.amountInCents)}
         </div>
       </button>
 
@@ -840,7 +839,7 @@ function BillRow({ bill, isExpanded, onToggleEdit, onDeleted, onSaved }: BillRow
 // ---------------------------------------------------------------------------
 
 export default function BillsPage() {
-  const currency = useCurrency();
+  const { fmt, fmtExact } = useFormatCurrency();
   const [period, setPeriod] = useState<Period>(30);
   const [data, setData] = useState<BillsSummary | null>(null);
   const [bills, setBills] = useState<Bill[]>([]);
@@ -944,7 +943,7 @@ export default function BillsPage() {
             {loading
               ? "Loading…"
               : data
-                ? `${formatCurrency(data.totalDuePeriodInCents, currency)} due in next ${period} days`
+                ? `${fmt(data.totalDuePeriodInCents)} due in next ${period} days`
                 : null}
           </div>
         </div>
@@ -973,7 +972,7 @@ export default function BillsPage() {
                   />
                 ) : (
                   <div className="serif num" style={{ fontSize: 32, marginTop: 6 }}>
-                    {data ? formatCurrency(data.totalDuePeriodInCents, currency) : "—"}
+                    {data ? fmt(data.totalDuePeriodInCents) : "—"}
                   </div>
                 )}
               </div>
@@ -1051,7 +1050,7 @@ export default function BillsPage() {
                         flexDirection: "column",
                         alignItems: "center",
                       }}
-                      title={`${b.name}: ${formatCurrency(b.amountInCents, currency)} due ${b.dueDate}`}
+                      title={`${b.name}: ${fmt(b.amountInCents)} due ${b.dueDate}`}
                     >
                       <div
                         style={{
@@ -1078,7 +1077,7 @@ export default function BillsPage() {
                         }}
                         aria-hidden
                       >
-                        {formatCurrency(b.amountInCents, currency)}
+                        {fmt(b.amountInCents)}
                       </div>
                     </div>
                   );
@@ -1247,12 +1246,12 @@ export default function BillsPage() {
                   }}
                 >
                   <span className="serif num" style={{ fontSize: 36, lineHeight: 1 }}>
-                    {formatCurrencyExact(data.totalSubsMonthlyInCents, currency)}
+                    {fmtExact(data.totalSubsMonthlyInCents)}
                   </span>
                   <span className="muted">/ month</span>
                 </div>
                 <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                  {formatCurrency(data.totalSubsMonthlyInCents * 12, currency)}/year ·{" "}
+                  {fmt(data.totalSubsMonthlyInCents * 12)}/year ·{" "}
                   {subs.length} active
                 </div>
 

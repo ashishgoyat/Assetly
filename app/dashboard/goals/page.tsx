@@ -8,8 +8,8 @@
 import { useState, useEffect } from "react";
 import Icon from "@/app/components/ui/Icon";
 import type { Goal, GoalSummary } from "@/contracts/api-contracts";
-import { formatCurrency, formatCompact, formatPercent } from "@/lib/format";
-import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { formatPercent } from "@/lib/format";
+import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import NewGoalButton from "@/app/dashboard/goals/NewGoalButton";
 import {
   addFundsToGoal,
@@ -30,7 +30,7 @@ function GoalCard({
   onUpdate: (updated: Goal) => void;
   onDelete: (id: string) => void;
 }) {
-  const currency = useCurrency();
+  const { fmt, fmtCompact } = useFormatCurrency();
   const [expanded, setExpanded] = useState(false);
   const [activeAction, setActiveAction] = useState<"funds" | "monthly" | null>(
     null
@@ -148,7 +148,7 @@ function GoalCard({
             {goal.name}
           </div>
           <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-            {goal.vibe} · {formatCurrency(goal.monthlyContributionInCents, currency)}/mo auto
+            {goal.vibe} · {fmt(goal.monthlyContributionInCents)}/mo auto
           </div>
         </div>
       </div>
@@ -164,10 +164,10 @@ function GoalCard({
       >
         <div>
           <span className="serif num" style={{ fontSize: 32 }}>
-            {formatCompact(goal.currentInCents, currency)}
+            {fmtCompact(goal.currentInCents)}
           </span>
           <span className="muted" style={{ marginLeft: 4 }}>
-            of {formatCompact(goal.targetInCents, currency)}
+            of {fmtCompact(goal.targetInCents)}
           </span>
         </div>
         <span
@@ -219,7 +219,7 @@ function GoalCard({
             className="num"
             style={{ fontWeight: 600, color: "var(--ink-2)" }}
           >
-            {formatCompact(goal.targetInCents - goal.currentInCents, currency)}
+            {fmtCompact(goal.targetInCents - goal.currentInCents)}
           </span>{" "}
           to go
         </span>
@@ -361,7 +361,7 @@ function GoalCard({
 // ---------------------------------------------------------------------------
 
 export default function GoalsPage() {
-  const currency = useCurrency();
+  const { fmt, fmtCompact } = useFormatCurrency();
   const [data, setData] = useState<GoalSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -570,7 +570,7 @@ export default function GoalsPage() {
             Goals
           </h1>
           <div className="muted" style={{ marginTop: 4 }}>
-            {formatCompact(totalSavedInCents, currency)} saved across {goals.length}{" "}
+            {fmtCompact(totalSavedInCents)} saved across {goals.length}{" "}
             goals
           </div>
         </div>
@@ -594,12 +594,12 @@ export default function GoalsPage() {
               className="serif num"
               style={{ fontSize: 54, lineHeight: 1, marginTop: 8 }}
             >
-              {formatCompact(totalSavedInCents, currency)}
+              {fmtCompact(totalSavedInCents)}
             </div>
             <div className="muted" style={{ marginTop: 6 }}>
               of{" "}
               <span className="num">
-                {formatCompact(totalTargetInCents, currency)}
+                {fmtCompact(totalTargetInCents)}
               </span>{" "}
               ·{" "}
               {formatPercent(
@@ -619,7 +619,7 @@ export default function GoalsPage() {
                 color: "var(--pos)",
               }}
             >
-              {formatCurrency(totalMonthlyContributionInCents, currency)}
+              {fmt(totalMonthlyContributionInCents)}
               <span style={{ fontSize: 16, color: "var(--ink-3)" }}>/mo</span>
             </div>
             <div className="muted" style={{ marginTop: 6 }}>
