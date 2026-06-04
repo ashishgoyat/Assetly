@@ -636,23 +636,27 @@ export default function GoalsPage() {
             key={g.id}
             goal={g}
             onUpdate={(updated) => {
-              setData((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      goals: prev.goals.map((x) =>
-                        x.id === updated.id ? updated : x
-                      ),
-                    }
-                  : prev
-              );
+              setData((prev) => {
+                if (!prev) return prev;
+                const newGoals = prev.goals.map((x) => x.id === updated.id ? updated : x);
+                return {
+                  ...prev,
+                  goals: newGoals,
+                  totalSavedInCents: newGoals.reduce((s, g) => s + g.currentInCents, 0),
+                };
+              });
             }}
             onDelete={(id) => {
-              setData((prev) =>
-                prev
-                  ? { ...prev, goals: prev.goals.filter((x) => x.id !== id) }
-                  : prev
-              );
+              setData((prev) => {
+                if (!prev) return prev;
+                const newGoals = prev.goals.filter((x) => x.id !== id);
+                return {
+                  ...prev,
+                  goals: newGoals,
+                  totalSavedInCents: newGoals.reduce((s, g) => s + g.currentInCents, 0),
+                  totalTargetInCents: newGoals.reduce((s, g) => s + g.targetInCents, 0),
+                };
+              });
             }}
           />
         ))}

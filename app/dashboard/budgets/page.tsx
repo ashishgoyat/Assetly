@@ -507,26 +507,40 @@ export default function BudgetsPage() {
               key={b.id}
               budget={b}
               onUpdate={(updated) =>
-                setData((d) =>
-                  d
-                    ? {
-                        ...d,
-                        budgets: d.budgets.map((x) =>
-                          x.id === updated.id ? updated : x
-                        ),
-                      }
-                    : d
-                )
+                setData((d) => {
+                  if (!d) return d;
+                  const newBudgets = d.budgets.map((x) => x.id === updated.id ? updated : x);
+                  const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
+                  const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
+                  const newRemaining = newTotalLimit - newTotalSpent;
+                  return {
+                    ...d,
+                    budgets: newBudgets,
+                    totalLimitInCents: newTotalLimit,
+                    totalSpentInCents: newTotalSpent,
+                    percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
+                    remainingInCents: newRemaining,
+                    dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
+                  };
+                })
               }
               onDelete={(id) =>
-                setData((d) =>
-                  d
-                    ? {
-                        ...d,
-                        budgets: d.budgets.filter((x) => x.id !== id),
-                      }
-                    : d
-                )
+                setData((d) => {
+                  if (!d) return d;
+                  const newBudgets = d.budgets.filter((x) => x.id !== id);
+                  const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
+                  const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
+                  const newRemaining = newTotalLimit - newTotalSpent;
+                  return {
+                    ...d,
+                    budgets: newBudgets,
+                    totalLimitInCents: newTotalLimit,
+                    totalSpentInCents: newTotalSpent,
+                    percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
+                    remainingInCents: newRemaining,
+                    dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
+                  };
+                })
               }
             />
           ))}

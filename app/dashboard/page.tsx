@@ -45,7 +45,9 @@ async function getDashboardData(): Promise<DashboardSummary> {
   try {
     const cookieStore = await cookies();
     const cookieHeader = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ');
-    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const vercelUrl = process.env.VERCEL_URL
+    const base = process.env.NEXT_PUBLIC_BASE_URL
+      ?? (vercelUrl ? `https://${vercelUrl}` : "http://localhost:3000")
     const res = await fetch(`${base}/api/dashboard`, {
       cache: "no-store",
       headers: { cookie: cookieHeader },
