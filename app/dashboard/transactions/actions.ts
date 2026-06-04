@@ -8,7 +8,7 @@
 import { revalidatePath } from 'next/cache'
 import { after } from 'next/server'
 import { z } from 'zod'
-import { insertTransaction, removeTransaction, updateTransaction } from '@/lib/data/store'
+import { insertTransaction, removeTransaction, updateTransaction, adjustAccountBalanceByLabel, getAccounts } from '@/lib/data/store'
 import type { Transaction, TransactionCategory, TransactionType } from '@/contracts/api-contracts'
 import { auth } from '@/auth'
 import { sendPendingNotificationEmails } from '@/lib/email'
@@ -116,6 +116,28 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
 
     const { merchant, amountDollars, type, category, accountLabel } = parsed.data
 
+    // Block expense transactions that would push the account below $0
+    if (type === 'expense') {
+      const allAccounts = await getAccounts(userId)
+      const account = allAccounts.find((a) => `${a.name} ${a.number}` === accountLabel)
+      if (account && account.balanceInCents < amountDollars) {
+        const available = (account.balanceInCents / 100).toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+        })
+        const attempted = (amountDollars / 100).toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+        })
+        return {
+          success: false,
+          error: `Insufficient funds. ${account.name} has ${available} available, but this transaction requires ${attempted}.`,
+        }
+      }
+    }
+
     const id = crypto.randomUUID()
     const now = new Date()
     const date = now.toISOString().slice(0, 10)
@@ -134,8 +156,13 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
       status: 'posted',
     }, userId)
 
+    // Adjust account balance: expenses subtract, income adds
+    const delta = type === 'income' ? amountDollars : -amountDollars
+    await adjustAccountBalanceByLabel(accountLabel, userId, delta)
+
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard')
+    revalidatePath('/dashboard/accounts')
 
     after(() => sendPendingNotificationEmails(userId))
 

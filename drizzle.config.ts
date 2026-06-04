@@ -1,10 +1,13 @@
-import type { Config } from 'drizzle-kit'
+import { defineConfig } from 'drizzle-kit'
+import { config } from 'dotenv'
 
-export default {
+config({ path: '.env.local' })
+
+export default defineConfig({
   schema: './lib/db/schema.ts',
   out: './drizzle',
-  dialect: 'turso',
+  dialect: 'postgresql',
   dbCredentials: {
-    url: 'file:./assetly.db',
+    url: process.env.DATABASE_URL!,
   },
-} satisfies Config
+})

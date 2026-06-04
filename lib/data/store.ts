@@ -851,7 +851,7 @@ export async function generateNotifications(
         title: `Large transaction: ${tx.merchant}`,
         body: `${formatCurrencyNotif(tx.amountInCents)} at ${tx.merchant} on ${tx.date}.`,
         isRead: false,
-        createdAt: `${tx.date}T00:00:00Z`,
+        createdAt: parseTxDateTime(tx.date, tx.time),
         route: '/dashboard/transactions',
       })
     }
@@ -906,16 +906,26 @@ export async function generateNotifications(
     }
   }
 
-  // Sort: unread first, then by type urgency, cap at 20
-  const TYPE_PRIORITY: Record<string, number> = {
-    bill_due: 0, budget_exceeded: 1, large_transaction: 2, goal_milestone: 3, weekly_digest: 4,
-  }
+  // Sort: unread first, then newest createdAt first, cap at 20
   return notifications
     .sort((a, b) => {
       if (a.isRead !== b.isRead) return a.isRead ? 1 : -1
-      return (TYPE_PRIORITY[a.type] ?? 9) - (TYPE_PRIORITY[b.type] ?? 9)
+      return b.createdAt.localeCompare(a.createdAt)
     })
     .slice(0, 20)
+}
+
+// Converts a transaction's stored date ("2026-06-04") + time ("3:42 PM") into an
+// ISO 8601 string so large_transaction notifications get the real event time, not
+// a hardcoded midnight-UTC timestamp that makes relative-time display wrong.
+function parseTxDateTime(date: string, time: string): string {
+  const m = time.match(/^(\d+):(\d+)\s*(AM|PM)$/i)
+  if (!m) return `${date}T00:00:00.000Z`
+  let h = parseInt(m[1], 10)
+  const min = parseInt(m[2], 10)
+  if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12
+  if (m[3].toUpperCase() === 'AM' && h === 12) h = 0
+  return `${date}T${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:00.000Z`
 }
 
 function computeDueInDays(dueDate: string): number {
@@ -941,4 +951,55 @@ function getISOWeek(d: Date): string {
   const week1 = new Date(date.getFullYear(), 0, 4)
   const weekNum = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7)
   return `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`
+}
+
+// ---------------------------------------------------------------------------
+// Account balance adjustment helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Adjusts an account's balance by deltaInCents (positive = add, negative = subtract).
+ * Used by transfer actions and auto-save. Looks up account by ID.
+ */
+export async function adjustAccountBalance(
+  accountId: string,
+  userId: string,
+  deltaInCents: number,
+): Promise<void> {
+  await ensureDb()
+  await db
+    .update(accountsTable)
+    .set({ balanceInCents: sql`${accountsTable.balanceInCents} + ${deltaInCents}` })
+    .where(and(eq(accountsTable.id, accountId), eq(accountsTable.userId, userId)))
+}
+
+export async function updateAccountLastSync(id: string, userId: string): Promise<void> {
+  await ensureDb()
+  await db
+    .update(accountsTable)
+    .set({ lastSync: 'Just now' })
+    .where(and(eq(accountsTable.id, id), eq(accountsTable.userId, userId)))
+}
+
+/**
+ * Adjusts an account's balance by deltaInCents, found by matching the accountLabel
+ * string (format: "Account Name ··XXXX") against name + ' ' + number in the DB.
+ * Used by createTransaction to update balance after inserting a transaction.
+ */
+export async function adjustAccountBalanceByLabel(
+  accountLabel: string,
+  userId: string,
+  deltaInCents: number,
+): Promise<void> {
+  await ensureDb()
+  const rows = await db
+    .select({ id: accountsTable.id, name: accountsTable.name, number: accountsTable.number })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId))
+  const account = rows.find((r) => `${r.name} ${r.number}` === accountLabel)
+  if (!account) return // label doesn't match any account — skip silently
+  await db
+    .update(accountsTable)
+    .set({ balanceInCents: sql`${accountsTable.balanceInCents} + ${deltaInCents}` })
+    .where(and(eq(accountsTable.id, account.id), eq(accountsTable.userId, userId)))
 }

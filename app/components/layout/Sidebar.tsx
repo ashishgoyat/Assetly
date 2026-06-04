@@ -120,16 +120,54 @@ export default function Sidebar({ userName, userInitials, userAvatarUrl, account
             href={`/dashboard/accounts/${account.id}`}
             className={`nav-item${isActive(`/dashboard/accounts/${account.id}`) ? " active" : ""}`}
             aria-current={isActive(`/dashboard/accounts/${account.id}`) ? "page" : undefined}
+            style={{ alignItems: "center", padding: "8px 10px" }}
           >
             <span
-              className="dot"
-              style={{ background: account.color, marginLeft: 4 }}
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 6,
+                background: account.color + "25",
+                color: account.color,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 10,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
               aria-hidden
-            />
-            <span style={{ flex: 1 }} className="account-label">{account.name}</span>
+            >
+              {account.name[0]?.toUpperCase() ?? "A"}
+            </span>
             <span
-              className="num"
-              style={{ fontSize: 11, color: "var(--ink-3)" }}
+              className="account-label"
+              style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1, overflow: "hidden" }}
+            >
+              <span
+                style={{
+                  fontSize: 12.5,
+                  fontWeight: 500,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {account.name}
+              </span>
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontFamily: "var(--f-mono)",
+                  color: "var(--ink-4)",
+                }}
+              >
+                {account.number}
+              </span>
+            </span>
+            <span
+              className="account-label num"
+              style={{ fontSize: 11, color: "var(--ink-3)", flexShrink: 0 }}
             >
               {formatBalance(account.balanceInCents)}
             </span>

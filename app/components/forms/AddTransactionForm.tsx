@@ -86,6 +86,7 @@ export default function AddTransactionForm({
           onCreated?.(result.transaction);
         }
         onClose();
+        window.dispatchEvent(new CustomEvent("assetly:notifications-refresh"));
       } else {
         setError(result.error);
       }

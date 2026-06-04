@@ -4,7 +4,7 @@
  * Topbar — Client Component (search input, notifications, and keyboard shortcuts need client)
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Icon from "@/app/components/ui/Icon";
 import DarkModeToggle from "@/app/components/ui/DarkModeToggle";
 import HamburgerButton from "@/app/components/layout/HamburgerButton";
@@ -27,17 +27,72 @@ export default function Topbar({ userName, userInitials, accounts }: TopbarProps
   const [notifOpen, setNotifOpen] = useState(false);
   const notifWrapperRef = useRef<HTMLDivElement>(null);
   const notif = useExitAnimation(notifOpen, MOTION_MS.fast);
+  const seenNotifIds = useRef<Set<string>>(new Set());
+  const [toast, setToast] = useState<{ title: string; body: string } | null>(null);
 
-  // Re-fetch every time the panel is opened
+  const fetchNotifications = useCallback(async (showToast: boolean) => {
+    try {
+      const res = await fetch("/api/notifications");
+      const d: { data?: Notification[] } = await res.json();
+      if (!d.data) return;
+      const newNotifs = d.data;
+
+      if (showToast) {
+        const TYPE_PRIORITY: Record<string, number> = {
+          bill_due: 0,
+          budget_exceeded: 1,
+          large_transaction: 2,
+          goal_milestone: 3,
+          weekly_digest: 4,
+        };
+        const brandNew = newNotifs
+          .filter((n) => !n.isRead && !seenNotifIds.current.has(n.id))
+          .sort((a, b) => (TYPE_PRIORITY[a.type] ?? 9) - (TYPE_PRIORITY[b.type] ?? 9));
+        if (brandNew.length > 0) {
+          setToast({ title: brandNew[0].title, body: brandNew[0].body });
+        }
+      }
+
+      newNotifs.forEach((n) => seenNotifIds.current.add(n.id));
+      setNotifications(newNotifs);
+    } catch {
+      // non-critical — badge stays at last known count
+    }
+  }, []); // seenNotifIds is a ref (stable), setNotifications/setToast are stable setters
+
+  // Initial fetch on mount (no toast — avoids showing stale notifications as "new")
+  useEffect(() => {
+    void fetchNotifications(false);
+  }, [fetchNotifications]);
+
+  // Poll every 30 seconds — show toast if new unread notifications arrive
+  useEffect(() => {
+    const interval = setInterval(() => void fetchNotifications(true), 30_000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  // Re-fetch when the panel opens (keep existing behaviour, no toast)
   useEffect(() => {
     if (!notifOpen) return;
-    fetch("/api/notifications")
-      .then((r) => r.json())
-      .then((d: { data?: Notification[] }) => {
-        if (d.data) setNotifications(d.data);
-      })
-      .catch(() => {});
-  }, [notifOpen]);
+    void fetchNotifications(false);
+  }, [notifOpen, fetchNotifications]);
+
+  // Listen for custom event dispatched by mutation forms (e.g. after createTransaction)
+  useEffect(() => {
+    function handleRefresh() {
+      // Small delay so the server action has time to persist before we re-fetch
+      setTimeout(() => void fetchNotifications(true), 800);
+    }
+    window.addEventListener("assetly:notifications-refresh", handleRefresh);
+    return () => window.removeEventListener("assetly:notifications-refresh", handleRefresh);
+  }, [fetchNotifications]);
+
+  // Auto-dismiss toast after 5 seconds
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // Click outside notification panel to close
   useEffect(() => {
@@ -137,6 +192,69 @@ export default function Topbar({ userName, userInitials, accounts }: TopbarProps
         )}
       </div>
 
+      {/* Toast notification */}
+      {toast && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="anim-slide-in-right"
+          style={{
+            position: "fixed",
+            top: 68,
+            right: 20,
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 14,
+            padding: "14px 16px",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+            zIndex: 1000,
+            maxWidth: 320,
+            display: "flex",
+            gap: 12,
+            alignItems: "flex-start",
+            minWidth: 240,
+          }}
+        >
+          <span style={{ color: "var(--accent)", marginTop: 1, flexShrink: 0 }}>
+            <Icon name="bell" size={15} />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>
+              {toast.title}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--ink-3)",
+                marginTop: 3,
+                lineHeight: 1.4,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {toast.body}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            aria-label="Dismiss notification"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--ink-4)",
+              padding: 2,
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Icon name="x" size={13} />
+          </button>
+        </div>
+      )}
     </header>
   );
 }

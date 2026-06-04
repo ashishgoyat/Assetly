@@ -2,7 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { insertAccount, updateAccount, removeAccount } from '@/lib/data/store'
+import {
+  insertAccount, updateAccount, removeAccount,
+  getAccountById, insertTransaction,
+  getGoalById, updateGoal,
+  adjustAccountBalance, updateAccountLastSync,
+} from '@/lib/data/store'
 import { auth } from '@/auth'
 
 type ActionResult = { success: true; id: string } | { success: false; error: string }
@@ -144,5 +149,176 @@ export async function deleteAccountAction(id: string): Promise<ActionResult> {
   } catch (err) {
     console.error('[deleteAccountAction] unexpected error:', err)
     return { success: false, error: 'An unexpected error occurred. Please try again.' }
+  }
+}
+
+export async function syncAccountAction(accountId: string): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+    if (!accountId) return { success: false, error: 'Account id is required' }
+    await updateAccountLastSync(accountId, userId)
+    revalidatePath(`/dashboard/accounts/${accountId}`)
+    revalidatePath('/dashboard')
+    return { success: true, id: accountId }
+  } catch (err) {
+    console.error('[syncAccountAction]', err)
+    return { success: false, error: 'Sync failed. Please try again.' }
+  }
+}
+
+const transferSchema = z.object({
+  fromAccountId: z.string().min(1),
+  toAccountId: z.string().min(1),
+  amountDollars: z
+    .string()
+    .transform((v) => Math.round(parseFloat(v) * 100))
+    .pipe(z.number().int().positive('Amount must be positive')),
+})
+
+export async function transferMoneyAction(raw: {
+  fromAccountId: string
+  toAccountId: string
+  amountDollars: string
+}): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const parsed = transferSchema.safeParse(raw)
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues.map((i) => i.message).join(', ') }
+    }
+    const { fromAccountId, toAccountId, amountDollars: amountInCents } = parsed.data
+
+    if (fromAccountId === toAccountId) return { success: false, error: 'Cannot transfer to the same account.' }
+
+    const fromAccount = await getAccountById(fromAccountId, userId)
+    const toAccount = await getAccountById(toAccountId, userId)
+    if (!fromAccount || !toAccount) return { success: false, error: 'Account not found.' }
+    if (fromAccount.balanceInCents < amountInCents) return { success: false, error: 'Insufficient balance.' }
+
+    const now = new Date()
+    const date = now.toISOString().slice(0, 10)
+    const h = now.getHours(), m = now.getMinutes()
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const time = `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`
+
+    await insertTransaction({
+      id: crypto.randomUUID(),
+      date, time,
+      merchant: `Transfer to ${toAccount.name}`,
+      category: 'Transfers',
+      accountLabel: `${fromAccount.name} ${fromAccount.number}`,
+      amountInCents,
+      type: 'expense',
+      status: 'posted',
+    }, userId)
+
+    await insertTransaction({
+      id: crypto.randomUUID(),
+      date, time,
+      merchant: `Transfer from ${fromAccount.name}`,
+      category: 'Transfers',
+      accountLabel: `${toAccount.name} ${toAccount.number}`,
+      amountInCents,
+      type: 'income',
+      status: 'posted',
+    }, userId)
+
+    await adjustAccountBalance(fromAccountId, userId, -amountInCents)
+    await adjustAccountBalance(toAccountId, userId, amountInCents)
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/accounts')
+    revalidatePath(`/dashboard/accounts/${fromAccountId}`)
+    revalidatePath(`/dashboard/accounts/${toAccountId}`)
+    revalidatePath('/dashboard/transactions')
+
+    return { success: true, id: fromAccountId }
+  } catch (err) {
+    console.error('[transferMoneyAction]', err)
+    return { success: false, error: 'Transfer failed. Please try again.' }
+  }
+}
+
+const autoSaveSchema = z.object({
+  accountId: z.string().min(1),
+  goalId: z.string().min(1),
+  amountDollars: z
+    .string()
+    .transform((v) => Math.round(parseFloat(v) * 100))
+    .pipe(z.number().int().positive('Amount must be positive')),
+  frequency: z.enum(['weekly', 'monthly']),
+})
+
+export async function setupAutoSaveAction(raw: {
+  accountId: string
+  goalId: string
+  amountDollars: string
+  frequency: 'weekly' | 'monthly'
+}): Promise<{ success: true; id: string; nextDate: string } | { success: false; error: string }> {
+  try {
+    const session = await auth()
+    const userId = (session?.user as { id?: string })?.id ?? ''
+
+    const parsed = autoSaveSchema.safeParse(raw)
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues.map((i) => i.message).join(', ') }
+    }
+    const { accountId, goalId, amountDollars: amountInCents, frequency } = parsed.data
+
+    const account = await getAccountById(accountId, userId)
+    const goal = await getGoalById(goalId, userId)
+    if (!account || !goal) return { success: false, error: 'Account or goal not found.' }
+    if (account.balanceInCents < amountInCents) return { success: false, error: 'Insufficient balance.' }
+
+    const newCurrent = goal.currentInCents + amountInCents
+    const percentageComplete = Math.round((newCurrent / goal.targetInCents) * 100)
+    const remaining = goal.targetInCents - newCurrent
+    const monthly = goal.monthlyContributionInCents || amountInCents
+    const monthsToGo = remaining > 0 && monthly > 0 ? Math.ceil(remaining / monthly) : 0
+    const eta = monthsToGo === 0
+      ? 'Funded'
+      : new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(
+          new Date(Date.now() + monthsToGo * 30 * 24 * 60 * 60 * 1000)
+        )
+
+    await updateGoal(goalId, { currentInCents: newCurrent, percentageComplete, eta }, userId)
+
+    const now = new Date()
+    const date = now.toISOString().slice(0, 10)
+    const h = now.getHours(), m = now.getMinutes()
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const time = `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`
+
+    await insertTransaction({
+      id: crypto.randomUUID(),
+      date, time,
+      merchant: goal.name,
+      category: 'Transfers',
+      accountLabel: `${account.name} ${account.number}`,
+      amountInCents,
+      type: 'expense',
+      status: 'posted',
+    }, userId)
+
+    await adjustAccountBalance(accountId, userId, -amountInCents)
+
+    const nextMs = frequency === 'weekly'
+      ? Date.now() + 7 * 24 * 60 * 60 * 1000
+      : Date.now() + 30 * 24 * 60 * 60 * 1000
+    const nextDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(nextMs))
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/goals')
+    revalidatePath('/dashboard/accounts')
+    revalidatePath(`/dashboard/accounts/${accountId}`)
+    revalidatePath('/dashboard/transactions')
+
+    return { success: true, id: accountId, nextDate }
+  } catch (err) {
+    console.error('[setupAutoSaveAction]', err)
+    return { success: false, error: 'Auto-save setup failed. Please try again.' }
   }
 }

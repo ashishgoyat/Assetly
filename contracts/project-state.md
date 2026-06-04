@@ -540,3 +540,52 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: not run
 - pnpm build: not run
+
+---
+
+## Session 2026-06-04 (account flow + transactions filter + account detail buttons)
+
+### What was built / fixed
+
+- **Account balance update on transaction** (`lib/data/store.ts`, `app/dashboard/transactions/actions.ts`): added `adjustAccountBalance(id, userId, delta)` and `adjustAccountBalanceByLabel(label, userId, delta)` to store; `createTransaction` now adjusts account balance after every transaction (expense = -amount, income = +amount); revalidates `/dashboard/accounts`.
+- **Sidebar account button redesign** (`app/components/layout/Sidebar.tsx`): replaced colored dot + plain text with a 22×22 rounded square icon (first letter in account color), two-line flex-column label (account name + masked number), and balance on the right; collapsed state hides all text, shows only the square icon.
+- **Sync button on account detail** (`lib/data/store.ts`, `app/dashboard/accounts/actions.ts`, `app/dashboard/accounts/[id]/AccountDetailClient.tsx`): `syncAccountAction` updates `lastSync` to "Just now" in DB; Sync button shows "Syncing…" with disabled state while request is in flight; on success updates the displayed sync time without a page reload.
+- **Settings button on account detail** (`AccountDetailClient.tsx`, `accounts/actions.ts`): opens an inline overlay modal; user can rename the account (calls existing `updateAccountAction`) or delete the account (calls `deleteAccountAction`, redirects to dashboard on success).
+- **Transfer money on account detail** (`AccountDetailClient.tsx`, `accounts/actions.ts`): opens modal with From (read-only), To (dropdown of other accounts), Amount; `transferMoneyAction` inserts debit + credit transactions, adjusts both account balances, revalidates.
+- **Set up auto-save on account detail** (`AccountDetailClient.tsx`, `accounts/actions.ts`): opens modal explaining the feature; user picks savings goal, amount, frequency; `setupAutoSaveAction` immediately funds the first contribution (updates goal currentInCents/percentageComplete/eta, inserts expense transaction, deducts from account); shows next scheduled date.
+- **Export CSV on account detail** (`AccountDetailClient.tsx`): fetches all transactions, filters client-side by accountLabel, downloads as `<AccountName>-transactions-<date>.csv`.
+- **Account filter on transactions page** (`app/dashboard/transactions/page.tsx`): added `accountFilter` state; Account section added to the Filter popover below Type/Status; filters by exact `accountLabel` match; `hasActiveFilter` and Clear all reset include account filter.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` on the detail page aggregates all-time totals, not scoped to the current calendar month
+5. Auto-save frequency is not automatically enforced — next trigger is manual (press Sync)
+
+### Last checks
+- pnpm lint: passed (0 errors, 2 pre-existing warnings)
+- pnpm build: not run
+
+---
+
+## Session 2026-06-04 (Supabase migration)
+
+### What was built / fixed
+- **Database migrated from SQLite to Supabase (PostgreSQL)** (`lib/db/schema.ts`, `lib/db/index.ts`, `drizzle.config.ts`, `package.json`): removed `@libsql/client`; added `postgres` npm package; schema migrated from `drizzle-orm/sqlite-core` (`sqliteTable`) to `drizzle-orm/pg-core` (`pgTable`); integer booleans (`integer({ mode: 'boolean' })`) replaced with native PostgreSQL `boolean` columns on `budgets.isOver`, `bills.isAutoPay`, `bills.isUrgent`, `subscriptions.isUsed`, `insights.isPinned`; `lib/db/index.ts` rewritten — SQLite/libSQL client, manual `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE` migrations, and `PRAGMA` checks all removed; replaced with a minimal `postgres` + Drizzle setup (`max: 1` for serverless connection limit); `ensureDb()` retained as a no-op for store.ts call-site compatibility.
+- **Drizzle config updated** (`drizzle.config.ts`): dialect changed from `turso` → `postgresql`; reads `DATABASE_URL` from env via `dotenv`; `dotenv` added as devDependency.
+- **Migration file generated** (`drizzle/0000_jittery_madelyne_pryor.sql`): full `CREATE TABLE` DDL for all 11 tables in PostgreSQL syntax; ready to apply with `pnpm drizzle-kit migrate`.
+- **Notification sort + timestamp fix** (`lib/data/store.ts`): `large_transaction` notifications now use real event time (`parseTxDateTime`) instead of hardcoded midnight-UTC; notification sort changed from type-priority order to unread-first then newest-createdAt-first.
+- **Notification refresh event** (`app/components/forms/AddTransactionForm.tsx`): dispatches `assetly:notifications-refresh` after creating a transaction so the topbar bell re-fetches immediately.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` on the detail page aggregates all-time totals, not scoped to the current calendar month
+5. Auto-save frequency is not automatically enforced — next trigger is manual (press Sync)
+6. `pnpm drizzle-kit migrate` must be run once manually to push schema to Supabase
+
+### Last checks
+- pnpm lint: passed (0 errors, 2 pre-existing warnings)
+- pnpm build: not run

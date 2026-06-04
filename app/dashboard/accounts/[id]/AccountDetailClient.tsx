@@ -12,10 +12,17 @@ import Icon from "@/app/components/ui/Icon";
 import MerchantIcon from "@/app/components/ui/MerchantIcon";
 import AreaChart from "@/app/components/charts/AreaChart";
 import PeriodSelector from "@/app/components/ui/PeriodSelector";
-import type { AccountDetail } from "@/contracts/api-contracts";
+import type { AccountDetail, Account, Goal, Transaction } from "@/contracts/api-contracts";
 import { MOCK_ACCOUNT_DETAILS } from "@/lib/mock-data";
 import { formatCurrency, formatCurrencyExact } from "@/lib/format";
 import { useCurrency } from "@/app/contexts/CurrencyContext";
+import {
+  syncAccountAction,
+  transferMoneyAction,
+  setupAutoSaveAction,
+  updateAccountAction,
+  deleteAccountAction,
+} from "@/app/dashboard/accounts/actions";
 
 type Period = "1W" | "1M" | "3M" | "1Y";
 
@@ -37,6 +44,37 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
   // retrySignal increments when the user presses Retry, causing the effect to re-run
   const [retrySignal, setRetrySignal] = useState(0);
 
+  // Sync state
+  const [syncing, setSyncing] = useState(false);
+
+  // Transfer modal state
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferTo, setTransferTo] = useState('');
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferring, setTransferring] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [otherAccounts, setOtherAccounts] = useState<Account[]>([]);
+
+  // Auto-save modal state
+  const [autoSaveOpen, setAutoSaveOpen] = useState(false);
+  const [autoSaveGoal, setAutoSaveGoal] = useState('');
+  const [autoSaveAmount, setAutoSaveAmount] = useState('');
+  const [autoSaveFreq, setAutoSaveFreq] = useState<'weekly' | 'monthly'>('monthly');
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
+  const [autoSaveSuccess, setAutoSaveSuccess] = useState<string | null>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
+
+  // Settings modal state
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsName, setSettingsName] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // Export state
+  const [exporting, setExporting] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -55,7 +93,10 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
           | { data: AccountDetail; error: null }
           | { data: null; error: { message: string } };
         if (json.error) throw new Error(json.error.message);
-        if (!cancelled) setDetail(json.data);
+        if (!cancelled) {
+          setDetail(json.data);
+          setSettingsName(json.data.account.name);
+        }
       } catch (err) {
         if (process.env.NODE_ENV === "production") {
           if (!cancelled)
@@ -66,7 +107,9 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
         console.error("[account] API not available, using mock data:", err);
         const mock = MOCK_ACCOUNT_DETAILS[id] ?? null;
         if (!cancelled) {
-          setDetail(mock ? { ...mock, period } : null);
+          const resolved = mock ? { ...mock, period } : null;
+          setDetail(resolved);
+          if (resolved) setSettingsName(resolved.account.name);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -76,6 +119,151 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
     void run();
     return () => { cancelled = true; };
   }, [id, period, retrySignal]);
+
+  // Fetch other accounts and goals once detail is loaded
+  useEffect(() => {
+    if (!detail) return;
+    const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+
+    fetch(`${base}/api/accounts`)
+      .then(r => r.json())
+      .then((d: { data?: Account[] }) => {
+        if (d.data) {
+          const others = d.data.filter((a: Account) => a.id !== detail.account.id);
+          setOtherAccounts(others);
+          setTransferTo(others[0]?.id ?? '');
+        }
+      })
+      .catch(() => {});
+
+    fetch(`${base}/api/goals`)
+      .then(r => r.json())
+      .then((d: { data?: { goals?: Goal[] } }) => {
+        if (d.data?.goals) {
+          setGoals(d.data.goals);
+          setAutoSaveGoal(d.data.goals[0]?.id ?? '');
+        }
+      })
+      .catch(() => {});
+  }, [detail]);
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
+  async function handleSync() {
+    if (!detail) return;
+    setSyncing(true);
+    const result = await syncAccountAction(detail.account.id);
+    if (result.success) {
+      setDetail(prev => prev ? { ...prev, account: { ...prev.account, lastSync: 'Just now' } } : prev);
+    }
+    setSyncing(false);
+  }
+
+  async function handleTransfer() {
+    if (!detail) return;
+    setTransferring(true);
+    setTransferError(null);
+    const result = await transferMoneyAction({
+      fromAccountId: detail.account.id,
+      toAccountId: transferTo,
+      amountDollars: transferAmount,
+    });
+    if (result.success) {
+      setTransferOpen(false);
+      setTransferAmount('');
+      setTransferError(null);
+      setRetrySignal(n => n + 1);
+    } else {
+      setTransferError(result.error);
+    }
+    setTransferring(false);
+  }
+
+  async function handleAutoSave() {
+    if (!detail) return;
+    setAutoSaving(true);
+    setAutoSaveError(null);
+    setAutoSaveSuccess(null);
+    const result = await setupAutoSaveAction({
+      accountId: detail.account.id,
+      goalId: autoSaveGoal,
+      amountDollars: autoSaveAmount,
+      frequency: autoSaveFreq,
+    });
+    if (result.success) {
+      setAutoSaveSuccess(`First transfer done. Next auto-save: ${result.nextDate}`);
+      setAutoSaveAmount('');
+      setRetrySignal(n => n + 1);
+    } else {
+      setAutoSaveError(result.error);
+    }
+    setAutoSaving(false);
+  }
+
+  async function handleSaveSettings() {
+    if (!detail) return;
+    setSavingSettings(true);
+    setSettingsError(null);
+    const fd = new FormData();
+    fd.set('id', detail.account.id);
+    fd.set('name', settingsName);
+    fd.set('balanceDollars', String(detail.account.balanceInCents / 100));
+    const result = await updateAccountAction(fd);
+    if (result.success) {
+      setSettingsOpen(false);
+      setRetrySignal(n => n + 1);
+    } else {
+      setSettingsError(result.error);
+    }
+    setSavingSettings(false);
+  }
+
+  async function handleDeleteAccount() {
+    if (!detail) return;
+    if (!window.confirm(`Delete "${detail.account.name}"? This cannot be undone.`)) return;
+    setDeletingAccount(true);
+    const result = await deleteAccountAction(detail.account.id);
+    if (result.success) {
+      window.location.href = '/dashboard';
+    } else {
+      alert(result.error);
+      setDeletingAccount(false);
+    }
+  }
+
+  async function handleExportCsv() {
+    if (!detail) return;
+    setExporting(true);
+    try {
+      const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+      const res = await fetch(`${base}/api/transactions?pageSize=1000`);
+      const json = (await res.json()) as { data?: { items?: { items?: Transaction[] } } };
+      const allTxs: Transaction[] = json.data?.items?.items ?? [];
+      const accountLabel = `${detail.account.name} ${detail.account.number}`;
+      const accountTxs = allTxs.filter(t => t.accountLabel === accountLabel);
+
+      const header = 'Date,Time,Merchant,Category,Type,Amount,Status';
+      const lines = accountTxs.map(t =>
+        [
+          t.date, t.time,
+          `"${t.merchant.replace(/"/g, '""')}"`,
+          t.category, t.type,
+          (t.amountInCents / 100).toFixed(2),
+          t.status,
+        ].join(',')
+      );
+      const csv = [header, ...lines].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${detail.account.name.replace(/\s+/g, '-')}-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   // ── Not found ──────────────────────────────────────────────────────────────
   if (!loading && !error && detail === null) {
@@ -276,10 +464,21 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-sm" type="button">
-            <Icon name="refresh" size={13} /> Sync
+          <button
+            className="btn btn-sm"
+            type="button"
+            onClick={handleSync}
+            disabled={syncing}
+            aria-busy={syncing}
+            style={syncing ? { opacity: 0.7 } : undefined}
+          >
+            <Icon name="refresh" size={13} /> {syncing ? 'Syncing…' : 'Sync'}
           </button>
-          <button className="btn btn-sm" type="button">
+          <button
+            className="btn btn-sm"
+            type="button"
+            onClick={() => { setSettingsName(detail?.account.name ?? ''); setSettingsOpen(true); }}
+          >
             Settings
           </button>
         </div>
@@ -548,6 +747,7 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
                 className="btn"
                 style={{ width: "100%", justifyContent: "flex-start" }}
                 type="button"
+                onClick={() => setTransferOpen(true)}
               >
                 <Icon name="arrowR" size={14} /> Transfer money
               </button>
@@ -555,6 +755,7 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
                 className="btn"
                 style={{ width: "100%", justifyContent: "flex-start" }}
                 type="button"
+                onClick={() => setAutoSaveOpen(true)}
               >
                 <Icon name="spark" size={14} /> Set up auto-save
               </button>
@@ -562,13 +763,187 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
                 className="btn"
                 style={{ width: "100%", justifyContent: "flex-start" }}
                 type="button"
+                onClick={handleExportCsv}
+                disabled={exporting}
               >
-                <Icon name="download" size={14} /> Export CSV
+                <Icon name="download" size={14} /> {exporting ? 'Exporting…' : 'Export CSV'}
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Transfer modal */}
+      {transferOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setTransferOpen(false); }}
+        >
+          <div
+            style={{
+              background: 'var(--surface)', borderRadius: 16, padding: 28,
+              width: '100%', maxWidth: 400, border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+            }}
+          >
+            <h2 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 600 }}>Transfer money</h2>
+            {transferError && <div style={{ color: 'var(--neg)', fontSize: 12, marginBottom: 12 }}>{transferError}</div>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="field">
+                <label>From</label>
+                <div className="field-input" style={{ background: 'var(--surface-2)', color: 'var(--ink-3)' }}>
+                  {detail?.account.name} {detail?.account.number}
+                </div>
+              </div>
+              <div className="field">
+                <label>To</label>
+                <select className="field-input" value={transferTo} onChange={e => setTransferTo(e.target.value)}>
+                  {otherAccounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name} {acc.number}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Amount</label>
+                <input
+                  type="number"
+                  className="field-input"
+                  placeholder="0.00"
+                  min="0.01"
+                  step="any"
+                  value={transferAmount}
+                  onChange={e => setTransferAmount(e.target.value)}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn btn-ghost" type="button" onClick={() => setTransferOpen(false)} disabled={transferring}>Cancel</button>
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={handleTransfer}
+                disabled={transferring || !transferTo || !transferAmount}
+              >
+                {transferring ? 'Transferring…' : 'Transfer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-save modal */}
+      {autoSaveOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}
+          onClick={e => { if (e.target === e.currentTarget) setAutoSaveOpen(false); }}
+        >
+          <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 28, width: '100%', maxWidth: 400, border: '1px solid var(--border)', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
+            <h2 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>Set up auto-save</h2>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--ink-3)' }}>
+              Automatically transfer a set amount from this account to a savings goal on a schedule.
+            </p>
+            {autoSaveError && <div style={{ color: 'var(--neg)', fontSize: 12, marginBottom: 12 }}>{autoSaveError}</div>}
+            {autoSaveSuccess ? (
+              <div>
+                <div style={{ color: 'var(--pos)', fontSize: 13, marginBottom: 20 }}>✓ {autoSaveSuccess}</div>
+                <button className="btn btn-primary" style={{ width: '100%' }} type="button" onClick={() => { setAutoSaveOpen(false); setAutoSaveSuccess(null); }}>Done</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="field">
+                  <label>Savings goal</label>
+                  <select className="field-input" value={autoSaveGoal} onChange={e => setAutoSaveGoal(e.target.value)}>
+                    {goals.length === 0
+                      ? <option value="">No goals found — add one first</option>
+                      : goals.map(g => <option key={g.id} value={g.id}>{g.name}</option>)
+                    }
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Amount per transfer</label>
+                  <input
+                    type="number"
+                    className="field-input"
+                    placeholder="0.00"
+                    min="0.01"
+                    step="any"
+                    value={autoSaveAmount}
+                    onChange={e => setAutoSaveAmount(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>Frequency</label>
+                  <select className="field-input" value={autoSaveFreq} onChange={e => setAutoSaveFreq(e.target.value as 'weekly' | 'monthly')}>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 6 }}>
+                  <button className="btn btn-ghost" type="button" onClick={() => setAutoSaveOpen(false)} disabled={autoSaving}>Cancel</button>
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={handleAutoSave}
+                    disabled={autoSaving || !autoSaveGoal || !autoSaveAmount}
+                  >
+                    {autoSaving ? 'Setting up…' : 'Start auto-saving'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Settings modal */}
+      {settingsOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}
+          onClick={e => { if (e.target === e.currentTarget) setSettingsOpen(false); }}
+        >
+          <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 28, width: '100%', maxWidth: 400, border: '1px solid var(--border)', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
+            <h2 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 600 }}>Account settings</h2>
+            {settingsError && <div style={{ color: 'var(--neg)', fontSize: 12, marginBottom: 12 }}>{settingsError}</div>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="field">
+                <label>Account name</label>
+                <input
+                  type="text"
+                  className="field-input"
+                  value={settingsName}
+                  onChange={e => setSettingsName(e.target.value)}
+                  maxLength={80}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', marginTop: 20 }}>
+              <button
+                className="btn"
+                style={{ color: 'var(--neg)', borderColor: 'var(--neg)' }}
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount || savingSettings}
+              >
+                {deletingAccount ? 'Deleting…' : 'Delete account'}
+              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-ghost" type="button" onClick={() => setSettingsOpen(false)} disabled={savingSettings}>Cancel</button>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={handleSaveSettings}
+                  disabled={savingSettings || !settingsName.trim()}
+                >
+                  {savingSettings ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

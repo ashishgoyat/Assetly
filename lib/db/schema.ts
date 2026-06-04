@@ -1,16 +1,10 @@
-/**
- * Drizzle ORM schema definitions for Assetly.
- * All monetary values are stored as integers (cents).
- * Array fields (balanceHistory, sparklineData) are stored as JSON TEXT.
- */
-
-import { integer, sqliteTable, text, real, primaryKey } from 'drizzle-orm/sqlite-core'
+import { integer, pgTable, text, real, boolean, primaryKey } from 'drizzle-orm/pg-core'
 
 // ---------------------------------------------------------------------------
 // transactions
 // ---------------------------------------------------------------------------
 
-export const transactionsTable = sqliteTable('transactions', {
+export const transactionsTable = pgTable('transactions', {
   id: text('id').primaryKey(),
   userId: text('user_id'),
   date: text('date').notNull(),       // ISO date "2026-04-23"
@@ -28,7 +22,7 @@ export const transactionsTable = sqliteTable('transactions', {
 // accounts
 // ---------------------------------------------------------------------------
 
-export const accountsTable = sqliteTable('accounts', {
+export const accountsTable = pgTable('accounts', {
   id: text('id').primaryKey(),
   userId: text('user_id'),
   name: text('name').notNull(),
@@ -48,7 +42,7 @@ export const accountsTable = sqliteTable('accounts', {
 // budgets
 // ---------------------------------------------------------------------------
 
-export const budgetsTable = sqliteTable('budgets', {
+export const budgetsTable = pgTable('budgets', {
   id: text('id').primaryKey(),
   userId: text('user_id'),
   name: text('name').notNull(),
@@ -58,14 +52,14 @@ export const budgetsTable = sqliteTable('budgets', {
   percentageUsed: real('percentage_used').notNull(),
   icon: text('icon').notNull(),
   color: text('color').notNull(),
-  isOver: integer('is_over', { mode: 'boolean' }).notNull(),
+  isOver: boolean('is_over').notNull(),
 })
 
 // ---------------------------------------------------------------------------
 // goals
 // ---------------------------------------------------------------------------
 
-export const goalsTable = sqliteTable('goals', {
+export const goalsTable = pgTable('goals', {
   id: text('id').primaryKey(),
   userId: text('user_id'),
   name: text('name').notNull(),
@@ -83,15 +77,15 @@ export const goalsTable = sqliteTable('goals', {
 // bills
 // ---------------------------------------------------------------------------
 
-export const billsTable = sqliteTable('bills', {
+export const billsTable = pgTable('bills', {
   id: text('id').primaryKey(),
   userId: text('user_id'),
   name: text('name').notNull(),
   amountInCents: integer('amount_in_cents').notNull(),
   dueDate: text('due_date').notNull(),
   dueInDays: integer('due_in_days').notNull(),
-  isAutoPay: integer('is_auto_pay', { mode: 'boolean' }).notNull(),
-  isUrgent: integer('is_urgent', { mode: 'boolean' }).notNull(),
+  isAutoPay: boolean('is_auto_pay').notNull(),
+  isUrgent: boolean('is_urgent').notNull(),
   category: text('category').notNull(),
   icon: text('icon').notNull(),
   color: text('color').notNull(),
@@ -101,13 +95,13 @@ export const billsTable = sqliteTable('bills', {
 // subscriptions
 // ---------------------------------------------------------------------------
 
-export const subscriptionsTable = sqliteTable('subscriptions', {
+export const subscriptionsTable = pgTable('subscriptions', {
   id: text('id').primaryKey(),
   userId: text('user_id'),
   name: text('name').notNull(),
   amountMonthlyInCents: integer('amount_monthly_in_cents').notNull(),
   nextDate: text('next_date').notNull(),
-  isUsed: integer('is_used', { mode: 'boolean' }).notNull(),
+  isUsed: boolean('is_used').notNull(),
   icon: text('icon').notNull(),
   color: text('color').notNull(),
 })
@@ -116,7 +110,7 @@ export const subscriptionsTable = sqliteTable('subscriptions', {
 // insights
 // ---------------------------------------------------------------------------
 
-export const insightsTable = sqliteTable('insights', {
+export const insightsTable = pgTable('insights', {
   id: text('id').primaryKey(),
   glyph: text('glyph').notNull(),
   tag: text('tag').notNull(),
@@ -124,7 +118,7 @@ export const insightsTable = sqliteTable('insights', {
   title: text('title').notNull(),
   body: text('body').notNull(),
   cta: text('cta').notNull(),
-  isPinned: integer('is_pinned', { mode: 'boolean' }).notNull(),
+  isPinned: boolean('is_pinned').notNull(),
   sparklineData: text('sparkline_data'), // JSON TEXT: number[] | null
 })
 
@@ -132,7 +126,7 @@ export const insightsTable = sqliteTable('insights', {
 // users
 // ---------------------------------------------------------------------------
 
-export const usersTable = sqliteTable('users', {
+export const usersTable = pgTable('users', {
   id:             text('id').primaryKey(),
   name:           text('name').notNull(),
   email:          text('email').notNull(),
@@ -147,7 +141,7 @@ export const usersTable = sqliteTable('users', {
 // notification reads
 // ---------------------------------------------------------------------------
 
-export const notificationReadsTable = sqliteTable('notification_reads', {
+export const notificationReadsTable = pgTable('notification_reads', {
   userId:         text('user_id').notNull(),
   notificationId: text('notification_id').notNull(),
   readAt:         text('read_at').notNull(),
@@ -157,7 +151,7 @@ export const notificationReadsTable = sqliteTable('notification_reads', {
 // notification emails sent
 // ---------------------------------------------------------------------------
 
-export const notificationEmailsSentTable = sqliteTable('notification_emails_sent', {
+export const notificationEmailsSentTable = pgTable('notification_emails_sent', {
   userId:         text('user_id').notNull(),
   notificationId: text('notification_id').notNull(),
   sentAt:         text('sent_at').notNull(),
@@ -167,7 +161,7 @@ export const notificationEmailsSentTable = sqliteTable('notification_emails_sent
 // user sessions
 // ---------------------------------------------------------------------------
 
-export const userSessionsTable = sqliteTable('user_sessions', {
+export const userSessionsTable = pgTable('user_sessions', {
   id:        text('id').primaryKey(),
   userId:    text('user_id').notNull(),
   createdAt: text('created_at').notNull(),  // ISO datetime

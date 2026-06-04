@@ -97,6 +97,7 @@ export default function TransactionsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "posted" | "pending">("all");
+  const [accountFilter, setAccountFilter] = useState<string>("all");
   const filterRef = useRef<HTMLDivElement>(null);
 
   // Month picker state
@@ -178,7 +179,7 @@ export default function TransactionsPage() {
     .sort()
     .reverse();
 
-  // Chain all four filters in order: category → month → type → status
+  // Chain all five filters in order: category → month → type → status → account
   let filtered =
     filter === "all"
       ? transactions
@@ -189,8 +190,10 @@ export default function TransactionsPage() {
     filtered = filtered.filter((t) => t.type === typeFilter);
   if (statusFilter !== "all")
     filtered = filtered.filter((t) => t.status === statusFilter);
+  if (accountFilter !== "all")
+    filtered = filtered.filter((t) => t.accountLabel === accountFilter);
 
-  const hasActiveFilter = typeFilter !== "all" || statusFilter !== "all";
+  const hasActiveFilter = typeFilter !== "all" || statusFilter !== "all" || accountFilter !== "all";
 
   if (loading) {
     return (
@@ -502,6 +505,44 @@ export default function TransactionsPage() {
                   </button>
                 ))}
               </div>
+
+              {/* Account filter */}
+              {accounts.length > 0 && (
+                <div style={{ borderTop: "1px solid var(--border-2)", paddingTop: 12, marginTop: 12 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "var(--ink-3)",
+                      marginBottom: 8,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                    }}
+                  >
+                    Account
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {[
+                      { label: "All accounts", value: "all" },
+                      ...accounts.map((a) => ({
+                        label: `${a.name} ${a.number}`,
+                        value: `${a.name} ${a.number}`,
+                      })),
+                    ].map(({ label, value }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`btn btn-sm${accountFilter === value ? " btn-primary" : ""}`}
+                        style={{ justifyContent: "flex-start" }}
+                        onClick={() => setAccountFilter(value)}
+                      >
+                        {accountFilter === value && <Icon name="check" size={11} />}
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -690,6 +731,7 @@ export default function TransactionsPage() {
                     setFilter("all");
                     setTypeFilter("all");
                     setStatusFilter("all");
+                    setAccountFilter("all");
                     setMonthFilter(null);
                   }}
                 >
