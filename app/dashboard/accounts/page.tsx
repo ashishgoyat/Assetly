@@ -23,6 +23,7 @@ const TYPE_LABEL: Record<Account["type"], string> = {
   checking: "Checking",
   savings: "Savings",
   investment: "Investment",
+  cash: "Cash",
 };
 
 function AccountCard({
