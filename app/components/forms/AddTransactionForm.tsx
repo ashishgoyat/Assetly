@@ -80,7 +80,7 @@ export default function AddTransactionForm({
       formData.set("amountDollars", amount);
       formData.set("type", type);
       formData.set("category", category);
-      formData.set("accountLabel", accountLabel);
+      formData.set("accountLabel", paymentMethod === "cash" ? "Cash" : accountLabel);
       formData.set("paymentMethod", paymentMethod);
 
       const result = await createTransaction(formData);
@@ -215,33 +215,35 @@ export default function AddTransactionForm({
           </select>
         </div>
 
-        {/* Account — loaded from GET /api/accounts */}
-        <div className="field">
-          <label htmlFor="tx-account">Account</label>
-          <select
-            id="tx-account"
-            className="field-input"
-            value={accountLabel}
-            onChange={(e) => setAccountLabel(e.target.value)}
-            disabled={accountsLoading}
-            aria-busy={accountsLoading}
-          >
-            {accountsLoading ? (
-              <option value="">Loading accounts…</option>
-            ) : accounts.length === 0 ? (
-              <option value="">No accounts found</option>
-            ) : (
-              accounts.map((a) => {
-                const label = `${a.name} ${a.number}`;
-                return (
-                  <option key={a.id} value={label}>
-                    {label}
-                  </option>
-                );
-              })
-            )}
-          </select>
-        </div>
+        {/* Account — hidden for cash payments */}
+        {paymentMethod !== "cash" && (
+          <div className="field">
+            <label htmlFor="tx-account">Account</label>
+            <select
+              id="tx-account"
+              className="field-input"
+              value={accountLabel}
+              onChange={(e) => setAccountLabel(e.target.value)}
+              disabled={accountsLoading}
+              aria-busy={accountsLoading}
+            >
+              {accountsLoading ? (
+                <option value="">Loading accounts…</option>
+              ) : accounts.length === 0 ? (
+                <option value="">No accounts found</option>
+              ) : (
+                accounts.map((a) => {
+                  const label = `${a.name} ${a.number}`;
+                  return (
+                    <option key={a.id} value={label}>
+                      {label}
+                    </option>
+                  );
+                })
+              )}
+            </select>
+          </div>
+        )}
 
         {/* Payment method toggle */}
         <div className="field">
@@ -264,7 +266,6 @@ export default function AddTransactionForm({
                 { value: "card", label: "Card" },
                 { value: "cash", label: "Cash" },
                 { value: "bank_transfer", label: "Bank" },
-                { value: "other", label: "Other" },
               ] as { value: PaymentMethod; label: string }[]
             ).map(({ value, label }) => {
               const isActive = paymentMethod === value;
