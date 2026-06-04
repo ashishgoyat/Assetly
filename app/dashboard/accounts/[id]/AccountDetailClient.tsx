@@ -83,7 +83,7 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
       setError(null);
       try {
         const base =
-          process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+          "";
         const res = await fetch(
           `${base}/api/accounts/${id}?period=${period}`,
           { cache: "no-store" }

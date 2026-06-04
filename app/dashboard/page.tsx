@@ -1,15 +1,23 @@
-/**
- * Dashboard / Home page — Server Component
- */
-
 import { auth } from "@/auth";
 import { cookies } from "next/headers";
 import CashOnHandCard from "@/app/components/dashboard/CashOnHandCard";
 import DashboardActivity from "@/app/components/dashboard/DashboardActivity";
-import type { DashboardSummary } from "@/contracts/api-contracts";
-import { MOCK_DASHBOARD } from "@/lib/mock-data";
 import { formatCurrency } from "@/lib/format";
 import { getCurrencyServer } from "@/lib/server-prefs";
+import {
+  getTransactions,
+  getAccounts,
+  getBills,
+  getGoals,
+  getBudgets,
+} from "@/lib/data/store";
+import {
+  getLatestTransactionDate,
+  parseDate,
+  daysInMonth,
+  formatDateLong,
+} from "@/lib/calculations";
+import { computeCashFlow } from "@/lib/cash-flow";
 
 function getHourInTimezone(timezone: string): number {
   try {
@@ -41,48 +49,63 @@ function firstName(full: string | null | undefined): string {
   return trimmed.split(/\s+/)[0];
 }
 
-async function getDashboardData(): Promise<DashboardSummary> {
-  try {
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ');
-    const vercelUrl = process.env.VERCEL_URL
-    const base = process.env.NEXT_PUBLIC_BASE_URL
-      ?? (vercelUrl ? `https://${vercelUrl}` : "http://localhost:3000")
-    const res = await fetch(`${base}/api/dashboard`, {
-      cache: "no-store",
-      headers: { cookie: cookieHeader },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    if (json.error) throw new Error(json.error.message);
-    return json.data as DashboardSummary;
-  } catch (err) {
-    if (process.env.NODE_ENV === "production") throw err;
-    console.error("[dashboard] API not available, using mock data:", err);
-    return MOCK_DASHBOARD;
-  }
-}
-
 export default async function DashboardPage() {
-  const [data, session, cookieStore, currency] = await Promise.all([
-    getDashboardData(),
+  const [session, cookieStore, currency] = await Promise.all([
     auth(),
     cookies(),
     getCurrencyServer(),
   ]);
-  const { user, today, cashOnHand, recentTransactions, upcomingBills, savingGoals } = data;
 
-  const displayName = firstName(session?.user?.name ?? user.name);
+  const userId = (session?.user as { id?: string })?.id ?? "";
+
+  const [txList, acctList, billList, goalList, budgetList] = await Promise.all([
+    getTransactions(userId),
+    getAccounts(userId),
+    getBills(userId),
+    getGoals(userId),
+    getBudgets(userId),
+  ]);
+
+  const latestDate =
+    getLatestTransactionDate(txList) || new Date().toISOString().slice(0, 10);
+  const { year, month } = parseDate(latestDate);
+
+  const cashAccounts = acctList.filter((a) => a.type !== "investment");
+  const cashTotalInCents = cashAccounts.reduce((s, a) => s + a.balanceInCents, 0);
+  const cashWeekDeltaInCents = cashAccounts.reduce((s, a) => s + a.weekDeltaInCents, 0);
+
+  const { dataByPeriod: cashFlowDataByPeriod, labelsByPeriod: cashFlowLabelsByPeriod } =
+    computeCashFlow(txList, cashTotalInCents, new Date());
+
+  const spentTodayInCents = txList
+    .filter((tx) => tx.date === latestDate && tx.type === "expense")
+    .reduce((s, tx) => s + tx.amountInCents, 0);
+
+  const totalBudgetLimitInCents = budgetList.reduce((s, b) => s + b.limitInCents, 0);
+  const daysInCurrentMonth = daysInMonth(year, month);
+  const dailyAllowanceInCents = Math.round(totalBudgetLimitInCents / daysInCurrentMonth);
+  const safeToSpendInCents = Math.max(0, dailyAllowanceInCents - spentTodayInCents);
+  const percentSpentToday =
+    dailyAllowanceInCents > 0
+      ? Math.round((spentTodayInCents / dailyAllowanceInCents) * 100)
+      : 0;
+
+  const recentTransactions = txList.slice(0, 7);
+  const upcomingBills = [...billList].sort((a, b) => a.dueInDays - b.dueInDays).slice(0, 4);
+  const savingGoals = goalList.slice(0, 3);
+
+  const displayName = firstName(session?.user?.name);
   const timezone = cookieStore.get("assetly-timezone")?.value ?? "Asia/Kolkata";
   const greeting = getGreeting(getHourInTimezone(timezone));
-
-  const pctToday = today.percentSpentToday;
+  const pctToday = percentSpentToday;
 
   return (
     <div className="page-content">
       {/* Greeting */}
       <div style={{ marginBottom: 22 }}>
-        <div className="sec-label" style={{ marginBottom: 6 }}>{today.date}</div>
+        <div className="sec-label" style={{ marginBottom: 6 }}>
+          {formatDateLong(latestDate)}
+        </div>
         <h1
           className="serif"
           style={{ fontSize: 40, lineHeight: 1.02, letterSpacing: "-0.02em", margin: 0 }}
@@ -92,10 +115,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 1: Safe-to-spend + Cash flow */}
-      <div
-        className="grid-2col-wide"
-        style={{ marginBottom: 14 }}
-      >
+      <div className="grid-2col-wide" style={{ marginBottom: 14 }}>
         {/* Safe to spend */}
         <div
           className="card-accent"
@@ -108,10 +128,7 @@ export default async function DashboardPage() {
               alignItems: "flex-start",
             }}
           >
-            <div
-              className="sec-label"
-              style={{ color: "var(--accent-2)" }}
-            >
+            <div className="sec-label" style={{ color: "var(--accent-2)" }}>
               Safe to spend today
             </div>
             <span className="pill pill-accent">After bills · savings</span>
@@ -126,14 +143,14 @@ export default async function DashboardPage() {
               letterSpacing: "-0.04em",
             }}
           >
-            {formatCurrency(today.safeToSpendInCents, currency)}
+            {formatCurrency(safeToSpendInCents, currency)}
           </div>
           <div style={{ marginTop: 14, color: "var(--ink-2)" }}>
             <span className="num" style={{ fontWeight: 500 }}>
-              {formatCurrency(today.spentTodayInCents, currency)}
+              {formatCurrency(spentTodayInCents, currency)}
             </span>{" "}
             <span className="muted">
-              of {formatCurrency(today.dailyAllowanceInCents, currency)} daily allowance
+              of {formatCurrency(dailyAllowanceInCents, currency)} daily allowance
             </span>
           </div>
           <div
@@ -147,7 +164,6 @@ export default async function DashboardPage() {
               }}
             />
           </div>
-          {/* Decorative circle */}
           <div
             style={{
               position: "absolute",
@@ -165,10 +181,10 @@ export default async function DashboardPage() {
 
         {/* Cash flow */}
         <CashOnHandCard
-          totalInCents={cashOnHand.totalInCents}
-          weekDeltaInCents={cashOnHand.weekDeltaInCents}
-          cashFlowDataByPeriod={cashOnHand.cashFlowDataByPeriod}
-          cashFlowLabelsByPeriod={cashOnHand.cashFlowLabelsByPeriod}
+          totalInCents={cashTotalInCents}
+          weekDeltaInCents={cashWeekDeltaInCents}
+          cashFlowDataByPeriod={cashFlowDataByPeriod}
+          cashFlowLabelsByPeriod={cashFlowLabelsByPeriod}
         />
       </div>
 
@@ -180,4 +196,3 @@ export default async function DashboardPage() {
     </div>
   );
 }
-

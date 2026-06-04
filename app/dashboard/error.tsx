@@ -55,7 +55,7 @@ export default function DashboardError({ error, reset }: ErrorProps) {
             marginBottom: 24,
           }}
         >
-          {error.message ?? "An unexpected error occurred while loading your dashboard."}
+          An unexpected error occurred. Please try again.
         </div>
         <button className="btn btn-primary" type="button" onClick={reset}>
           Try again

@@ -35,7 +35,7 @@ interface PageData {
 async function fetchTransactions(): Promise<PageData> {
   try {
     // TODO: awaiting backend — expects GET /api/transactions, see contracts/api-contracts.ts
-    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const base = "";
     const res = await fetch(`${base}/api/transactions?page=1&pageSize=50`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
@@ -136,7 +136,7 @@ export default function TransactionsPage() {
 
   // Fetch accounts once for the account dropdown in TxDetailPanel
   useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const base = "";
     fetch(`${base}/api/accounts`)
       .then((r) => r.json())
       .then((d) => {

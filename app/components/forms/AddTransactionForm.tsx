@@ -51,7 +51,7 @@ export default function AddTransactionForm({
 
   // Fetch real accounts from GET /api/accounts on mount
   useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const base = "";
     fetch(`${base}/api/accounts`)
       .then((r) => r.json())
       .then((d: { data?: Account[] }) => {
