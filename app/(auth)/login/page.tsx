@@ -5,10 +5,15 @@ import { signIn } from 'next-auth/react'
 
 export default function LoginPage() {
   const [redirecting, setRedirecting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  async function handleGoogleSignIn() {
+  function handleGoogleSignIn() {
     setRedirecting(true)
-    await signIn('google', { callbackUrl: '/dashboard' })
+    setError(null)
+    signIn('google', { callbackUrl: '/dashboard' }).catch(() => {
+      setRedirecting(false)
+      setError('Sign-in failed. Please try again.')
+    })
   }
 
   return (
@@ -117,6 +122,13 @@ export default function LoginPage() {
           </>
         )}
       </button>
+
+      {/* Sign-in error */}
+      {error !== null && (
+        <p className="text-sm text-center" style={{ color: 'var(--neg)' }}>
+          {error}
+        </p>
+      )}
 
       {/* Privacy note */}
       <p className="text-center text-xs" style={{ color: 'var(--ink-4)' }}>

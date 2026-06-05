@@ -852,3 +852,26 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 0 warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-05 (mobile Google login fix)
+
+### What was built / fixed
+- **`app/(auth)/login/page.tsx`** — `handleGoogleSignIn` was `async` with an `await` before `signIn()`; iOS Safari drops the user-gesture context at the first `await`, causing the OAuth redirect to be blocked on mobile. Fixed by making the handler synchronous (no `async`/`await`) and chaining `.catch()` on the `signIn()` promise instead. Added an `error` state that renders "Sign-in failed. Please try again." below the button if `signIn` rejects, so the user is never stuck on "Redirecting…".
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices"
+10. **Existing DB rows are still plaintext** — run `pnpm encrypt-db` once to migrate them
+
+### Last checks
+- pnpm lint: passed (0 errors, 0 warnings)
+- pnpm build: not run
