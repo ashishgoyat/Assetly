@@ -8,6 +8,8 @@ import { useState } from "react";
 import Icon from "@/app/components/ui/Icon";
 import Modal from "@/app/components/ui/Modal";
 import { createBudget } from "@/app/dashboard/budgets/actions";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { getCurrencySymbol } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -57,6 +59,8 @@ const COLOR_OPTIONS = [
 // ---------------------------------------------------------------------------
 
 export default function NewBudgetButton() {
+  const currency = useCurrency();
+  const currSymbol = getCurrencySymbol(currency);
   const [open, setOpen] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#5e7d96");
   const [submitting, setSubmitting] = useState(false);
@@ -159,7 +163,7 @@ export default function NewBudgetButton() {
             {/* Monthly limit */}
             <div>
               <label htmlFor="budget-limit" style={labelStyle}>
-                Monthly limit
+                Monthly limit ({currSymbol})
               </label>
               <input
                 id="budget-limit"

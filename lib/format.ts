@@ -34,3 +34,8 @@ export function formatCompact(cents: number, currency = "USD", rate = 1): string
 export function formatPercent(value: number, decimals = 0): string {
   return `${value.toFixed(decimals)}%`;
 }
+
+export function getCurrencySymbol(currency: string): string {
+  const symbols: Record<string, string> = { USD: '$', INR: '₹', EUR: '€' }
+  return symbols[currency] ?? '$'
+}

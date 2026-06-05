@@ -66,6 +66,7 @@ function mapTransaction(row: TransactionRow): Transaction {
     ...(row.note != null ? { note: row.note } : {}),
     ...(row.paymentMethod != null ? { paymentMethod: row.paymentMethod as Transaction['paymentMethod'] } : {}),
     ...(row.chargePercent != null ? { chargePercent: row.chargePercent } : {}),
+    ...(row.budgetId != null ? { budgetId: row.budgetId } : {}),
   }
 }
 
@@ -257,6 +258,7 @@ export async function insertTransaction(tx: Transaction, userId?: string): Promi
     note: tx.note ?? null,
     paymentMethod: tx.paymentMethod ?? null,
     chargePercent: tx.chargePercent ?? null,
+    budgetId: tx.budgetId ?? null,
   })
 }
 

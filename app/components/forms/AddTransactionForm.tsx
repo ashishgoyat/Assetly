@@ -8,12 +8,15 @@
 import { useState, useEffect } from "react";
 import type {
   Account,
+  Budget,
   Transaction,
   TransactionCategory,
   TransactionType,
   PaymentMethod,
 } from "@/contracts/api-contracts";
 import { createTransaction } from "@/app/dashboard/transactions/actions";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { getCurrencySymbol } from "@/lib/format";
 
 interface AddTransactionFormProps {
   onClose: () => void;
@@ -40,6 +43,9 @@ export default function AddTransactionForm({
   onClose,
   onCreated,
 }: AddTransactionFormProps) {
+  const currency = useCurrency();
+  const currSymbol = getCurrencySymbol(currency);
+
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<TransactionType>("expense");
@@ -49,6 +55,8 @@ export default function AddTransactionForm({
   const [chargePercent, setChargePercent] = useState("");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
+  const [budgetList, setBudgetList] = useState<Budget[]>([]);
+  const [budgetId, setBudgetId] = useState<string>("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +78,17 @@ export default function AddTransactionForm({
       .finally(() => setAccountsLoading(false));
   }, []);
 
+  // Fetch budgets for the current month on mount
+  useEffect(() => {
+    const month = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+    fetch(`/api/budgets?month=${month}`)
+      .then((r) => r.json())
+      .then((d: { data?: { budgets: Budget[] } }) => {
+        if (d.data?.budgets) setBudgetList(d.data.budgets);
+      })
+      .catch(() => {});
+  }, []);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -84,6 +103,7 @@ export default function AddTransactionForm({
       formData.set("accountLabel", paymentMethod === "cash" ? "Cash" : accountLabel);
       formData.set("paymentMethod", paymentMethod);
       if (chargePercent) formData.set("chargePercent", chargePercent);
+      if (budgetId) formData.set("budgetId", budgetId);
 
       const result = await createTransaction(formData);
       if (result.success) {
@@ -102,6 +122,9 @@ export default function AddTransactionForm({
       setPending(false);
     }
   }
+
+  const budgetsForCategory = budgetList.filter((b) => b.category === category);
+  const showBudgetPicker = budgetsForCategory.length > 1;
 
   return (
     <form onSubmit={handleSubmit} noValidate>
@@ -138,7 +161,7 @@ export default function AddTransactionForm({
               }}
               aria-hidden
             >
-              $
+              {currSymbol}
             </span>
             <input
               id="tx-amount"
@@ -207,7 +230,12 @@ export default function AddTransactionForm({
             id="tx-category"
             className="field-input"
             value={category}
-            onChange={(e) => setCategory(e.target.value as TransactionCategory)}
+            onChange={(e) => {
+              const newCat = e.target.value as TransactionCategory;
+              setCategory(newCat);
+              const matching = budgetList.filter((b) => b.category === newCat);
+              setBudgetId(matching.length > 1 ? matching[0].id : "");
+            }}
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -216,6 +244,25 @@ export default function AddTransactionForm({
             ))}
           </select>
         </div>
+
+        {/* Budget picker — only shown when the selected category has multiple budgets */}
+        {showBudgetPicker && (
+          <div className="field">
+            <label htmlFor="tx-budget">Which budget?</label>
+            <select
+              id="tx-budget"
+              className="field-input"
+              value={budgetId}
+              onChange={(e) => setBudgetId(e.target.value)}
+            >
+              {budgetsForCategory.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Account — hidden for cash payments */}
         {paymentMethod !== "cash" && (
@@ -321,7 +368,7 @@ export default function AddTransactionForm({
           <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: -8, paddingLeft: 2 }}>
             Net after {chargePercent}% charge:{" "}
             <strong style={{ color: "var(--ink)" }}>
-              ${(parseFloat(amount) * (1 - parseFloat(chargePercent) / 100)).toFixed(2)}
+              {currSymbol}{(parseFloat(amount) * (1 - parseFloat(chargePercent) / 100)).toFixed(2)}
             </strong>
           </div>
         )}

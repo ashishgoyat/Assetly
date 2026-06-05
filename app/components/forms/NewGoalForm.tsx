@@ -10,6 +10,8 @@ import Icon from "@/app/components/ui/Icon";
 import type { IconName } from "@/app/components/ui/Icon";
 import { createGoal } from "@/app/dashboard/goals/actions";
 import type { Goal } from "@/contracts/api-contracts";
+import { useCurrency } from "@/app/contexts/CurrencyContext";
+import { getCurrencySymbol } from "@/lib/format";
 
 interface NewGoalFormProps {
   onClose: () => void;
@@ -26,6 +28,9 @@ const ICON_OPTIONS: { name: IconName; label: string }[] = [
 ];
 
 export default function NewGoalForm({ onClose, onCreated }: NewGoalFormProps) {
+  const currency = useCurrency();
+  const currSymbol = getCurrencySymbol(currency);
+
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
   const [monthly, setMonthly] = useState("");
@@ -98,7 +103,7 @@ export default function NewGoalForm({ onClose, onCreated }: NewGoalFormProps) {
               }}
               aria-hidden
             >
-              $
+              {currSymbol}
             </span>
             <input
               id="goal-target"
@@ -131,7 +136,7 @@ export default function NewGoalForm({ onClose, onCreated }: NewGoalFormProps) {
               }}
               aria-hidden
             >
-              $
+              {currSymbol}
             </span>
             <input
               id="goal-monthly"

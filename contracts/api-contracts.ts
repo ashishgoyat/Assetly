@@ -61,6 +61,7 @@ export interface Transaction {
   note?: string
   paymentMethod?: PaymentMethod
   chargePercent?: number        // Optional fee/commission %, e.g. 11.5 means 11.5%
+  budgetId?: string             // When set, this transaction counts only toward that specific budget
 }
 
 export interface Account {

@@ -7,10 +7,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { insertGoal, getGoalById, updateGoal, removeGoal, insertTransaction } from '@/lib/data/store'
+import { insertGoal, getGoalById, updateGoal, removeGoal, insertTransaction, getGoals } from '@/lib/data/store'
 import { computeGoalPercentage } from '@/lib/calculations'
 import { auth } from '@/auth'
 import type { Goal } from '@/contracts/api-contracts'
+import { getCurrencyServer, getExchangeRateServer } from '@/lib/server-prefs'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -102,6 +103,12 @@ export async function createGoal(formData: FormData): Promise<CreateGoalResult> 
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
 
+    const [currency, existingGoals] = await Promise.all([
+      getCurrencyServer(),
+      getGoals(userId),
+    ])
+    const rate = await getExchangeRateServer(currency)
+
     const raw = {
       name: val(formData, 'name'),
       targetInCents: val(formData, 'targetInCents'),
@@ -117,23 +124,32 @@ export async function createGoal(formData: FormData): Promise<CreateGoalResult> 
       return { success: false, error: message }
     }
 
-    const { name, targetInCents, monthlyContributionInCents, icon, color, vibe } =
-      parsed.data
+    const { name, icon, color, vibe } = parsed.data
+
+    const duplicate = existingGoals.find(g =>
+      g.name.trim().toLowerCase() === name.trim().toLowerCase()
+    )
+    if (duplicate) {
+      return { success: false, error: `A goal named "${name}" already exists.` }
+    }
+
+    const targetBaseCents = Math.round(parsed.data.targetInCents / rate)
+    const monthlyBaseCents = Math.round(parsed.data.monthlyContributionInCents / rate)
 
     // Additional domain constraints
-    if (targetInCents > 100_000_000) {
-      return { success: false, error: 'Target cannot exceed $1,000,000' }
+    if (targetBaseCents > 1_000_000_00) {
+      return { success: false, error: 'Target cannot exceed 1,000,000' }
     }
 
     const id = crypto.randomUUID()
-    const eta = computeEta(targetInCents, monthlyContributionInCents)
+    const eta = computeEta(targetBaseCents, monthlyBaseCents)
 
     await insertGoal({
       id,
       name,
       currentInCents: 0,
-      targetInCents,
-      monthlyContributionInCents,
+      targetInCents: targetBaseCents,
+      monthlyContributionInCents: monthlyBaseCents,
       percentageComplete: 0,
       eta,
       icon,
@@ -148,8 +164,8 @@ export async function createGoal(formData: FormData): Promise<CreateGoalResult> 
       id,
       name,
       currentInCents: 0,
-      targetInCents,
-      monthlyContributionInCents,
+      targetInCents: targetBaseCents,
+      monthlyContributionInCents: monthlyBaseCents,
       percentageComplete: 0,
       eta,
       icon,
@@ -174,13 +190,17 @@ export async function addFundsToGoal(
       return { success: false, error: 'Amount must be a positive number.' }
     }
 
+    const currencyS = await getCurrencyServer()
+    const rateS = await getExchangeRateServer(currencyS)
+    const parsedAmountBase = Math.round(parsedAmount / rateS)
+
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
 
     const goal = await getGoalById(id, userId)
     if (!goal) return { success: false, error: 'Goal not found.' }
 
-    const newCurrentInCents = goal.currentInCents + parsedAmount
+    const newCurrentInCents = goal.currentInCents + parsedAmountBase
     const newPercentage = computeGoalPercentage(newCurrentInCents, goal.targetInCents)
     const newEta = computeEta(
       Math.max(0, goal.targetInCents - newCurrentInCents),
@@ -201,7 +221,7 @@ export async function addFundsToGoal(
       merchant: goal.name,
       category: 'Transfers',
       accountLabel: 'Goal Transfer',
-      amountInCents: parsedAmount,
+      amountInCents: parsedAmountBase,
       type: 'expense',
       status: 'posted',
     }, userId)
@@ -226,6 +246,10 @@ export async function updateGoalMonthly(
       return { success: false, error: 'Monthly amount must be a positive number.' }
     }
 
+    const currencyS = await getCurrencyServer()
+    const rateS = await getExchangeRateServer(currencyS)
+    const parsedCentsBase = Math.round(parsedCents / rateS)
+
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
 
@@ -233,10 +257,10 @@ export async function updateGoalMonthly(
     if (!goal) return { success: false, error: 'Goal not found.' }
 
     const remaining = Math.max(0, goal.targetInCents - goal.currentInCents)
-    const newEta = computeEta(remaining, parsedCents)
+    const newEta = computeEta(remaining, parsedCentsBase)
 
     await updateGoal(id, {
-      monthlyContributionInCents: parsedCents,
+      monthlyContributionInCents: parsedCentsBase,
       eta: newEta,
     }, userId)
 

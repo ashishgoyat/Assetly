@@ -18,6 +18,7 @@ export const transactionsTable = pgTable('transactions', {
   note: text('note'),
   paymentMethod: text('payment_method'),
   chargePercent: real('charge_percent'),
+  budgetId: text('budget_id'),
 })
 
 // ---------------------------------------------------------------------------

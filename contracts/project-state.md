@@ -674,3 +674,30 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 3 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-05 (currency inputs, duplicate prevention, budget disambiguation)
+
+### What was built / fixed
+- **Budget page layout fix** (`app/dashboard/budgets/page.tsx`): budget category cards moved into the left column below the hero card (stacked vertically), eliminating the empty space gap; calendar occupies right column full height
+- **getCurrencySymbol helper** (`lib/format.ts`): new exported function returning `$`/`₹`/`€` for USD/INR/EUR
+- **Currency-aware amount inputs** (`app/components/forms/AddTransactionForm.tsx`, `app/components/forms/NewGoalForm.tsx`, `app/dashboard/budgets/NewBudgetButton.tsx`, `app/dashboard/budgets/page.tsx` BudgetCard, `app/dashboard/goals/page.tsx` GoalCard): all hardcoded `$` symbols replaced with dynamic currency symbol from `useCurrency()` + `getCurrencySymbol()`
+- **Server-side exchange rate conversion** (`app/dashboard/budgets/actions.ts`, `app/dashboard/goals/actions.ts`, `app/dashboard/transactions/actions.ts`): `createBudget`, `createGoal`, `addFundsToGoal`, `updateGoalMonthly`, and `createTransaction` now read currency + exchange rate from cookies via `getCurrencyServer()`/`getExchangeRateServer()` and divide the user's local-currency input by rate before storing
+- **Duplicate budget prevention** (`app/dashboard/budgets/actions.ts`): `createBudget` blocks a second budget with the same name + category
+- **Duplicate goal prevention** (`app/dashboard/goals/actions.ts`): `createGoal` blocks a second goal with the same name
+- **Budget disambiguation** (`lib/db/schema.ts`, `lib/data/store.ts`, `contracts/api-contracts.ts`, `app/api/budgets/route.ts`, `app/dashboard/transactions/actions.ts`, `app/components/forms/AddTransactionForm.tsx`, `drizzle/0003_add_budget_id.sql`): added nullable `budget_id TEXT` column; "Which budget?" picker appears in the Add Transaction form when a category has 2+ budgets; tagged transactions count only toward their specified budget; untagged transactions fall back to category matching
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+
+### Last checks
+- pnpm lint: passed (0 errors, 3 pre-existing warnings)
+- pnpm build: not run

@@ -1,0 +1,1 @@
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS budget_id TEXT;

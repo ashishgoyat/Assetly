@@ -11,8 +11,8 @@ import DonutChart from "@/app/components/charts/DonutChart";
 import NewBudgetButton from "@/app/dashboard/budgets/NewBudgetButton";
 import { useExitAnimation, MOTION_MS } from "@/app/hooks/useExitAnimation";
 import type { Budget, BudgetSummary } from "@/contracts/api-contracts";
-import { formatPercent } from "@/lib/format";
-import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
+import { formatPercent, getCurrencySymbol } from "@/lib/format";
+import { useFormatCurrency, useCurrency } from "@/app/contexts/CurrencyContext";
 import {
   updateBudgetLimit,
   deleteBudget,
@@ -435,10 +435,10 @@ export default function BudgetsPage() {
         </div>
       </div>
 
-      {/* Row 1: Hero + Calendar (side by side) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 14, marginBottom: 14 }}>
-        {/* Left: Hero summary card only */}
-        <div>
+      {/* Main layout: Left (hero + budget cards) | Right (calendar) */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 14 }}>
+        {/* Left column: Hero + Budget cards stacked */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             className="card-dark"
             style={{ padding: 24, display: "flex", gap: 24, alignItems: "center" }}
@@ -499,9 +499,53 @@ export default function BudgetsPage() {
               </div>
             </div>
           </div>
+
+          {/* Budget category cards — stacked vertically in left column */}
+          {budgets.map((b) => (
+            <BudgetCard
+              key={b.id}
+              budget={b}
+              onUpdate={(updated) =>
+                setData((d) => {
+                  if (!d) return d;
+                  const newBudgets = d.budgets.map((x) => x.id === updated.id ? updated : x);
+                  const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
+                  const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
+                  const newRemaining = newTotalLimit - newTotalSpent;
+                  return {
+                    ...d,
+                    budgets: newBudgets,
+                    totalLimitInCents: newTotalLimit,
+                    totalSpentInCents: newTotalSpent,
+                    percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
+                    remainingInCents: newRemaining,
+                    dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
+                  };
+                })
+              }
+              onDelete={(id) =>
+                setData((d) => {
+                  if (!d) return d;
+                  const newBudgets = d.budgets.filter((x) => x.id !== id);
+                  const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
+                  const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
+                  const newRemaining = newTotalLimit - newTotalSpent;
+                  return {
+                    ...d,
+                    budgets: newBudgets,
+                    totalLimitInCents: newTotalLimit,
+                    totalSpentInCents: newTotalSpent,
+                    percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
+                    remainingInCents: newRemaining,
+                    dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
+                  };
+                })
+              }
+            />
+          ))}
         </div>
 
-        {/* Right: Calendar + vs last month */}
+        {/* Right column: Calendar + vs last month */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {/* Daily spend heatmap */}
           <div className="card" style={{ padding: 20 }}>
@@ -674,51 +718,6 @@ export default function BudgetsPage() {
         </div>
       </div>
 
-      {/* Row 2: Budget category cards — full-width 2-column grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
-        {budgets.map((b) => (
-          <BudgetCard
-            key={b.id}
-            budget={b}
-            onUpdate={(updated) =>
-              setData((d) => {
-                if (!d) return d;
-                const newBudgets = d.budgets.map((x) => x.id === updated.id ? updated : x);
-                const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
-                const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
-                const newRemaining = newTotalLimit - newTotalSpent;
-                return {
-                  ...d,
-                  budgets: newBudgets,
-                  totalLimitInCents: newTotalLimit,
-                  totalSpentInCents: newTotalSpent,
-                  percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
-                  remainingInCents: newRemaining,
-                  dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
-                };
-              })
-            }
-            onDelete={(id) =>
-              setData((d) => {
-                if (!d) return d;
-                const newBudgets = d.budgets.filter((x) => x.id !== id);
-                const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
-                const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
-                const newRemaining = newTotalLimit - newTotalSpent;
-                return {
-                  ...d,
-                  budgets: newBudgets,
-                  totalLimitInCents: newTotalLimit,
-                  totalSpentInCents: newTotalSpent,
-                  percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
-                  remainingInCents: newRemaining,
-                  dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
-                };
-              })
-            }
-          />
-        ))}
-      </div>
     </div>
   );
 }
@@ -735,6 +734,8 @@ interface BudgetCardProps {
 
 function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
   const { fmt } = useFormatCurrency();
+  const currency = useCurrency();
+  const currSymbol = getCurrencySymbol(currency);
   const [expanded, setExpanded] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -888,7 +889,7 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
                 fontWeight: 600,
               }}
             >
-              New monthly limit ($)
+              {`New monthly limit (${currSymbol})`}
             </div>
             <div
               style={{

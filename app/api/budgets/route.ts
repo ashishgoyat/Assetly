@@ -73,23 +73,19 @@ export async function GET(req: NextRequest) {
 
     const monthLabel = formatMonthLabel(referenceDate)
 
-    // --- Compute per-category spend from real transactions (integer math only) ---
+    // --- Compute per-budget spend from real transactions (integer math only) ---
     // Only expense transactions from the selected month count.
     const mmStr = String(month).padStart(2, '0')
     const monthPrefix = `${year}-${mmStr}`
-    const spentByCategory = new Map<string, number>()
-    for (const tx of txList) {
-      if (tx.type !== 'expense') continue
-      if (!tx.date.startsWith(monthPrefix)) continue
-      spentByCategory.set(
-        tx.category,
-        (spentByCategory.get(tx.category) ?? 0) + tx.amountInCents,
-      )
-    }
+    const monthExpenses = txList.filter(
+      (tx) => tx.type === 'expense' && tx.date.startsWith(monthPrefix),
+    )
 
     // --- Enrich each budget with computed fields driven by real transactions ---
     const budgets = budgetList.map((b) => {
-      const spentInCents = spentByCategory.get(b.category) ?? 0
+      const spentInCents = monthExpenses
+        .filter((tx) => tx.budgetId ? tx.budgetId === b.id : tx.category === b.category)
+        .reduce((s, tx) => s + tx.amountInCents, 0)
       return {
         ...b,
         spentInCents,

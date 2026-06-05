@@ -12,6 +12,7 @@ import { insertTransaction, removeTransaction, updateTransaction, adjustAccountB
 import type { Transaction, TransactionCategory, TransactionType, PaymentMethod } from '@/contracts/api-contracts'
 import { auth } from '@/auth'
 import { sendPendingNotificationEmails } from '@/lib/email'
+import { getCurrencyServer, getExchangeRateServer } from '@/lib/server-prefs'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -103,6 +104,7 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
     const paymentMethod = (val(formData, 'paymentMethod') as PaymentMethod | undefined) ?? undefined
     const chargePercentRaw = val(formData, 'chargePercent')
     const chargePercent = chargePercentRaw ? parseFloat(chargePercentRaw) : undefined
+    const budgetId = val(formData, 'budgetId') ?? undefined
 
     const raw = {
       merchant: val(formData, 'merchant'),
@@ -120,19 +122,23 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
 
     const { merchant, amountDollars, type, category, accountLabel } = parsed.data
 
+    const currency = await getCurrencyServer()
+    const rate = await getExchangeRateServer(currency)
+    const amountBaseCents = Math.round(amountDollars / rate)
+
     // Block expense transactions that would push the account below $0
     if (type === 'expense') {
       const allAccounts = await getAccounts(userId)
       const account = allAccounts.find((a) => `${a.name} ${a.number}` === accountLabel)
-      if (account && account.balanceInCents < amountDollars) {
+      if (account && account.balanceInCents < amountBaseCents) {
         const available = (account.balanceInCents / 100).toLocaleString('en-US', {
           style: 'currency',
-          currency: 'USD',
+          currency,
           minimumFractionDigits: 2,
         })
-        const attempted = (amountDollars / 100).toLocaleString('en-US', {
+        const attempted = (amountBaseCents / 100).toLocaleString('en-US', {
           style: 'currency',
-          currency: 'USD',
+          currency,
           minimumFractionDigits: 2,
         })
         return {
@@ -155,16 +161,17 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
       merchant,
       category,
       accountLabel,
-      amountInCents: amountDollars,
+      amountInCents: amountBaseCents,
       type,
       status: 'posted',
       ...(paymentMethod !== undefined ? { paymentMethod } : {}),
       ...(chargePercent !== undefined ? { chargePercent } : {}),
+      ...(budgetId !== undefined ? { budgetId } : {}),
     }, userId)
 
     // Adjust account balance: income adds net (gross minus charge), expenses subtract gross
-    const chargeInCents = chargePercent ? Math.round(amountDollars * chargePercent / 100) : 0
-    const netInCents = amountDollars - chargeInCents
+    const chargeInCents = chargePercent ? Math.round(amountBaseCents * chargePercent / 100) : 0
+    const netInCents = amountBaseCents - chargeInCents
     const delta = type === 'income' ? netInCents : -netInCents
     await adjustAccountBalanceByLabel(accountLabel, userId, delta)
 
@@ -184,11 +191,12 @@ export async function createTransaction(formData: FormData): Promise<ActionResul
         merchant,
         category,
         accountLabel,
-        amountInCents: amountDollars,
+        amountInCents: amountBaseCents,
         type,
         status: 'posted' as const,
         ...(paymentMethod !== undefined ? { paymentMethod } : {}),
         ...(chargePercent !== undefined ? { chargePercent } : {}),
+        ...(budgetId !== undefined ? { budgetId } : {}),
       } satisfies Transaction,
     }
   } catch (err) {

@@ -8,7 +8,8 @@
 import { useState, useEffect } from "react";
 import Icon from "@/app/components/ui/Icon";
 import type { Goal, GoalSummary } from "@/contracts/api-contracts";
-import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
+import { useFormatCurrency, useCurrency } from "@/app/contexts/CurrencyContext";
+import { getCurrencySymbol } from "@/lib/format";
 import NewGoalButton from "@/app/dashboard/goals/NewGoalButton";
 import {
   addFundsToGoal,
@@ -30,6 +31,8 @@ function GoalCard({
   onDelete: (id: string) => void;
 }) {
   const { fmt, fmtCompact } = useFormatCurrency();
+  const currency = useCurrency();
+  const currSymbol = getCurrencySymbol(currency);
   const [expanded, setExpanded] = useState(false);
   const [activeAction, setActiveAction] = useState<"funds" | "monthly" | null>(
     null
@@ -293,8 +296,8 @@ function GoalCard({
                   style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 6 }}
                 >
                   {activeAction === "funds"
-                    ? "Amount to add ($)"
-                    : "New monthly amount ($)"}
+                    ? `Amount to add (${currSymbol})`
+                    : `New monthly amount (${currSymbol})`}
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <input

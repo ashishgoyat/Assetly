@@ -8,10 +8,11 @@
 import { revalidatePath } from 'next/cache'
 import { after } from 'next/server'
 import { z } from 'zod'
-import { insertBudget, updateBudget, removeBudget } from '@/lib/data/store'
+import { insertBudget, updateBudget, removeBudget, getBudgets } from '@/lib/data/store'
 import type { TransactionCategory } from '@/contracts/api-contracts'
 import { auth } from '@/auth'
 import { sendPendingNotificationEmails } from '@/lib/email'
+import { getCurrencyServer, getExchangeRateServer } from '@/lib/server-prefs'
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -76,6 +77,12 @@ export async function createBudget(formData: FormData): Promise<ActionResult> {
     const session = await auth()
     const userId = (session?.user as { id?: string })?.id ?? ''
 
+    const [currency, budgetList] = await Promise.all([
+      getCurrencyServer(),
+      getBudgets(userId),
+    ])
+    const rate = await getExchangeRateServer(currency)
+
     const raw = {
       name: val(formData, 'name'),
       category: val(formData, 'category'),
@@ -91,13 +98,23 @@ export async function createBudget(formData: FormData): Promise<ActionResult> {
     }
 
     const { name, category, limitDollars, icon, color } = parsed.data
+
+    const duplicate = budgetList.find(b =>
+      b.name.trim().toLowerCase() === name.trim().toLowerCase() &&
+      b.category === category
+    )
+    if (duplicate) {
+      return { success: false, error: `A budget named "${name}" for ${category} already exists.` }
+    }
+
+    const limitInCents = Math.round(limitDollars / rate)
     const id = crypto.randomUUID()
 
     await insertBudget({
       id,
       name,
       category,
-      limitInCents: limitDollars,
+      limitInCents,
       spentInCents: 0,
       percentageUsed: 0,
       icon,
