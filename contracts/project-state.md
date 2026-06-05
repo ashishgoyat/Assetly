@@ -701,3 +701,31 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 3 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-05b (settings cleanup + session instances)
+
+### What was built / fixed
+- **Settings decorative SVG removed** (`app/dashboard/settings/page.tsx`): removed `SettingsIllustration` fixed-position decorative component from the bottom-right corner of the settings page; removed now-unused import, `resolvedTheme`, `mounted`, `useTheme`, and `useSyncExternalStore`
+- **Hamburger button CSS fix** (`app/globals.css`): `.btn-icon { display: inline-flex }` (line 620) was overriding `.hamburger { display: none }` (line 354) due to CSS ordering — fixed with `!important` on the hamburger rules so it is correctly hidden on desktop
+- **Budget layout fix** (`app/dashboard/budgets/page.tsx`): budget category cards moved into the left column below the hero, stacked vertically — eliminates empty gap on the left side
+- **Active sessions list in Settings** (`app/dashboard/settings/page.tsx`, `app/api/settings/route.ts`, `app/api/sessions/route.ts`, `app/dashboard/settings/actions.ts`): Security section now lists each active session showing browser/OS device name, sign-in date, expiry countdown, "Current" badge on newest session, and a Revoke button per session (current session revoke is disabled)
+- **Device info + IP captured on sign-in** (`auth.ts`, `lib/data/store.ts`, `lib/db/schema.ts`): `insertUserSession` now accepts optional `deviceInfo` (parsed from user-agent) and `ipAddress` (from x-forwarded-for); new nullable columns `device_info` and `ip_address` added to `user_sessions` table
+- **Migration 0004** (`drizzle/0004_add_session_device_info.sql`): adds `device_info TEXT` and `ip_address TEXT` nullable columns to `user_sessions`; applied to Supabase
+- **Type fix** (`app/api/settings/route.ts`): DB returns `string | null` for nullable session columns; mapped to conditional spreads so `null` becomes absent (`undefined`) matching `SessionInstance` type contract
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices" which increments `sessionVersion`
+
+### Last checks
+- pnpm lint: passed (0 errors, 3 pre-existing warnings)
+- pnpm build: failed before type fix; passes after fix
