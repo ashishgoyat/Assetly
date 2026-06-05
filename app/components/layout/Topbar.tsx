@@ -208,11 +208,11 @@ export default function Topbar({ userName, userInitials, accounts }: TopbarProps
             padding: "14px 16px",
             boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
             zIndex: 1000,
-            maxWidth: 320,
+            maxWidth: "min(320px, calc(100vw - 2rem))",
+            width: "max-content",
             display: "flex",
             gap: 12,
             alignItems: "flex-start",
-            minWidth: 240,
           }}
         >
           <span style={{ color: "var(--accent)", marginTop: 1, flexShrink: 0 }}>

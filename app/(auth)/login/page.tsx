@@ -70,7 +70,7 @@ export default function LoginPage() {
         aria-disabled={redirecting}
         aria-busy={redirecting}
         onClick={handleGoogleSignIn}
-        className="w-full rounded-xl py-3 px-4 text-sm font-semibold transition-opacity"
+        className="w-full rounded-xl py-3 px-4 text-sm font-semibold transition-opacity min-h-[44px]"
         style={{
           display: 'flex',
           alignItems: 'center',

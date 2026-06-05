@@ -188,7 +188,7 @@ function AccountCard({
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 maxLength={80}
-                style={{ fontSize: 13 }}
+                style={{ fontSize: 16 }}
               />
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
@@ -203,7 +203,7 @@ function AccountCard({
                 onChange={(e) => setEditBalance(e.target.value)}
                 min="0"
                 step="any"
-                style={{ fontSize: 13 }}
+                style={{ fontSize: 16 }}
               />
             </div>
             {editError !== null && (
@@ -247,15 +247,17 @@ function AccountCard({
         onKeyDown={(e) => e.stopPropagation()}
         role="presentation"
       >
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={startEdit}
-          disabled={deleting}
-          aria-label={`Edit ${account.name}`}
-        >
-          <Icon name="settings" size={12} /> Edit
-        </button>
+        {!editing && (
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={startEdit}
+            disabled={deleting}
+            aria-label={`Edit ${account.name}`}
+          >
+            <Icon name="settings" size={12} /> Edit
+          </button>
+        )}
         <button
           type="button"
           className="btn btn-sm"

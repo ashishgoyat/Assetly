@@ -196,6 +196,14 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* Prevent iOS auto-zoom on all form inputs (font-size must be ≥ 16px) */
+input:not([type="radio"]):not([type="checkbox"]):not([type="range"]),
+textarea,
+select {
+  font-size: 16px;
 }
 
 html, body, #root {
@@ -476,8 +484,13 @@ input, textarea {
     flex-wrap: wrap;
     gap: 10px;
   }
-  .page-head .h-title {
-    font-size: 28px;
+
+  /* .page-head .h-title font-size handled by clamp() — no override needed */
+
+  /* Ensure btn-icon meets 44×44px touch target on mobile */
+  .btn-icon {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   /* Transactions: detail panel stacks below the list on mobile */
@@ -488,6 +501,12 @@ input, textarea {
   /* Transaction detail panel: remove sticky on mobile so it flows naturally */
   .tx-detail-grid aside {
     position: static !important;
+  }
+
+  /* Popovers: prevent overflow on narrow screens */
+  .anim-pop[role="dialog"],
+  .anim-pop[role="listbox"] {
+    max-width: calc(100vw - 2rem);
   }
 }
 
@@ -741,7 +760,7 @@ input, textarea {
     background   var(--dur-fast) var(--ease-out-quart);
 }
 .search:focus-within { border-color: var(--ink-4); }
-.search input { flex: 1; font-size: 13px; }
+.search input { flex: 1; font-size: 16px; }
 .search .kbd {
   font-family: var(--f-mono);
   font-size: 10.5px;
@@ -776,7 +795,7 @@ input, textarea {
 }
 
 .page-head .h-title {
-  font-size: 36px;
+  font-size: clamp(1.5rem, 3.5vw, 2.25rem);
   line-height: 1.05;
   letter-spacing: -0.02em;
 }
@@ -852,6 +871,8 @@ input, textarea {
   cursor: pointer;
 }
 .tx-row:hover { background: var(--surface-hover); }
+/* Prevent text in the second (1fr) column from overflowing */
+.tx-row > :nth-child(2) { min-width: 0; }
 
 /* ─── Merchant icon ─────────────────────────────────────────────────────────── */
 
@@ -1094,7 +1115,7 @@ input, textarea {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  font-size: 14px;
+  font-size: 16px;
   color: var(--ink);
   width: 100%;
   transition: border-color var(--dur-fast) var(--ease-out-quart);
@@ -1128,7 +1149,7 @@ select.field-input { cursor: pointer; }
   transition: transform var(--dur-fast) var(--ease-spring);
   pointer-events: none;
 }
-.toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+.toggle input:checked ~ .toggle-thumb { transform: translateX(18px); background: var(--bg); }
 .toggle:focus-within .toggle-track { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ─── Skeleton loading ──────────────────────────────────────────────────────── */

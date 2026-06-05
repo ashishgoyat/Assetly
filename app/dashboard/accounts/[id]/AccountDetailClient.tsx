@@ -465,9 +465,11 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
           alignItems: "flex-end",
           justifyContent: "space-between",
           marginBottom: 22,
+          flexWrap: "wrap",
+          gap: 12,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0 }}>
           <div
             style={{
               width: 52,
@@ -478,14 +480,15 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              flexShrink: 0,
             }}
             aria-hidden
           >
             <Icon name="bank" size={24} stroke={1.7} />
           </div>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <h1
-              style={{ fontSize: 32, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
+              style={{ fontSize: "clamp(1.25rem, 3vw, 2rem)", margin: 0, lineHeight: 1.05, fontWeight: 700 }}
             >
               {a.name}
             </h1>
@@ -516,11 +519,8 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
       </div>
 
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 300px",
-          gap: 14,
-        }}
+        className="grid-2col-bills"
+        style={{ alignItems: "start" }}
       >
         {/* Main column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

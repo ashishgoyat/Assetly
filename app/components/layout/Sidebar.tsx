@@ -246,7 +246,7 @@ export default function Sidebar({ userName, userInitials, userAvatarUrl, account
             </div>
           )}
           <span
-            style={{ flex: 1, textAlign: "left", display: "flex", flexDirection: "column", gap: 1 }}
+            style={{ flex: 1, minWidth: 0, textAlign: "left", display: "flex", flexDirection: "column", gap: 1 }}
             className="user-name"
           >
             <span style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.2 }}>{userName}</span>

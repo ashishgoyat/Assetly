@@ -108,14 +108,14 @@ export default async function DashboardPage() {
           {formatDateLong(latestDate)}
         </div>
         <h1
-          style={{ fontSize: 36, lineHeight: 1.05, letterSpacing: "-0.02em", margin: 0, fontWeight: 700 }}
+          style={{ fontSize: "clamp(1.5rem, 4vw, 2.25rem)", lineHeight: 1.05, letterSpacing: "-0.02em", margin: 0, fontWeight: 700 }}
         >
           {greeting}, {displayName}.
         </h1>
       </div>
 
       {/* Row 1: Net worth chart + Safe-to-spend */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.9fr 1.1fr", gap: 14, marginBottom: 14 }}>
+      <div className="grid-2col-wide" style={{ marginBottom: 14 }}>
         {/* Net worth / Cash flow — dark card */}
         <CashOnHandCard
           dark={true}
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
           <div
             className="num"
             style={{
-              fontSize: 72,
+              fontSize: "clamp(2rem, 6vw, 4.5rem)",
               lineHeight: 1,
               marginTop: 14,
               color: "var(--ink)",

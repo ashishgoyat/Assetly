@@ -43,7 +43,7 @@ export async function GET() {
     // --- Reference date: latest transaction date (fall back to today) ---
     const latestDate =
       getLatestTransactionDate(txList) || new Date().toISOString().slice(0, 10)
-    const { year, month, day } = parseDate(latestDate)
+    const { year, month } = parseDate(latestDate)
 
     // --- Net worth (server-side) ---
     const netWorthCalc = computeNetWorth(acctList)

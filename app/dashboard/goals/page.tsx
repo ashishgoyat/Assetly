@@ -319,7 +319,7 @@ function GoalCard({
                       border: "1px solid var(--border)",
                       background: "var(--surface-2)",
                       color: "var(--ink)",
-                      fontSize: 13,
+                      fontSize: 16,
                     }}
                   />
                   <button
@@ -500,7 +500,7 @@ export default function GoalsPage() {
         >
           <div>
             <h1
-              style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
+              style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)", margin: 0, lineHeight: 1.05, fontWeight: 700 }}
             >
               Goals
             </h1>
@@ -559,7 +559,7 @@ export default function GoalsPage() {
       >
         <div>
           <h1
-            style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
+            style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)", margin: 0, lineHeight: 1.05, fontWeight: 700 }}
           >
             Goals
           </h1>
@@ -572,7 +572,7 @@ export default function GoalsPage() {
       </div>
 
       {/* Hero row: total saved + auto-saving */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 14, marginBottom: 18 }}>
+      <div className="grid-2col-goals" style={{ marginBottom: 18 }}>
         {/* Total saved — white card */}
         <div className="card" style={{ padding: 20, display: "flex", gap: 20, alignItems: "center" }}>
           <div style={{ position: "relative", width: 90, height: 90, flexShrink: 0 }}>

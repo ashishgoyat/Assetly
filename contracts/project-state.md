@@ -781,3 +781,50 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 3 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-05 (responsive overhaul + UI bug fixes)
+
+### What was built / fixed
+
+**Responsive design overhaul (RESPONSIVE.md rules applied):**
+- `app/layout.tsx` — added typed `Viewport` export (`width: device-width`, `initialScale: 1`, `themeColor` for light/dark)
+- `app/globals.css` — `overflow-x: hidden` on body; global `font-size: 16px` reset on all inputs/textareas/selects (prevents iOS auto-zoom); `.search input` 13px → 16px; `.field-input` 14px → 16px; `.page-head .h-title` fixed 36px → `clamp(1.5rem, 3.5vw, 2.25rem)`; `.btn-icon` gets `min-width/min-height: 44px` on mobile; `.tx-row > :nth-child(2)` gets `min-width: 0`; popover `max-width: calc(100vw - 2rem)` on mobile; toggle thumb fix (see below)
+- All page `<h1>` headings converted from fixed `40px` → `clamp(1.5rem, 4vw, 2.5rem)`
+- Dashboard greeting and safe-to-spend number use `clamp()` fluid sizes
+- Layout grids on `dashboard/page.tsx`, `budgets/page.tsx`, `goals/page.tsx`, `accounts/[id]/AccountDetailClient.tsx` switched from inline `gridTemplateColumns` to shared CSS grid classes (collapse to 1-col on mobile)
+- Budget heatmap calendar wrapped in `.table-scroll` div for horizontal scroll on mobile
+- Bills/subscriptions edit form grids use `auto-fit minmax(160px, 1fr)` to auto-collapse
+- Settings profile/form grids use `auto-fit minmax(180px, 1fr)`; danger-zone button row gets `flexWrap: wrap`
+- Transaction detail panel uses `min(360px, 100%)` column width
+- All inline edit/detail panel selects and inputs upgraded to `font-size: 16`
+- Login Google button gets `min-h-[44px]`; notification panel capped at `min(320px, calc(100vw - 2rem))`; sidebar user name span gets `minWidth: 0`; QuickAddFab bottom uses `clamp(24px, 5vh, 80px)`; account detail header wraps on mobile
+
+**UI bug fixes:**
+- `CashOnHandCard.tsx` — removed "X this week" delta pill from the net worth card header; made `weekDeltaInCents` prop optional; removed now-unused `Icon` import
+- `DonutChart.tsx` — fixed `strokeDashoffset` bug: offset was `circumference - prevAcc`, missing the segment's own `len`, causing every segment to render shifted forward by its own length. Corrected to `circumference + clampedLen - prevAcc`; pre-clamp `len` in `computedSegs` so `strokeDasharray` no longer needs a second `Math.max`
+- `globals.css` — toggle thumb dark-mode fix: `.toggle input:checked ~ .toggle-thumb` now sets `background: var(--bg)`, making the thumb visible when the (white in dark mode) track is active
+- `accounts/page.tsx` — Edit button in `AccountCard` action row now hidden with `{!editing && ...}` when the card is already in edit mode
+- `NewGoalForm.tsx` — selected icon button `color: "white"` → `color: "var(--bg)"` so icon is visible in dark mode (where `--accent` background is white)
+
+**Lint warning cleanup:**
+- `app/api/dashboard/route.ts` — removed unused `day` from `parseDate` destructure
+- `app/dashboard/bills/page.tsx` — removed unused `unusedSubs` variable
+- `app/dashboard/error.tsx` — removed unused `error` from props destructure
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices"
+10. **Existing DB rows are still plaintext** — run `pnpm encrypt-db` once to migrate them
+
+### Last checks
+- pnpm lint: passed (0 errors, 0 warnings)
+- pnpm build: not run

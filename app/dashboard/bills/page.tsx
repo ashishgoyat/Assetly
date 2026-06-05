@@ -138,7 +138,7 @@ function EditPanel({ bill, onClose, onDeleted, onSaved }: EditPanelProps) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
             gap: 10,
             marginBottom: 10,
           }}
@@ -346,7 +346,7 @@ function SubEditPanel({ sub, onClose, onDeleted, onSaved, onPaid }: SubEditPanel
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
             gap: 10,
             marginBottom: 10,
           }}
@@ -523,7 +523,7 @@ function AddSubForm({ onClose, onSaved }: AddSubFormProps) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
             gap: 10,
             marginBottom: 10,
           }}
@@ -950,7 +950,6 @@ export default function BillsPage() {
   }
 
   const labels = timelineLabels(period);
-  const unusedSubs = subs.filter((s) => !s.isUsed);
 
   return (
     <div className="page-content">
@@ -964,7 +963,7 @@ export default function BillsPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}>
+          <h1 style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)", margin: 0, lineHeight: 1.05, fontWeight: 700 }}>
             Bills &amp; subscriptions
           </h1>
           <div className="muted" style={{ marginTop: 4 }}>

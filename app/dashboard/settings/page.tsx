@@ -182,7 +182,7 @@ function ProfileSkeleton() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: 12,
         }}
         aria-busy="true"
@@ -246,7 +246,7 @@ function EditProfileForm({ initial, onSaved, onCancel }: EditProfileFormProps) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: 12,
           marginBottom: 14,
         }}
@@ -854,7 +854,7 @@ export default function SettingsPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
                   gap: 12,
                 }}
               >
@@ -1056,7 +1056,7 @@ export default function SettingsPage() {
         <Section dangerZone>
           <SectionLabel danger>Danger zone</SectionLabel>
 
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
               className="btn btn-sm"
               type="button"

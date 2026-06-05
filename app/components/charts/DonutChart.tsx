@@ -34,12 +34,16 @@ export default function DonutChart({
   const r = (size - strokeW) / 2;
   const circumference = 2 * Math.PI * r;
 
-  // Pre-compute offsets outside of render — avoids mutating a variable inside map
+  // Pre-compute offsets outside of render — avoids mutating a variable inside map.
+  // Correct dashoffset: to start a segment at path position prevAcc, the offset must
+  // equal (dashLen + circumference) - prevAcc, not just circumference - prevAcc.
+  // Using only circumference shifts every segment forward by its own length.
   const computedSegs = segs.map((s, i) => {
     const prevTotal = segs.slice(0, i).reduce((sum, prev) => sum + prev.v, 0);
     const prevAcc = total > 0 ? (prevTotal / total) * circumference : 0;
     const len = total > 0 ? (s.v / total) * circumference - gap : 0;
-    return { ...s, len, off: circumference - prevAcc };
+    const clampedLen = Math.max(0, len);
+    return { ...s, len: clampedLen, off: circumference + clampedLen - prevAcc };
   });
 
   return (
@@ -73,7 +77,7 @@ export default function DonutChart({
             fill="none"
             stroke={s.c}
             strokeWidth={strokeW}
-            strokeDasharray={`${Math.max(0, s.len)} ${circumference}`}
+            strokeDasharray={`${s.len} ${circumference}`}
             strokeDashoffset={s.off}
             strokeLinecap="butt"
           />

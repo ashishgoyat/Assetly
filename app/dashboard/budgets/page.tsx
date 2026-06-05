@@ -286,7 +286,7 @@ export default function BudgetsPage() {
         >
           <div>
             <h1
-              style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
+              style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)", margin: 0, lineHeight: 1.05, fontWeight: 700 }}
             >
               Budgets
             </h1>
@@ -356,7 +356,7 @@ export default function BudgetsPage() {
       >
         <div>
           <h1
-            style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
+            style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)", margin: 0, lineHeight: 1.05, fontWeight: 700 }}
           >
             Budgets
           </h1>
@@ -436,7 +436,7 @@ export default function BudgetsPage() {
       </div>
 
       {/* Main layout: Left (hero + budget cards) | Right (calendar) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 14 }}>
+      <div className="grid-2col-budgets">
         {/* Left column: Hero + Budget cards stacked */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
@@ -562,11 +562,13 @@ export default function BudgetsPage() {
                 {daysLeft > 0 ? `${daysLeft} days left` : "Month complete"}
               </span>
             </div>
+            <div className="table-scroll">
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(7, 1fr)",
                 gap: 4,
+                minWidth: 220,
               }}
               aria-label="Daily spending heatmap"
             >
@@ -645,6 +647,7 @@ export default function BudgetsPage() {
                   );
                 })}
             </div>
+            </div>{/* /table-scroll */}
             <div
               style={{
                 display: "flex",
@@ -910,7 +913,7 @@ function BudgetCard({ budget: b, onUpdate, onDelete }: BudgetCardProps) {
                 style={{
                   flex: 1,
                   minWidth: 100,
-                  fontSize: 13,
+                  fontSize: 16,
                   padding: "6px 10px",
                   borderRadius: 8,
                   border: "1px solid var(--border)",

@@ -259,7 +259,7 @@ export default function TransactionsPage() {
       {/* Header */}
       <div style={{ marginBottom: 22 }}>
         <h1
-          style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
+          style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)", margin: 0, lineHeight: 1.05, fontWeight: 700 }}
         >
           Transactions
         </h1>
@@ -646,7 +646,7 @@ export default function TransactionsPage() {
         className={detail.shouldRender ? "tx-detail-grid" : undefined}
         style={{
           display: "grid",
-          gridTemplateColumns: detail.shouldRender ? "1fr 360px" : "1fr",
+          gridTemplateColumns: detail.shouldRender ? "1fr min(360px, 100%)" : "1fr",
           gap: 14,
         }}
       >
@@ -990,7 +990,7 @@ function TxDetailPanel({
           }
           aria-label="Merchant name"
           style={{
-            fontSize: 17,
+            fontSize: 16,
             fontWeight: 600,
             textAlign: "center",
             border: "1px solid var(--border)",
@@ -1046,7 +1046,7 @@ function TxDetailPanel({
             }
             aria-label="Category"
             style={{
-              fontSize: 13,
+              fontSize: 16,
               padding: "4px 8px",
               borderRadius: 8,
               border: "1px solid var(--border)",
@@ -1082,7 +1082,7 @@ function TxDetailPanel({
               }
               aria-label="Account"
               style={{
-                fontSize: 13,
+                fontSize: 16,
                 padding: "4px 8px",
                 borderRadius: 8,
                 border: "1px solid var(--border)",
@@ -1121,7 +1121,7 @@ function TxDetailPanel({
             }
             aria-label="Status"
             style={{
-              fontSize: 13,
+              fontSize: 16,
               padding: "4px 8px",
               borderRadius: 8,
               border: "1px solid var(--border)",
@@ -1158,7 +1158,7 @@ function TxDetailPanel({
             }}
             aria-label="Payment method"
             style={{
-              fontSize: 13,
+              fontSize: 16,
               padding: "4px 8px",
               borderRadius: 8,
               border: "1px solid var(--border)",
@@ -1188,7 +1188,7 @@ function TxDetailPanel({
             max="100"
             step="any"
             aria-label="Charge percent"
-            style={{ fontSize: 13, padding: "4px 8px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", color: "var(--ink)", width: "60%", textAlign: "right" }}
+            style={{ fontSize: 16, padding: "4px 8px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", color: "var(--ink)", width: "60%", textAlign: "right" }}
           />
           <span style={{ fontSize: 12, color: "var(--ink-3)", marginLeft: 4 }}>%</span>
         </div>
@@ -1220,7 +1220,7 @@ function TxDetailPanel({
             borderRadius: 10,
             border: "1px solid var(--border)",
             background: "var(--surface-2)",
-            fontSize: 13,
+            fontSize: 16,
             fontFamily: "inherit",
             resize: "none",
             outline: "none",

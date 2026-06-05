@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import AreaChart from "@/app/components/charts/AreaChart";
-import Icon from "@/app/components/ui/Icon";
 import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 
 type Period = "1W" | "1M" | "3M" | "1Y";
@@ -16,7 +15,7 @@ interface AccountSummary {
 interface Props {
   dark?: boolean;
   totalInCents: number;
-  weekDeltaInCents: number;
+  weekDeltaInCents?: number;
   cashFlowDataByPeriod: Record<Period, number[]>;
   cashFlowLabelsByPeriod: Record<Period, string[]>;
   accounts?: AccountSummary[];
@@ -27,7 +26,6 @@ const PERIODS: Period[] = ["1W", "1M", "3M", "1Y"];
 export default function CashOnHandCard({
   dark,
   totalInCents,
-  weekDeltaInCents,
   cashFlowDataByPeriod,
   cashFlowLabelsByPeriod,
   accounts,
@@ -62,20 +60,6 @@ export default function CashOnHandCard({
             >
               {fmtCompact(totalInCents)}
             </span>
-            {dark ? (
-              <span
-                className="pill"
-                style={{ background: "rgba(34,197,94,0.2)", color: "#22C55E" }}
-              >
-                <Icon name="arrowUp" size={11} />
-                {fmtCompact(weekDeltaInCents)} this week
-              </span>
-            ) : (
-              <span className="pill pill-pos">
-                <Icon name="arrowUp" size={11} />
-                {fmtCompact(weekDeltaInCents)} this week
-              </span>
-            )}
           </div>
         </div>
         <div style={{ display: "flex", gap: 4 }}>

@@ -455,7 +455,7 @@ export default function QuickAddFab() {
         ref={fabRef}
         style={{
           position: "fixed",
-          bottom: 24,
+          bottom: "clamp(24px, 5vh, 80px)",
           right: 24,
           zIndex: 40,
           display: "flex",

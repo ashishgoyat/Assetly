@@ -177,7 +177,7 @@ export default function NewGoalForm({ onClose, onCreated }: NewGoalFormProps) {
                     borderRadius: "var(--r)",
                     border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
                     background: isSelected ? "var(--accent)" : "var(--surface-2)",
-                    color: isSelected ? "white" : "var(--ink-3)",
+                    color: isSelected ? "var(--bg)" : "var(--ink-3)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
