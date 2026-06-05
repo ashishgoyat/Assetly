@@ -73,7 +73,13 @@ export async function GET() {
         activeSessions: sessionCount,
         twoFactorEnabled: false,   // Deprecated — always false with Google OAuth
         lastPasswordChange: '',    // Deprecated — always empty with Google OAuth
-        sessions,
+        sessions: sessions.map((s) => ({
+          id: s.id,
+          createdAt: s.createdAt,
+          expiresAt: s.expiresAt,
+          ...(s.deviceInfo != null ? { deviceInfo: s.deviceInfo } : {}),
+          ...(s.ipAddress != null ? { ipAddress: s.ipAddress } : {}),
+        })),
       },
     }
 
