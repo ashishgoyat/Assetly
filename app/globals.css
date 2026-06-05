@@ -258,7 +258,7 @@ input, textarea {
   transition: grid-template-columns var(--dur-base) var(--ease-in-out-quart);
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 768px) {
   .app[data-sidebar-collapsed="true"] {
     grid-template-columns: 64px 1fr;
   }
@@ -286,28 +286,7 @@ input, textarea {
 
 @media (min-width: 768px) and (max-width: 1279px) {
   .app {
-    grid-template-columns: 64px 1fr;
-  }
-  /* Apply icon-only sidebar styles directly at tablet breakpoint */
-  .sidebar-desktop .sidebar {
-    width: 64px;
-    padding: 14px 10px;
-    align-items: center;
-  }
-  .sidebar-desktop .sidebar .brand-name,
-  .sidebar-desktop .sidebar .nav-item > span:not(.nav-icon):not(.nav-badge),
-  .sidebar-desktop .sidebar .nav-section-label,
-  .sidebar-desktop .sidebar .user-name {
-    display: none;
-  }
-  .sidebar-desktop .sidebar .nav-item {
-    justify-content: center;
-    padding: 8px;
-    border-radius: 10px;
-  }
-  .sidebar-desktop .sidebar .brand {
-    justify-content: center;
-    padding: 4px 4px 18px;
+    grid-template-columns: 232px 1fr;
   }
 }
 
@@ -379,7 +358,7 @@ input, textarea {
 .sidebar-toggle {
   display: none;
 }
-@media (min-width: 1280px) {
+@media (min-width: 768px) {
   .sidebar-toggle {
     display: inline-flex;
   }

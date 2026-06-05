@@ -51,6 +51,7 @@ export default async function DashboardLayout({
         <Topbar
           userName={userName}
           userInitials={userInitials}
+          userAvatarUrl={userAvatarUrl}
           accounts={accounts}
         />
         <main className="page">{children}</main>

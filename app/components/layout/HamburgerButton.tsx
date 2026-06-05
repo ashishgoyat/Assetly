@@ -14,12 +14,14 @@ import type { Account } from "@/contracts/api-contracts";
 interface HamburgerButtonProps {
   userName: string;
   userInitials: string;
+  userAvatarUrl: string;
   accounts: Account[];
 }
 
 export default function HamburgerButton({
   userName,
   userInitials,
+  userAvatarUrl,
   accounts,
 }: HamburgerButtonProps) {
   const [open, setOpen] = useState(false);
@@ -33,13 +35,14 @@ export default function HamburgerButton({
         onClick={() => setOpen(true)}
         type="button"
       >
-        <Icon name="list" size={18} />
+        <Icon name="sidebar" size={18} />
       </button>
       {open && (
         <MobileDrawer
           onClose={() => setOpen(false)}
           userName={userName}
           userInitials={userInitials}
+          userAvatarUrl={userAvatarUrl}
           accounts={accounts}
         />
       )}

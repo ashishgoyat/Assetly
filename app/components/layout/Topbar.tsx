@@ -16,10 +16,11 @@ import type { Account, Notification } from "@/contracts/api-contracts";
 interface TopbarProps {
   userName: string;
   userInitials: string;
+  userAvatarUrl: string;
   accounts: Account[];
 }
 
-export default function Topbar({ userName, userInitials, accounts }: TopbarProps) {
+export default function Topbar({ userName, userInitials, userAvatarUrl, accounts }: TopbarProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Notifications state
@@ -132,6 +133,7 @@ export default function Topbar({ userName, userInitials, accounts }: TopbarProps
       <HamburgerButton
         userName={userName}
         userInitials={userInitials}
+        userAvatarUrl={userAvatarUrl}
         accounts={accounts}
       />
 

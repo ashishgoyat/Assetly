@@ -875,3 +875,31 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 0 warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-05 (sidebar consistency across all screen sizes)
+
+### What was built / fixed
+- **Tablet sidebar — full width restored** (`app/globals.css`): removed the `@media (min-width: 768px) and (max-width: 1279px)` block that forced the sidebar into 64px icon-only mode; tablet (768–1279px) now uses the same `232px 1fr` grid as desktop, showing the full sidebar permanently.
+- **Sidebar collapse toggle — tablet enabled** (`app/globals.css`): the `.sidebar-toggle` display breakpoint changed from `min-width: 1280px` → `min-width: 768px`, so the collapse button is now visible on tablet and desktop alike.
+- **Collapsed grid — tablet enabled** (`app/globals.css`): `app[data-sidebar-collapsed="true"]` grid change (`64px 1fr`) now applies at `min-width: 768px` instead of `min-width: 1280px`, so tapping the toggle on tablet correctly collapses the sidebar to icon-only.
+- **MobileDrawer rewritten to match Sidebar** (`app/components/layout/MobileDrawer.tsx`): removed hardcoded `formatBalance` (USD-only) and stale `badge: 3` on Transactions; now uses `useCurrency()` + `useExchangeRate()` + `formatCurrency` for account balances; `Accounts` label is now a `Link` to `/dashboard/accounts`; added "Add account" button + `AddAccountForm` modal; replaced the static user row + `SignOutButton` with the same animated 3-dots sign-out dropdown used in Sidebar; added `userAvatarUrl` prop to show Google profile picture.
+- **Hamburger icon changed** (`app/components/layout/HamburgerButton.tsx`): icon changed from `list` (identical to the Transactions nav icon — confusing) to `sidebar` (same icon as the desktop/tablet collapse toggle), making the mobile nav trigger visually consistent with all other screen sizes.
+- **`userAvatarUrl` threaded to mobile drawer** (`app/dashboard/layout.tsx`, `app/components/layout/Topbar.tsx`, `app/components/layout/HamburgerButton.tsx`): `userAvatarUrl` is now passed `DashboardLayout → Topbar → HamburgerButton → MobileDrawer` so the Google profile picture shows in the mobile drawer's user row.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices"
+10. **Existing DB rows are still plaintext** — run `pnpm encrypt-db` once to migrate them
+
+### Last checks
+- pnpm lint: passed (0 errors, 0 warnings)
+- pnpm build: passed (26 routes)
