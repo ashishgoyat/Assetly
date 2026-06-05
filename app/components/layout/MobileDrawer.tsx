@@ -7,6 +7,7 @@
  */
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Icon from "@/app/components/ui/Icon";
@@ -73,7 +74,7 @@ export default function MobileDrawer({
     return pathname.startsWith(href);
   }
 
-  return (
+  return createPortal(
     <>
       {/* Overlay */}
       <div
@@ -170,6 +171,7 @@ export default function MobileDrawer({
         {/* Sign out */}
         <SignOutButton />
       </nav>
-    </>
+    </>,
+    document.body
   );
 }

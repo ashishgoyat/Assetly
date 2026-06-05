@@ -196,6 +196,12 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
+}
+
+/* Prevent horizontal scroll at the viewport level.
+   Applied to html only — overflow-x:hidden on body creates a scroll container
+   that breaks position:fixed on iOS Safari and other mobile browsers. */
+html {
   overflow-x: hidden;
 }
 

@@ -828,3 +828,27 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 0 warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-05 (mobile drawer portal fix)
+
+### What was built / fixed
+- **`app/globals.css`** — moved `overflow-x: hidden` from the `html, body` combined selector to `html` only; `overflow: hidden` on `body` creates a scroll container on iOS Safari that breaks `position: fixed` children (the drawer overlay and panel were not appearing on mobile)
+- **`app/components/layout/MobileDrawer.tsx`** — wrapped return in `createPortal(…, document.body)` so the overlay and nav render at the top level of the DOM, outside any overflow container; removed the `useState`/`useEffect` mounted guard that triggered the project's `react-hooks/set-state-in-effect` lint rule (not needed since the component only ever renders after a user click, never during SSR)
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices"
+10. **Existing DB rows are still plaintext** — run `pnpm encrypt-db` once to migrate them
+
+### Last checks
+- pnpm lint: passed (0 errors, 0 warnings)
+- pnpm build: not run
