@@ -699,8 +699,11 @@ export async function incrementSessionVersion(userId: string): Promise<void> {
 // User sessions — per-sign-in tracking for active session count
 // ---------------------------------------------------------------------------
 
-export async function insertUserSession(userId: string): Promise<void> {
-  // TODO: replace with DB query
+export async function insertUserSession(
+  userId: string,
+  deviceInfo?: string,
+  ipAddress?: string,
+): Promise<void> {
   await ensureDb()
   const now = new Date()
   await db.insert(userSessionsTable).values({
@@ -708,7 +711,43 @@ export async function insertUserSession(userId: string): Promise<void> {
     userId,
     createdAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    deviceInfo: deviceInfo ?? null,
+    ipAddress: ipAddress ?? null,
   })
+}
+
+export async function getActiveSessions(userId: string): Promise<{
+  id: string
+  createdAt: string
+  expiresAt: string
+  deviceInfo: string | null
+  ipAddress: string | null
+}[]> {
+  await ensureDb()
+  const rows = await db
+    .select({
+      id: userSessionsTable.id,
+      createdAt: userSessionsTable.createdAt,
+      expiresAt: userSessionsTable.expiresAt,
+      deviceInfo: userSessionsTable.deviceInfo,
+      ipAddress: userSessionsTable.ipAddress,
+    })
+    .from(userSessionsTable)
+    .where(
+      and(
+        eq(userSessionsTable.userId, userId),
+        gt(userSessionsTable.expiresAt, new Date().toISOString()),
+      ),
+    )
+    .orderBy(desc(userSessionsTable.createdAt))
+  return rows
+}
+
+export async function deleteUserSession(sessionId: string, userId: string): Promise<void> {
+  await ensureDb()
+  await db
+    .delete(userSessionsTable)
+    .where(and(eq(userSessionsTable.id, sessionId), eq(userSessionsTable.userId, userId)))
 }
 
 export async function countActiveSessions(userId: string): Promise<number> {

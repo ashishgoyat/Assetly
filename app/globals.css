@@ -352,16 +352,11 @@ input, textarea {
 /* ─── Mobile hamburger button ────────────────────────────────────────────────── */
 
 .hamburger {
-  display: none;
+  display: none !important;
 }
 @media (max-width: 767px) {
   .hamburger {
-    display: inline-flex;
-  }
-}
-@media (min-width: 768px) {
-  .hamburger {
-    display: none;
+    display: inline-flex !important;
   }
 }
 

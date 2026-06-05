@@ -165,8 +165,10 @@ export const notificationEmailsSentTable = pgTable('notification_emails_sent', {
 // ---------------------------------------------------------------------------
 
 export const userSessionsTable = pgTable('user_sessions', {
-  id:        text('id').primaryKey(),
-  userId:    text('user_id').notNull(),
-  createdAt: text('created_at').notNull(),  // ISO datetime
-  expiresAt: text('expires_at').notNull(),  // ISO datetime (createdAt + 30 days)
+  id:         text('id').primaryKey(),
+  userId:     text('user_id').notNull(),
+  createdAt:  text('created_at').notNull(),  // ISO datetime
+  expiresAt:  text('expires_at').notNull(),  // ISO datetime (createdAt + 30 days)
+  deviceInfo: text('device_info'),            // e.g. "Chrome on macOS"
+  ipAddress:  text('ip_address'),             // first IP from x-forwarded-for
 })

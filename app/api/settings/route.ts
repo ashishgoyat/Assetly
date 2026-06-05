@@ -1,6 +1,6 @@
 import { ok, err } from '@/lib/api-response'
 import { auth } from '@/auth'
-import { getUserById, countActiveSessions } from '@/lib/data/store'
+import { getUserById, countActiveSessions, getActiveSessions } from '@/lib/data/store'
 import {
   getCurrencyServer,
   getTimezoneServer,
@@ -49,10 +49,12 @@ export async function GET() {
       }
     }
 
-    const [currency, timezone, notifPrefs] = await Promise.all([
+    const [currency, timezone, notifPrefs, sessionCount, sessions] = await Promise.all([
       getCurrencyServer(),
       getTimezoneServer(),
       getNotificationPrefsServer(),
+      userId ? countActiveSessions(userId) : Promise.resolve(1),
+      userId ? getActiveSessions(userId) : Promise.resolve([]),
     ])
 
     const settings: UserSettings = {
@@ -68,9 +70,10 @@ export async function GET() {
       },
       notifications: notifPrefs,
       security: {
-        activeSessions: userId ? await countActiveSessions(userId) : 1,
+        activeSessions: sessionCount,
         twoFactorEnabled: false,   // Deprecated — always false with Google OAuth
         lastPasswordChange: '',    // Deprecated — always empty with Google OAuth
+        sessions,
       },
     }
 

@@ -320,5 +320,14 @@ export interface UserSettings {
     activeSessions: number
     twoFactorEnabled: boolean  // Deprecated — always false with Google OAuth
     lastPasswordChange: string // Deprecated — always '' with Google OAuth
+    sessions: SessionInstance[]
   }
+}
+
+export interface SessionInstance {
+  id: string
+  createdAt: string   // ISO datetime
+  expiresAt: string   // ISO datetime
+  deviceInfo?: string // e.g. "Chrome on macOS"
+  ipAddress?: string  // IP from x-forwarded-for
 }

@@ -16,6 +16,7 @@ import {
   removeUser,
   incrementSessionVersion,
   clearUserSessions,
+  deleteUserSession,
   getTransactions,
   getAccounts,
   getBudgets,
@@ -323,6 +324,24 @@ export async function updatePassword(
   _formData: FormData,
 ): Promise<ActionResult> {
   return { success: false, error: 'Password login is no longer supported. Please use Google sign-in.' }
+}
+
+// ---------------------------------------------------------------------------
+// revokeSession — delete a single session by ID (user can only delete own)
+// ---------------------------------------------------------------------------
+
+export async function revokeSession(sessionId: string): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    const userId = getSessionUserId(session)
+    if (!userId) return { success: false, error: 'Not authenticated' }
+    if (!sessionId) return { success: false, error: 'Invalid session ID' }
+    await deleteUserSession(sessionId, userId)
+    return { success: true }
+  } catch (error) {
+    console.error('[revokeSession]', error)
+    return { success: false, error: 'Failed to revoke session' }
+  }
 }
 
 // ---------------------------------------------------------------------------

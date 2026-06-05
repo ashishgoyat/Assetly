@@ -7,10 +7,8 @@
  * and 2FA action buttons via inline modals and server actions.
  */
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-import { useTheme } from "next-themes";
-import SettingsIllustration from "@/app/dashboard/settings/SettingsIllustration";
-import type { ApiResponse, UserSettings } from "@/contracts/api-contracts";
+import { useCallback, useEffect, useState } from "react";
+import type { ApiResponse, UserSettings, SessionInstance } from "@/contracts/api-contracts";
 import SettingsThemeToggle from "@/app/dashboard/settings/SettingsThemeToggle";
 import SettingsNotifications from "@/app/dashboard/settings/SettingsNotifications";
 import Modal from "@/app/components/ui/Modal";
@@ -18,6 +16,7 @@ import {
   updateProfile,
   deleteAccount,
   signOutAllSessions,
+  revokeSession,
   exportUserData,
   clearAllData,
 } from "@/app/dashboard/settings/actions";
@@ -130,6 +129,10 @@ function SecurityRow({
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+// Captured at module load time — used in the sessions list to compute
+// "expires in N days" without calling Date.now() during render.
+const MODULE_LOAD_MS = new Date().getTime();
 
 // ---------------------------------------------------------------------------
 // Skeleton — shown while the profile data is loading
@@ -585,8 +588,6 @@ function ClearDataForm({ onCleared, onCancel }: ClearDataFormProps) {
 
 export default function SettingsPage() {
   const setGlobalCurrency = useSetCurrency();
-  const { resolvedTheme } = useTheme();
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -596,6 +597,8 @@ export default function SettingsPage() {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [clearDataOpen, setClearDataOpen] = useState(false);
+
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   // In-flight states for inline buttons
   const [signingOutAll, setSigningOutAll] = useState(false);
@@ -639,6 +642,29 @@ export default function SettingsPage() {
   // -------------------------------------------------------------------------
   // Action handlers
   // -------------------------------------------------------------------------
+
+  async function handleRevokeSession(sessionId: string) {
+    setRevokingId(sessionId);
+    setActionError(null);
+    const result = await revokeSession(sessionId);
+    if (result.success) {
+      // Remove from settings state optimistically
+      setSettings((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          security: {
+            ...prev.security,
+            activeSessions: Math.max(0, prev.security.activeSessions - 1),
+            sessions: prev.security.sessions.filter((s) => s.id !== sessionId),
+          },
+        };
+      });
+    } else {
+      setActionError(result.error);
+    }
+    setRevokingId(null);
+  }
 
   async function handleSignOutAll() {
     if (!window.confirm("Sign out of all sessions?")) return;
@@ -948,6 +974,80 @@ export default function SettingsPage() {
             onAction={handleSignOutAll}
             busy={signingOutAll}
           />
+
+          {/* Sessions list */}
+          {security?.sessions && security.sessions.length > 0 && (
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+              {security.sessions.map((s: SessionInstance, i: number) => {
+                const created = new Date(s.createdAt)
+                const expires = new Date(s.expiresAt)
+                const daysLeft = Math.max(0, Math.ceil((expires.getTime() - MODULE_LOAD_MS) / 86_400_000))
+                const isNewest = i === 0
+                return (
+                  <div
+                    key={s.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "10px 14px",
+                      borderRadius: 10,
+                      background: "var(--surface-2)",
+                      border: "1px solid var(--border-2)",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>
+                          {s.deviceInfo ?? "Unknown device"}
+                        </span>
+                        {isNewest && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              color: "var(--pos)",
+                              background: "color-mix(in srgb, var(--pos) 12%, transparent)",
+                              padding: "1px 6px",
+                              borderRadius: 999,
+                            }}
+                          >
+                            This device
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>
+                        Signed in{" "}
+                        {created.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}{" "}
+                        · expires in {daysLeft} day{daysLeft !== 1 ? "s" : ""}
+                        {s.ipAddress ? ` · ${s.ipAddress}` : ""}
+                      </div>
+                    </div>
+                    <button
+                      className="btn btn-sm"
+                      type="button"
+                      onClick={() => void handleRevokeSession(s.id)}
+                      disabled={revokingId === s.id || isNewest}
+                      aria-busy={revokingId === s.id}
+                      aria-label={`Revoke session for ${s.deviceInfo ?? "unknown device"}`}
+                      style={{
+                        flexShrink: 0,
+                        color: isNewest ? "var(--ink-4)" : "var(--neg)",
+                        borderColor: isNewest ? "var(--border)" : "var(--neg-soft)",
+                        cursor: isNewest ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {revokingId === s.id ? "…" : isNewest ? "Current" : "Revoke"}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </Section>
 
         {/* ------------------------------------------------------------------ */}
@@ -1031,22 +1131,6 @@ export default function SettingsPage() {
         />
       </Modal>
 
-      {/* Fixed decorative illustration — stays in place while scrolling */}
-      {mounted && (
-        <div
-          style={{
-            position: "fixed",
-            right: 40,
-            bottom: 40,
-            pointerEvents: "none",
-            zIndex: 0,
-            userSelect: "none",
-          }}
-          aria-hidden
-        >
-          <SettingsIllustration dark={resolvedTheme === "dark"} />
-        </div>
-      )}
     </div>
   );
 }
