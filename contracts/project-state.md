@@ -753,3 +753,31 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 3 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-05 (field-level encryption for financial data)
+
+### What was built / fixed
+- **`lib/crypto.ts`** (NEW): AES-256-GCM encrypt/decrypt utility using Node.js built-in `crypto` module only. `encrypt(plaintext)` generates a fresh 12-byte IV per call, returns `iv:authTag:ciphertext` (colon-delimited base64). `decrypt(ciphertext)` returns `null` on any failure (auth tag mismatch, malformed input, plaintext values not yet migrated). `ENCRYPTION_KEY` env var must be a base64-encoded 32-byte string.
+- **`lib/data/store.ts`** (8 changes): encrypt on write, decrypt on read for four sensitive display-only fields — `transactions.note`, `accounts.number`, `accounts.routingNumber`, `user_sessions.ipAddress`. `adjustAccountBalanceByLabel` raw query also patched to decrypt `r.number` before string-matching against `accountLabel`.
+- **`scripts/encrypt-existing-data.ts`** (NEW): idempotent one-time migration script; reads existing rows, detects plaintext via `decrypt() === null`, encrypts and writes back in batches of 100. Run with `pnpm encrypt-db`.
+- **`.env.example`** (NEW): template listing all required env vars with placeholder values; includes generation command for `ENCRYPTION_KEY`.
+- **`.env.local`**: `ENCRYPTION_KEY` added.
+- **`package.json`**: `"encrypt-db"` script added.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices"
+10. **Existing DB rows are still plaintext** — run `pnpm encrypt-db` once to migrate them
+
+### Last checks
+- pnpm lint: passed (0 errors, 3 pre-existing warnings)
+- pnpm build: not run

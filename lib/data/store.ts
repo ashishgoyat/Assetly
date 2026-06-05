@@ -20,6 +20,7 @@ import {
   userSessionsTable,
 } from '@/lib/db/schema'
 import { desc, eq, and, gte, gt, isNull, sql } from 'drizzle-orm'
+import { encrypt, decrypt } from '@/lib/crypto'
 import type {
   Transaction,
   Account,
@@ -63,7 +64,7 @@ function mapTransaction(row: TransactionRow): Transaction {
     amountInCents: row.amountInCents,
     type: row.type as Transaction['type'],
     status: row.status as Transaction['status'],
-    ...(row.note != null ? { note: row.note } : {}),
+    ...(row.note != null ? { note: decrypt(row.note) ?? row.note } : {}),
     ...(row.paymentMethod != null ? { paymentMethod: row.paymentMethod as Transaction['paymentMethod'] } : {}),
     ...(row.chargePercent != null ? { chargePercent: row.chargePercent } : {}),
     ...(row.budgetId != null ? { budgetId: row.budgetId } : {}),
@@ -74,13 +75,13 @@ function mapAccount(row: AccountRow): Account {
   return {
     id: row.id,
     name: row.name,
-    number: row.number,
+    number: decrypt(row.number) ?? row.number,
     balanceInCents: row.balanceInCents,
     weekDeltaInCents: row.weekDeltaInCents,
     type: row.type as Account['type'],
     color: row.color,
     ...(row.apyBps != null ? { apyBps: row.apyBps } : {}),
-    ...(row.routingNumber != null ? { routingNumber: row.routingNumber } : {}),
+    ...(row.routingNumber != null ? { routingNumber: decrypt(row.routingNumber) ?? row.routingNumber } : {}),
     linkedSince: row.linkedSince,
     lastSync: row.lastSync,
     // balanceHistory is stored as JSON TEXT — parse back to number[]
@@ -255,7 +256,7 @@ export async function insertTransaction(tx: Transaction, userId?: string): Promi
     amountInCents: tx.amountInCents,
     type: tx.type,
     status: tx.status,
-    note: tx.note ?? null,
+    note: tx.note != null ? encrypt(tx.note) : null,
     paymentMethod: tx.paymentMethod ?? null,
     chargePercent: tx.chargePercent ?? null,
     budgetId: tx.budgetId ?? null,
@@ -454,7 +455,7 @@ export async function updateTransaction(
       ...(updates.category !== undefined ? { category: updates.category } : {}),
       ...(updates.accountLabel !== undefined ? { accountLabel: updates.accountLabel } : {}),
       ...(updates.status !== undefined ? { status: updates.status } : {}),
-      ...(updates.note !== undefined ? { note: updates.note } : {}),
+      ...(updates.note !== undefined ? { note: updates.note != null ? encrypt(updates.note) : null } : {}),
       ...(updates.paymentMethod !== undefined ? { paymentMethod: updates.paymentMethod } : {}),
       ...(updates.chargePercent !== undefined ? { chargePercent: updates.chargePercent } : {}),
     })
@@ -500,13 +501,13 @@ export async function insertAccount(account: Account, userId?: string): Promise<
     id: account.id,
     userId: userId ?? null,
     name: account.name,
-    number: account.number,
+    number: encrypt(account.number),
     balanceInCents: account.balanceInCents,
     weekDeltaInCents: account.weekDeltaInCents,
     type: account.type,
     color: account.color,
     apyBps: account.apyBps ?? null,
-    routingNumber: account.routingNumber ?? null,
+    routingNumber: account.routingNumber != null ? encrypt(account.routingNumber) : null,
     linkedSince: account.linkedSince,
     lastSync: account.lastSync,
     balanceHistory: JSON.stringify(account.balanceHistory),
@@ -712,7 +713,7 @@ export async function insertUserSession(
     createdAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     deviceInfo: deviceInfo ?? null,
-    ipAddress: ipAddress ?? null,
+    ipAddress: ipAddress != null ? encrypt(ipAddress) : null,
   })
 }
 
@@ -740,7 +741,10 @@ export async function getActiveSessions(userId: string): Promise<{
       ),
     )
     .orderBy(desc(userSessionsTable.createdAt))
-  return rows
+  return rows.map((r) => ({
+    ...r,
+    ipAddress: r.ipAddress != null ? (decrypt(r.ipAddress) ?? r.ipAddress) : null,
+  }))
 }
 
 export async function deleteUserSession(sessionId: string, userId: string): Promise<void> {
@@ -1045,7 +1049,10 @@ export async function adjustAccountBalanceByLabel(
     .select({ id: accountsTable.id, name: accountsTable.name, number: accountsTable.number })
     .from(accountsTable)
     .where(eq(accountsTable.userId, userId))
-  const account = rows.find((r) => `${r.name} ${r.number}` === accountLabel)
+  const account = rows.find((r) => {
+    const num = decrypt(r.number) ?? r.number
+    return `${r.name} ${num}` === accountLabel
+  })
   if (!account) return // label doesn't match any account — skip silently
   await db
     .update(accountsTable)
