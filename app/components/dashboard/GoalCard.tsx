@@ -5,7 +5,6 @@ import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import {
   addFundsToGoalAction,
   setGoalMonthly,
-  pauseGoal,
 } from "@/app/dashboard/home-actions";
 import type { Goal } from "@/contracts/api-contracts";
 
@@ -79,20 +78,6 @@ export default function GoalCard({ goal: g, onUpdated }: GoalCardProps) {
         });
         setMode("actions");
         setMonthlyInput("");
-      } else {
-        setError(res.error);
-      }
-    });
-  }
-
-  function handlePause() {
-    setError(null);
-    startTransition(async () => {
-      const fd = new FormData();
-      fd.set("id", g.id);
-      const res = await pauseGoal(fd);
-      if (res.success) {
-        onUpdated?.({ ...g, monthlyContributionInCents: 0, eta: "Paused" });
       } else {
         setError(res.error);
       }
@@ -224,15 +209,6 @@ export default function GoalCard({ goal: g, onUpdated }: GoalCardProps) {
                 onClick={openAdjustMonthly}
               >
                 Adjust monthly
-              </button>
-              <button
-                className="btn btn-sm btn-ghost"
-                type="button"
-                style={{ color: "var(--ink-3)" }}
-                disabled={isPending}
-                onClick={handlePause}
-              >
-                Pause
               </button>
             </div>
           )}
