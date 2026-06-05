@@ -8,7 +8,6 @@
 import { useState, useEffect } from "react";
 import Icon from "@/app/components/ui/Icon";
 import type { Goal, GoalSummary } from "@/contracts/api-contracts";
-import { formatPercent } from "@/lib/format";
 import { useFormatCurrency } from "@/app/contexts/CurrencyContext";
 import NewGoalButton from "@/app/dashboard/goals/NewGoalButton";
 import {
@@ -163,7 +162,7 @@ function GoalCard({
         }}
       >
         <div>
-          <span className="serif num" style={{ fontSize: 32 }}>
+          <span className="num" style={{ fontSize: 32, fontWeight: 700 }}>
             {fmtCompact(goal.currentInCents)}
           </span>
           <span className="muted" style={{ marginLeft: 4 }}>
@@ -171,11 +170,11 @@ function GoalCard({
           </span>
         </div>
         <span
-          className="num serif"
+          className="num"
           style={{
             fontSize: 28,
             color: goal.color,
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
           {goal.percentageComplete}%
@@ -361,7 +360,7 @@ function GoalCard({
 // ---------------------------------------------------------------------------
 
 export default function GoalsPage() {
-  const { fmt, fmtCompact } = useFormatCurrency();
+  const { fmtCompact } = useFormatCurrency();
   const [data, setData] = useState<GoalSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -498,8 +497,7 @@ export default function GoalsPage() {
         >
           <div>
             <h1
-              className="serif"
-              style={{ fontSize: 40, margin: 0, lineHeight: 1.05 }}
+              style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
             >
               Goals
             </h1>
@@ -543,13 +541,7 @@ export default function GoalsPage() {
     );
   }
 
-  const {
-    totalSavedInCents,
-    totalTargetInCents,
-    totalMonthlyContributionInCents,
-    activeTransfers,
-    goals,
-  } = data;
+  const { totalSavedInCents, goals } = data;
 
   return (
     <div className="page-content">
@@ -564,8 +556,7 @@ export default function GoalsPage() {
       >
         <div>
           <h1
-            className="serif"
-            style={{ fontSize: 40, margin: 0, lineHeight: 1.05 }}
+            style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
           >
             Goals
           </h1>
@@ -577,54 +568,56 @@ export default function GoalsPage() {
         <NewGoalButton onCreated={handleGoalCreated} />
       </div>
 
-      {/* Hero strip */}
-      <div
-        className="card"
-        style={{
-          padding: 24,
-          marginBottom: 18,
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div className="grid-2col" style={{ gap: 32, alignItems: "center" }}>
-          <div>
-            <div className="sec-label">Total saved</div>
-            <div
-              className="serif num"
-              style={{ fontSize: 54, lineHeight: 1, marginTop: 8 }}
-            >
-              {fmtCompact(totalSavedInCents)}
-            </div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              of{" "}
-              <span className="num">
-                {fmtCompact(totalTargetInCents)}
-              </span>{" "}
-              ·{" "}
-              {formatPercent(
-                Math.round((totalSavedInCents / totalTargetInCents) * 100)
-              )}{" "}
-              there
+      {/* Hero row: total saved + auto-saving */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 14, marginBottom: 18 }}>
+        {/* Total saved — white card */}
+        <div className="card" style={{ padding: 20, display: "flex", gap: 20, alignItems: "center" }}>
+          <div style={{ position: "relative", width: 90, height: 90, flexShrink: 0 }}>
+            <svg width="90" height="90" viewBox="0 0 90 90">
+              <circle cx="45" cy="45" r="38" fill="none" stroke="var(--border)" strokeWidth="10" />
+              <circle
+                cx="45" cy="45" r="38"
+                fill="none"
+                stroke="var(--pos)"
+                strokeWidth="10"
+                strokeDasharray={`${2 * Math.PI * 38}`}
+                strokeDashoffset={`${2 * Math.PI * 38 * (1 - (data.totalSavedInCents / Math.max(data.totalTargetInCents, 1)))}`}
+                strokeLinecap="round"
+                transform="rotate(-90 45 45)"
+              />
+            </svg>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <span className="num" style={{ fontSize: 16, fontWeight: 700 }}>
+                {Math.round((data.totalSavedInCents / Math.max(data.totalTargetInCents, 1)) * 100)}%
+              </span>
+              <span style={{ fontSize: 10, color: "var(--ink-3)" }}>saved</span>
             </div>
           </div>
           <div>
-            <div className="sec-label">Auto-saving</div>
-            <div
-              className="serif num"
-              style={{
-                fontSize: 36,
-                lineHeight: 1,
-                marginTop: 8,
-                color: "var(--pos)",
-              }}
-            >
-              {fmt(totalMonthlyContributionInCents)}
-              <span style={{ fontSize: 16, color: "var(--ink-3)" }}>/mo</span>
+            <div className="sec-label">Total saved</div>
+            <div className="num" style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>
+              {fmtCompact(data.totalSavedInCents)}
             </div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              {activeTransfers} active transfers
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
+              of {fmtCompact(data.totalTargetInCents)} total target
             </div>
+            <div className="bar" style={{ marginTop: 10, background: "var(--border)" }}>
+              <i style={{ background: "var(--pos)", transform: `scaleX(${Math.min(data.totalSavedInCents / Math.max(data.totalTargetInCents, 1), 1)})` }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Auto-saving — dark card */}
+        <div className="card-dark" style={{ padding: 24 }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 8 }}>
+            Auto-saving
+          </div>
+          <div className="num" style={{ fontSize: 36, fontWeight: 700, color: "#FFFFFF", lineHeight: 1 }}>
+            {fmtCompact(data.totalMonthlyContributionInCents)}
+            <span style={{ fontSize: 16, fontWeight: 400, color: "rgba(255,255,255,0.6)" }}>/mo</span>
+          </div>
+          <div style={{ marginTop: 12, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
+            {data.activeTransfers} active transfer{data.activeTransfers !== 1 ? "s" : ""}
           </div>
         </div>
       </div>

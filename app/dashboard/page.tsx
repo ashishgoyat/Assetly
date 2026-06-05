@@ -108,18 +108,31 @@ export default async function DashboardPage() {
           {formatDateLong(latestDate)}
         </div>
         <h1
-          className="serif"
-          style={{ fontSize: 40, lineHeight: 1.02, letterSpacing: "-0.02em", margin: 0 }}
+          style={{ fontSize: 36, lineHeight: 1.05, letterSpacing: "-0.02em", margin: 0, fontWeight: 700 }}
         >
           {greeting}, {displayName}.
         </h1>
       </div>
 
-      {/* Row 1: Safe-to-spend + Cash flow */}
-      <div className="grid-2col-wide" style={{ marginBottom: 14 }}>
+      {/* Row 1: Net worth chart + Safe-to-spend */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.9fr 1.1fr", gap: 14, marginBottom: 14 }}>
+        {/* Net worth / Cash flow — dark card */}
+        <CashOnHandCard
+          dark={true}
+          totalInCents={cashTotalInCents}
+          weekDeltaInCents={cashWeekDeltaInCents}
+          cashFlowDataByPeriod={cashFlowDataByPeriod}
+          cashFlowLabelsByPeriod={cashFlowLabelsByPeriod}
+          accounts={acctList.map((a) => ({
+            name: a.name,
+            color: a.color,
+            balanceInCents: a.balanceInCents,
+          }))}
+        />
+
         {/* Safe to spend */}
         <div
-          className="card-accent"
+          className="card"
           style={{ padding: 22, position: "relative", overflow: "hidden" }}
         >
           <div
@@ -129,19 +142,19 @@ export default async function DashboardPage() {
               alignItems: "flex-start",
             }}
           >
-            <div className="sec-label" style={{ color: "var(--accent-2)" }}>
+            <div className="sec-label">
               Safe to spend today
             </div>
-            <span className="pill pill-accent">After bills · savings</span>
           </div>
           <div
-            className="serif num"
+            className="num"
             style={{
-              fontSize: 92,
+              fontSize: 72,
               lineHeight: 1,
               marginTop: 14,
-              color: "var(--accent-2)",
+              color: "var(--ink)",
               letterSpacing: "-0.04em",
+              fontWeight: 700,
             }}
           >
             {formatCurrency(safeToSpendInCents, currency, rate)}
@@ -150,43 +163,22 @@ export default async function DashboardPage() {
             <span className="num" style={{ fontWeight: 500 }}>
               {formatCurrency(spentTodayInCents, currency, rate)}
             </span>{" "}
-            <span className="muted">
+            <span style={{ color: "var(--ink-3)" }}>
               of {formatCurrency(dailyAllowanceInCents, currency, rate)} daily allowance
             </span>
           </div>
           <div
             className="bar"
-            style={{ marginTop: 8, background: "var(--accent-soft)" }}
+            style={{ marginTop: 8, background: "var(--border)" }}
           >
             <i
               style={{
-                background: "var(--accent)",
+                background: "var(--pos)",
                 transform: `scaleX(${pctToday / 100})`,
               }}
             />
           </div>
-          <div
-            style={{
-              position: "absolute",
-              right: -28,
-              bottom: -28,
-              width: 120,
-              height: 120,
-              borderRadius: "50%",
-              background: "var(--accent)",
-              opacity: 0.06,
-            }}
-            aria-hidden
-          />
         </div>
-
-        {/* Cash flow */}
-        <CashOnHandCard
-          totalInCents={cashTotalInCents}
-          weekDeltaInCents={cashWeekDeltaInCents}
-          cashFlowDataByPeriod={cashFlowDataByPeriod}
-          cashFlowLabelsByPeriod={cashFlowLabelsByPeriod}
-        />
       </div>
 
       <DashboardActivity

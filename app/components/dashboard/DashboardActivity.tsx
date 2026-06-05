@@ -124,8 +124,74 @@ export default function DashboardActivity({
         </div>
       </div>
 
-      {/* Row 3: Saving goals (full width) */}
-      <div style={{ marginBottom: 14 }}>
+      {/* Row 3: AI Insight (left) + Saving goals (right) */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1.8fr",
+          gap: 14,
+          marginBottom: 14,
+          alignItems: "start",
+        }}
+      >
+        {/* AI Insight dark card */}
+        <div
+          className="card-dark"
+          style={{ padding: 22, display: "flex", flexDirection: "column", gap: 14 }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: "rgba(255,255,255,0.1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="sparkle" size={15} color="rgba(255,255,255,0.7)" />
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              AI insight
+            </span>
+          </div>
+
+          {transactions.length === 0 ? (
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, margin: 0 }}>
+              Add transactions to unlock personalised insights about your spending habits.
+            </p>
+          ) : (
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.6, margin: 0 }}>
+              {(() => {
+                const expenses = transactions.filter((t) => t.type === "expense");
+                const total = expenses.reduce((s, t) => s + t.amountInCents, 0);
+                const topTx = expenses.sort((a, b) => b.amountInCents - a.amountInCents)[0];
+                if (!topTx) return "Keep tracking your spending to see insights here.";
+                return `Your top expense recently was ${topTx.merchant} (${fmtCompact(topTx.amountInCents)}). You've spent ${fmtCompact(total)} across ${expenses.length} transaction${expenses.length !== 1 ? "s" : ""} — keep an eye on your budget limits.`;
+              })()}
+            </p>
+          )}
+
+          <Link
+            href="/dashboard/transactions"
+            style={{
+              fontSize: 12,
+              color: "rgba(255,255,255,0.5)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              textDecoration: "none",
+              marginTop: "auto",
+            }}
+          >
+            View all transactions <Icon name="chev" size={11} color="rgba(255,255,255,0.4)" />
+          </Link>
+        </div>
+
+        {/* Saving goals */}
         <div className="card" style={{ padding: 22 }}>
           <div
             style={{

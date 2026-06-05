@@ -118,48 +118,32 @@ export default function Sidebar({ userName, userInitials, userAvatarUrl, account
             aria-current={isActive(`/dashboard/accounts/${account.id}`) ? "page" : undefined}
             style={{ alignItems: "center", padding: "8px 10px" }}
           >
+            {/* Colored dot */}
             <span
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                background: account.color + "25",
-                color: account.color,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 10,
-                fontWeight: 700,
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: account.color,
                 flexShrink: 0,
+                display: "inline-block",
               }}
               aria-hidden
-            >
-              {account.name[0]?.toUpperCase() ?? "A"}
-            </span>
+            />
+            {/* Account name — single line */}
             <span
               className="account-label"
-              style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1, overflow: "hidden" }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                fontSize: 12.5,
+                fontWeight: 500,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
             >
-              <span
-                style={{
-                  fontSize: 12.5,
-                  fontWeight: 500,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {account.name}
-              </span>
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontFamily: "var(--f-mono)",
-                  color: "var(--ink-4)",
-                }}
-              >
-                {account.number}
-              </span>
+              {account.name}
             </span>
             <span
               className="account-label num"
@@ -261,8 +245,12 @@ export default function Sidebar({ userName, userInitials, userAvatarUrl, account
               {userInitials}
             </div>
           )}
-          <span style={{ flex: 1, textAlign: "left" }} className="user-name">
-            {userName}
+          <span
+            style={{ flex: 1, textAlign: "left", display: "flex", flexDirection: "column", gap: 1 }}
+            className="user-name"
+          >
+            <span style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.2 }}>{userName}</span>
+            <span style={{ fontSize: 11, color: "var(--ink-3)", lineHeight: 1.2 }}>Free plan</span>
           </span>
         </button>
       </div>

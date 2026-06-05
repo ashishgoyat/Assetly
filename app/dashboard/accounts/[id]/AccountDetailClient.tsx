@@ -485,8 +485,7 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
           </div>
           <div>
             <h1
-              className="serif"
-              style={{ fontSize: 32, margin: 0, lineHeight: 1.05 }}
+              style={{ fontSize: 32, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
             >
               {a.name}
             </h1>
@@ -537,8 +536,8 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
               }}
             >
               <span
-                className="serif num"
-                style={{ fontSize: 52, lineHeight: 1 }}
+                className="num"
+                style={{ fontSize: 52, fontWeight: 700, lineHeight: 1 }}
               >
                 {fmtExact(a.balanceInCents)}
               </span>

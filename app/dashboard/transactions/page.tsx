@@ -259,8 +259,7 @@ export default function TransactionsPage() {
       {/* Header */}
       <div style={{ marginBottom: 22 }}>
         <h1
-          className="serif"
-          style={{ fontSize: 40, margin: 0, lineHeight: 1.05 }}
+          style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
         >
           Transactions
         </h1>
@@ -314,9 +313,10 @@ export default function TransactionsPage() {
                 }}
               >
                 <span
-                  className="num serif"
+                  className="num"
                   style={{
                     fontSize: 26,
+                    fontWeight: 700,
                     lineHeight: 1,
                     color:
                       tile.tone === "pos"
@@ -1003,9 +1003,10 @@ function TxDetailPanel({
           }}
         />
         <div
-          className="serif num"
+          className="num"
           style={{
             fontSize: 36,
+            fontWeight: 700,
             marginTop: 10,
             color: tx.type === "income" ? "var(--pos)" : "var(--ink)",
           }}

@@ -724,8 +724,36 @@ function BillRow({ bill, isExpanded, onToggleEdit, onDeleted, onSaved }: BillRow
       style={{
         borderRadius: "var(--r)",
         overflow: "hidden",
+        position: "relative",
       }}
     >
+      {/* Decorative checkmark for auto-pay bills */}
+      {bill.isAutoPay && !isExpanded && (
+        <svg
+          aria-hidden
+          viewBox="0 0 200 160"
+          style={{
+            position: "absolute",
+            right: 40,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: 200,
+            height: 160,
+            opacity: 0.22,
+            pointerEvents: "none",
+            color: "#22C55E",
+          }}
+        >
+          <polyline
+            points="20,85 70,135 180,20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="22"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
       <button
         type="button"
         className={`tx-row${isExpanded ? "" : " card-hoverable"}`}
@@ -936,7 +964,7 @@ export default function BillsPage() {
         }}
       >
         <div>
-          <h1 className="serif" style={{ fontSize: 40, margin: 0, lineHeight: 1.05 }}>
+          <h1 style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}>
             Bills &amp; subscriptions
           </h1>
           <div className="muted" style={{ marginTop: 4 }}>
@@ -971,7 +999,7 @@ export default function BillsPage() {
                     style={{ height: 36, width: 120, borderRadius: 6, marginTop: 6 }}
                   />
                 ) : (
-                  <div className="serif num" style={{ fontSize: 32, marginTop: 6 }}>
+                  <div className="num" style={{ fontSize: 32, fontWeight: 700, marginTop: 6 }}>
                     {data ? fmt(data.totalDuePeriodInCents) : "—"}
                   </div>
                 )}
@@ -1245,7 +1273,7 @@ export default function BillsPage() {
                     marginTop: 6,
                   }}
                 >
-                  <span className="serif num" style={{ fontSize: 36, lineHeight: 1 }}>
+                  <span className="num" style={{ fontSize: 36, fontWeight: 700, lineHeight: 1 }}>
                     {fmtExact(data.totalSubsMonthlyInCents)}
                   </span>
                   <span className="muted">/ month</span>

@@ -646,3 +646,31 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 3 pre-existing warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-05 (complete UI redesign)
+
+### What was built / fixed
+- **Color palette overhaul** (`app/globals.css`): light mode background shifted from warm cream (`#f6f1e7`) to neutral warm gray (`#EFECE7`); accent replaced from terracotta (`#c96442`) to black (`#111111`); dark mode shifted to near-black (`#111111` bg); positive color brightened to `#16A34A` / `#22C55E`; negative to `#DC2626`; new `.card-dark` class added (dark navy `#0F172A` background for hero cards)
+- **Typography cleanup** (`app/globals.css`, all dashboard pages): removed Caveat display font from `.page-head .h-title` CSS rule and from all `className="serif"` / `className="serif num"` usages across transactions, bills, budgets, goals, accounts, settings, account-detail — all headings and numbers now use Geist Sans with `fontWeight: 700`
+- **Dashboard layout redesign** (`app/dashboard/page.tsx`, `app/components/dashboard/CashOnHandCard.tsx`): net worth/cash-flow card moved to left wide column with `dark` prop (dark navy card, green chart, white text); safe-to-spend moved to right narrow column as clean white card; greeting removes Caveat font; `CashOnHandCard` gained `dark?: boolean` prop that sets card class, label ("Net worth"), chart color (`#22C55E`), and period button styling
+- **Sidebar user row** (`app/components/layout/Sidebar.tsx`): added "Free plan" subtitle below user name as a two-line flex column
+- **Budget hero card** (`app/dashboard/budgets/page.tsx`): hero summary card changed from `card-accent` to `card-dark`; all inner text/bar colors updated for white-on-dark legibility; heatmap intensity colors updated from terracotta to green scale; legend swatches updated to match; `DonutChart` passed `dark` prop
+- **Goals page hero** (`app/dashboard/goals/page.tsx`): old single hero strip replaced with 2-column layout — left white card (SVG donut + total saved + progress bar), right `card-dark` showing auto-saving monthly total and active transfer count
+- **Bills page decorative checkmark** (`app/dashboard/bills/page.tsx`): `BillRow` adds an absolutely-positioned decorative green checkmark SVG for `isAutoPay` bills when collapsed
+- **DonutChart** (`app/components/charts/DonutChart.tsx`): removed Caveat font from center label; added `dark?: boolean` prop for dark-card usage
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+
+### Last checks
+- pnpm lint: passed (0 errors, 3 pre-existing warnings)
+- pnpm build: not run

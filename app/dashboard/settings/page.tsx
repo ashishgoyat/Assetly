@@ -689,7 +689,7 @@ export default function SettingsPage() {
       {/* Page header */}
       <div className="page-head" style={{ paddingLeft: 0, paddingRight: 0 }}>
         <div>
-          <h1 className="serif h-title">Settings</h1>
+          <h1 className="h-title" style={{ fontWeight: 700 }}>Settings</h1>
           <p className="h-sub">
             Manage your profile, notifications, and preferences
           </p>

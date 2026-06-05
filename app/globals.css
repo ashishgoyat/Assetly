@@ -9,36 +9,36 @@
   --font-caveat: '';
 
   /* Surfaces */
-  --bg:           #f6f1e7;
-  --bg-soft:      #efe8d9;
-  --surface:      #ffffff;
-  --surface-2:    #fbf7ee;
-  --surface-hover:#f3ede0;
+  --bg:           #EFECE7;
+  --bg-soft:      #E8E4DF;
+  --surface:      #FFFFFF;
+  --surface-2:    #F8F6F3;
+  --surface-hover:#F0EDE9;
 
   /* Ink */
-  --ink:          #1c1a16;
-  --ink-2:        #46413a;
-  --ink-3:        #7b7468;
-  --ink-4:        #a8a193;
+  --ink:          #1A1A1A;
+  --ink-2:        #4A4A4A;
+  --ink-3:        #737373;
+  --ink-4:        #A3A3A3;
 
   /* Borders */
-  --border:       #e8dfca;
-  --border-2:     #efe8d9;
-  --border-strong:#1c1a16;
+  --border:       #E2DDD8;
+  --border-2:     #EDEAE6;
+  --border-strong:#1A1A1A;
 
   /* Accent */
-  --accent:       #c96442;
-  --accent-2:     #b25535;
-  --accent-soft:  #f8e9df;
-  --accent-tint:  #fdf4ec;
+  --accent:       #111111;
+  --accent-2:     #333333;
+  --accent-soft:  #F0F0F0;
+  --accent-tint:  #F8F8F8;
 
   /* Semantic */
-  --pos:          #2f7a52;
-  --pos-soft:     #e3eee5;
-  --neg:          #b04545;
-  --neg-soft:     #f3e0dd;
-  --warn:         #b07b1e;
-  --warn-soft:    #f5ead0;
+  --pos:          #16A34A;
+  --pos-soft:     #DCFCE7;
+  --neg:          #DC2626;
+  --neg-soft:     #FEE2E2;
+  --warn:         #D97706;
+  --warn-soft:    #FEF3C7;
 
   /* Category colors */
   --cat-1:        #c96442;
@@ -102,62 +102,62 @@
 /* .dark class is set by next-themes on <html>. System preference is the fallback. */
 
 .dark {
-  --bg:           #161310;
-  --bg-soft:      #1e1a15;
-  --surface:      #23201a;
-  --surface-2:    #2a261f;
-  --surface-hover:#322d25;
+  --bg:           #111111;
+  --bg-soft:      #1A1A1A;
+  --surface:      #1C1C1E;
+  --surface-2:    #242424;
+  --surface-hover:#2A2A2A;
 
-  --ink:          #f0e8d8;
-  --ink-2:        #c4b89e;
-  --ink-3:        #7d7060;
-  --ink-4:        #4e4438;
+  --ink:          #FFFFFF;
+  --ink-2:        #A0A0A0;
+  --ink-3:        #6B6B6B;
+  --ink-4:        #3D3D3D;
 
-  --border:       #36302a;
-  --border-2:     #2a261f;
-  --border-strong:#f0e8d8;
+  --border:       #2A2A2A;
+  --border-2:     #1E1E1E;
+  --border-strong:#FFFFFF;
 
-  --accent:       #d9784f;
-  --accent-2:     #e8956e;
-  --accent-soft:  #3a2016;
-  --accent-tint:  #2b180f;
+  --accent:       #FFFFFF;
+  --accent-2:     #E0E0E0;
+  --accent-soft:  #2A2A2A;
+  --accent-tint:  #222222;
 
-  --pos:          #52c27a;
-  --pos-soft:     #162b1e;
-  --neg:          #e06868;
-  --neg-soft:     #311414;
-  --warn:         #d4a535;
-  --warn-soft:    #302210;
+  --pos:          #22C55E;
+  --pos-soft:     #14532D;
+  --neg:          #EF4444;
+  --neg-soft:     #450A0A;
+  --warn:         #F59E0B;
+  --warn-soft:    #431407;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --bg:           #161310;
-    --bg-soft:      #1e1a15;
-    --surface:      #23201a;
-    --surface-2:    #2a261f;
-    --surface-hover:#322d25;
+    --bg:           #111111;
+    --bg-soft:      #1A1A1A;
+    --surface:      #1C1C1E;
+    --surface-2:    #242424;
+    --surface-hover:#2A2A2A;
 
-    --ink:          #f0e8d8;
-    --ink-2:        #c4b89e;
-    --ink-3:        #7d7060;
-    --ink-4:        #4e4438;
+    --ink:          #FFFFFF;
+    --ink-2:        #A0A0A0;
+    --ink-3:        #6B6B6B;
+    --ink-4:        #3D3D3D;
 
-    --border:       #36302a;
-    --border-2:     #2a261f;
-    --border-strong:#f0e8d8;
+    --border:       #2A2A2A;
+    --border-2:     #1E1E1E;
+    --border-strong:#FFFFFF;
 
-    --accent:       #d9784f;
-    --accent-2:     #e8956e;
-    --accent-soft:  #3a2016;
-    --accent-tint:  #2b180f;
+    --accent:       #FFFFFF;
+    --accent-2:     #E0E0E0;
+    --accent-soft:  #2A2A2A;
+    --accent-tint:  #222222;
 
-    --pos:          #52c27a;
-    --pos-soft:     #162b1e;
-    --neg:          #e06868;
-    --neg-soft:     #311414;
-    --warn:         #d4a535;
-    --warn-soft:    #302210;
+    --pos:          #22C55E;
+    --pos-soft:     #14532D;
+    --neg:          #EF4444;
+    --neg-soft:     #450A0A;
+    --warn:         #F59E0B;
+    --warn-soft:    #431407;
   }
 }
 
@@ -559,6 +559,17 @@ input, textarea {
   position: relative;
 }
 
+.card-dark {
+  background: #0F172A;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-lg);
+  color: #FFFFFF;
+}
+.dark .card-dark {
+  background: #0D1424;
+  border-color: rgba(255,255,255,0.06);
+}
+
 /* ─── Buttons ───────────────────────────────────────────────────────────────── */
 
 .btn {
@@ -598,10 +609,10 @@ input, textarea {
 
 .btn-accent {
   background: var(--accent);
-  color: white;
+  color: var(--bg);
   border-color: var(--accent);
 }
-.btn-accent:hover { background: var(--accent-2); border-color: var(--accent-2); }
+.btn-accent:hover { background: var(--accent-2); border-color: var(--accent-2); color: var(--bg); }
 
 .btn-sm { padding: 5px 9px; font-size: 11.5px; }
 .btn-lg { padding: 10px 16px; font-size: 13.5px; }
@@ -749,7 +760,7 @@ input, textarea {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #d98563);
+  background: linear-gradient(135deg, #2a2a2a, #555555);
   color: white;
   display: flex;
   align-items: center;
@@ -770,7 +781,6 @@ input, textarea {
 }
 
 .page-head .h-title {
-  font-family: var(--f-display);
   font-size: 36px;
   line-height: 1.05;
   letter-spacing: -0.02em;

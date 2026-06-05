@@ -152,7 +152,7 @@ function AccountCard({
       {/* Balance */}
       <div
         style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em" }}
-        className="serif num"
+        className="num"
       >
         {fmt(account.balanceInCents)}
       </div>

@@ -111,7 +111,7 @@ export default function GoalCard({ goal: g, onUpdated }: GoalCardProps) {
     >
       <div style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6 }}>{g.name}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 8 }}>
-        <span className="num serif" style={{ fontSize: 22, lineHeight: 1 }}>
+        <span className="num" style={{ fontSize: 22, fontWeight: 700, lineHeight: 1 }}>
           {fmtCompact(g.currentInCents)}
         </span>
         <span className="num" style={{ fontSize: 11, color: "var(--ink-3)" }}>

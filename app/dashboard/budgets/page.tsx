@@ -51,10 +51,10 @@ function getCalendarInfo(monthLabel: string): {
 
 const heatmapIntensityColors = [
   "transparent",
-  "#f5edd9",
-  "#ecdfc0",
-  "#d9c098",
-  "#c96442",
+  "#DCFCE7",
+  "#86EFAC",
+  "#4ADE80",
+  "#16A34A",
 ];
 
 // ---------------------------------------------------------------------------
@@ -286,8 +286,7 @@ export default function BudgetsPage() {
         >
           <div>
             <h1
-              className="serif"
-              style={{ fontSize: 40, margin: 0, lineHeight: 1.05 }}
+              style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
             >
               Budgets
             </h1>
@@ -357,8 +356,7 @@ export default function BudgetsPage() {
       >
         <div>
           <h1
-            className="serif"
-            style={{ fontSize: 40, margin: 0, lineHeight: 1.05 }}
+            style={{ fontSize: 40, margin: 0, lineHeight: 1.05, fontWeight: 700 }}
           >
             Budgets
           </h1>
@@ -437,12 +435,12 @@ export default function BudgetsPage() {
         </div>
       </div>
 
-      <div className="grid-2col-budgets">
-        {/* Left column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Hero summary */}
+      {/* Row 1: Hero + Calendar (side by side) */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 14, marginBottom: 14 }}>
+        {/* Left: Hero summary card only */}
+        <div>
           <div
-            className="card-accent"
+            className="card-dark"
             style={{ padding: 24, display: "flex", gap: 24, alignItems: "center" }}
           >
             <DonutChart
@@ -450,6 +448,7 @@ export default function BudgetsPage() {
               strokeW={18}
               label={`${Math.round(percentageUsed)}%`}
               sub="used"
+              dark
               segs={budgets.map((b) => ({
                 v: Math.min(b.spentInCents, b.limitInCents),
                 c: b.color,
@@ -459,7 +458,7 @@ export default function BudgetsPage() {
             <div style={{ flex: 1 }}>
               <div
                 className="sec-label"
-                style={{ color: "var(--accent-2)" }}
+                style={{ color: "rgba(255,255,255,0.5)" }}
               >
                 Spent of {fmt(totalLimitInCents)} monthly budget
               </div>
@@ -472,81 +471,37 @@ export default function BudgetsPage() {
                 }}
               >
                 <span
-                  className="serif num"
-                  style={{ fontSize: 44, lineHeight: 1 }}
+                  className="num"
+                  style={{ fontSize: 44, lineHeight: 1, fontWeight: 700, color: "#FFFFFF" }}
                 >
                   {fmt(totalSpentInCents)}
                 </span>
-                <span style={{ color: "var(--ink-3)" }}>
+                <span style={{ color: "rgba(255,255,255,0.5)" }}>
                   · {fmt(remainingInCents)} left
                 </span>
               </div>
               <div
                 className="bar lg"
-                style={{ marginTop: 14, background: "var(--surface)" }}
+                style={{ marginTop: 14, background: "rgba(255,255,255,0.15)" }}
               >
                 <i
                   style={{
-                    background: "var(--accent)",
+                    background: "#22C55E",
                     transform: `scaleX(${Math.min(percentageUsed, 100) / 100})`,
                   }}
                 />
               </div>
-              <div style={{ marginTop: 10, fontSize: 12, color: "var(--ink-2)" }}>
+              <div style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
                 You&apos;re on track — daily limit going forward:{" "}
-                <span className="num" style={{ fontWeight: 600 }}>
+                <span className="num" style={{ fontWeight: 600, color: "#FFFFFF" }}>
                   {fmt(dailyLimitGoingForwardInCents)}
                 </span>
               </div>
             </div>
           </div>
-
-          {/* Budget cards */}
-          {budgets.map((b) => (
-            <BudgetCard
-              key={b.id}
-              budget={b}
-              onUpdate={(updated) =>
-                setData((d) => {
-                  if (!d) return d;
-                  const newBudgets = d.budgets.map((x) => x.id === updated.id ? updated : x);
-                  const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
-                  const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
-                  const newRemaining = newTotalLimit - newTotalSpent;
-                  return {
-                    ...d,
-                    budgets: newBudgets,
-                    totalLimitInCents: newTotalLimit,
-                    totalSpentInCents: newTotalSpent,
-                    percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
-                    remainingInCents: newRemaining,
-                    dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
-                  };
-                })
-              }
-              onDelete={(id) =>
-                setData((d) => {
-                  if (!d) return d;
-                  const newBudgets = d.budgets.filter((x) => x.id !== id);
-                  const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
-                  const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
-                  const newRemaining = newTotalLimit - newTotalSpent;
-                  return {
-                    ...d,
-                    budgets: newBudgets,
-                    totalLimitInCents: newTotalLimit,
-                    totalSpentInCents: newTotalSpent,
-                    percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
-                    remainingInCents: newRemaining,
-                    dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
-                  };
-                })
-              }
-            />
-          ))}
         </div>
 
-        {/* Right column */}
+        {/* Right: Calendar + vs last month */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {/* Daily spend heatmap */}
           <div className="card" style={{ padding: 20 }}>
@@ -631,7 +586,7 @@ export default function BudgetsPage() {
                           intensity > 0.55
                             ? "white"
                             : intensity > 0.1
-                              ? "#1c1a16"
+                              ? "#1A1A1A"
                               : "var(--ink-2)",
                         borderRadius: 5,
                         fontFamily: "var(--f-mono)",
@@ -660,15 +615,15 @@ export default function BudgetsPage() {
               <span>less</span>
               {(
                 [
-                  "#fbf7ee",
-                  "#f5edd9",
-                  "#ecdfc0",
-                  "#d9c098",
-                  "#c96442",
+                  "#F0FDF4",
+                  "#DCFCE7",
+                  "#86EFAC",
+                  "#4ADE80",
+                  "#16A34A",
                 ] as const
-              ).map((c, i) => (
+              ).map((c) => (
                 <div
-                  key={i}
+                  key={c}
                   style={{
                     width: 12,
                     height: 12,
@@ -717,6 +672,52 @@ export default function BudgetsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Row 2: Budget category cards — full-width 2-column grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
+        {budgets.map((b) => (
+          <BudgetCard
+            key={b.id}
+            budget={b}
+            onUpdate={(updated) =>
+              setData((d) => {
+                if (!d) return d;
+                const newBudgets = d.budgets.map((x) => x.id === updated.id ? updated : x);
+                const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
+                const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
+                const newRemaining = newTotalLimit - newTotalSpent;
+                return {
+                  ...d,
+                  budgets: newBudgets,
+                  totalLimitInCents: newTotalLimit,
+                  totalSpentInCents: newTotalSpent,
+                  percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
+                  remainingInCents: newRemaining,
+                  dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
+                };
+              })
+            }
+            onDelete={(id) =>
+              setData((d) => {
+                if (!d) return d;
+                const newBudgets = d.budgets.filter((x) => x.id !== id);
+                const newTotalLimit = newBudgets.reduce((s, b) => s + b.limitInCents, 0);
+                const newTotalSpent = newBudgets.reduce((s, b) => s + b.spentInCents, 0);
+                const newRemaining = newTotalLimit - newTotalSpent;
+                return {
+                  ...d,
+                  budgets: newBudgets,
+                  totalLimitInCents: newTotalLimit,
+                  totalSpentInCents: newTotalSpent,
+                  percentageUsed: newTotalLimit > 0 ? Math.round((newTotalSpent / newTotalLimit) * 100) : 0,
+                  remainingInCents: newRemaining,
+                  dailyLimitGoingForwardInCents: d.daysLeft > 0 ? Math.round(newRemaining / d.daysLeft) : 0,
+                };
+              })
+            }
+          />
+        ))}
       </div>
     </div>
   );

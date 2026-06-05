@@ -18,6 +18,7 @@ interface DonutChartProps {
   label?: string;
   sub?: string;
   gap?: number;
+  dark?: boolean;
 }
 
 export default function DonutChart({
@@ -27,6 +28,7 @@ export default function DonutChart({
   label,
   sub,
   gap = 2,
+  dark,
 }: DonutChartProps) {
   const total = segs.reduce((s, x) => s + x.v, 0);
   const r = (size - strokeW) / 2;
@@ -59,7 +61,7 @@ export default function DonutChart({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="var(--border-2)"
+          stroke={dark ? "rgba(255,255,255,0.15)" : "var(--border-2)"}
           strokeWidth={strokeW}
         />
         {computedSegs.map((s, i) => (
@@ -94,9 +96,10 @@ export default function DonutChart({
           <div
             className="num"
             style={{
-              fontFamily: "var(--f-display)",
               fontSize: size * 0.22,
+              fontWeight: 700,
               lineHeight: 1,
+              color: dark ? "#FFFFFF" : undefined,
             }}
           >
             {label}
@@ -105,7 +108,7 @@ export default function DonutChart({
             <div
               style={{
                 fontSize: 10,
-                color: "var(--ink-3)",
+                color: dark ? "rgba(255,255,255,0.5)" : "var(--ink-3)",
                 marginTop: 4,
               }}
             >
