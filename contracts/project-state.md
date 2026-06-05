@@ -729,3 +729,27 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 3 pre-existing warnings)
 - pnpm build: failed before type fix; passes after fix
+
+---
+
+## Session 2026-06-05 (login page redesign)
+
+### What was built / fixed
+- **Auth layout logo fix** (`app/(auth)/layout.tsx`): "A" lettermark box used `text-white` Tailwind class; in dark mode `var(--ink)` (box background) becomes white, making the "A" invisible. Fixed by removing `text-white` and setting `color: var(--bg)` so the letter always contrasts against its background.
+- **Login button fix** (`app/(auth)/login/page.tsx`): Google sign-in button used `background: var(--accent)` + `color: 'white'`; in dark mode `--accent` is white, making the text invisible. Fixed by using `background: var(--surface-2)` + `color: var(--ink)` + a border.
+- **Login page recreation** (`app/(auth)/login/page.tsx`): Added feature list (3 bullets with green check icons), normal-height button (`py-3` vs old `py-10`), divider, and privacy note. Card narrowed to `max-w-sm`. Footer Terms/Privacy line added to layout.
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices" which increments `sessionVersion`
+
+### Last checks
+- pnpm lint: passed (0 errors, 3 pre-existing warnings)
+- pnpm build: not run
