@@ -934,3 +934,33 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 0 warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-06 (demo mode — isolated writable sessions)
+
+### What was built / fixed
+- **`lib/db/schema.ts`** — added `isDemo boolean NOT NULL DEFAULT false` and `demoExpiresAt text` columns to `usersTable`; DB migration applied via raw `ALTER TABLE IF NOT EXISTS`
+- **`lib/data/store.ts`** — added `createDemoUser(demoExpiresAt)` (inserts a demo user row); added `cleanupExpiredDemoUsers()` (deletes all users where `isDemo = true AND demoExpiresAt < now`, cascading via `removeUser`); added `isNotNull` and `lt` to drizzle imports; fixed `removeUser` to also delete `userSessionsTable` rows; fixed `upsertGoogleUser` to include `isDemo: false, demoExpiresAt: null` in new-user object to satisfy the updated `UserRow` type
+- **`app/api/demo/session/route.ts`** (NEW) — `POST /api/demo/session`: runs lazy cleanup, creates a demo user expiring in 2 hours, seeds it with all data from `seed-data.ts` (fresh UUIDs per row so multiple demo users don't conflict), generates an HMAC-SHA256 token, returns `{ userId, demoToken, expiresAt }`
+- **`auth.ts`** — added `Credentials` provider that accepts `{ userId, demoToken }`, verifies the HMAC token with `timingSafeEqual`, and returns the demo user; `signIn` callback bypasses Google logic for credentials; JWT callback embeds `isDemo`/`demoExpiresAt` on first sign-in and enforces expiry on subsequent reads; `session` callback forwards `isDemo` and `demoExpiresAt` to `session.user`
+- **`app/(auth)/login/page.tsx`** — added "Try Demo" dashed button below the Google button; `handleDemoSignIn` calls `POST /api/demo/session` then `signIn('credentials', …)`; shows "Setting up demo…" loading state; both buttons disabled while either is in flight; added expired demo notice when `?reason=demo-expired` is in the URL
+- **`app/components/demo/DemoBanner.tsx`** (NEW) — client component; shows "Demo session · data auto-deletes in Xh Ym" countdown banner using a 60s interval; styled with `--warn-soft` / `--warn` tokens
+- **`app/dashboard/layout.tsx`** — reads `isDemo` + `demoExpiresAt` from session; redirects to `/login?reason=demo-expired` if demo has expired; renders `<DemoBanner>` above page content for demo sessions
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices"
+10. **Existing DB rows are still plaintext** — run `pnpm encrypt-db` once to migrate them
+11. Demo cleanup is lazy — expired demo data stays in DB until the next `POST /api/demo/session` call purges it
+
+### Last checks
+- pnpm lint: passed (0 errors, 0 warnings)
+- pnpm build: not run

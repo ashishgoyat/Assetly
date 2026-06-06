@@ -138,6 +138,8 @@ export const usersTable = pgTable('users', {
   avatarUrl:      text('avatar_url'),
   sessionVersion: integer('session_version').notNull().default(0),
   createdAt:      text('created_at').notNull(),
+  isDemo:         boolean('is_demo').notNull().default(false),
+  demoExpiresAt:  text('demo_expires_at'),
 })
 
 // ---------------------------------------------------------------------------

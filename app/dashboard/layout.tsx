@@ -12,6 +12,7 @@ import Topbar from "@/app/components/layout/Topbar";
 import { SidebarProvider } from "@/app/components/layout/SidebarContext";
 import OnboardingGate from "@/app/components/onboarding/OnboardingGate";
 import QuickAddFab from "@/app/components/dashboard/QuickAddFab";
+import DemoBanner from "@/app/components/demo/DemoBanner";
 
 export default async function DashboardLayout({
   children,
@@ -21,7 +22,19 @@ export default async function DashboardLayout({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const userId = (session.user as { id?: string }).id ?? '';
+  type SessionUser = {
+    id?: string
+    avatarUrl?: string
+    sessionVersion?: number
+    isDemo?: boolean
+    demoExpiresAt?: string | null
+  }
+  const su = session.user as SessionUser
+  if (su.isDemo && su.demoExpiresAt && new Date(su.demoExpiresAt) < new Date()) {
+    redirect("/login?reason=demo-expired")
+  }
+
+  const userId = su.id ?? '';
   const accounts = await getAccounts(userId);
 
   const userName = session.user.name ?? "You";
@@ -32,7 +45,7 @@ export default async function DashboardLayout({
     .join("")
     .toUpperCase()
     .slice(0, 2);
-  const userAvatarUrl = (session.user as { id?: string; avatarUrl?: string }).avatarUrl ?? "";
+  const userAvatarUrl = su.avatarUrl ?? "";
 
   return (
     <SidebarProvider>
@@ -54,7 +67,12 @@ export default async function DashboardLayout({
           userAvatarUrl={userAvatarUrl}
           accounts={accounts}
         />
-        <main className="page">{children}</main>
+        <main className="page">
+          {su.isDemo && su.demoExpiresAt && (
+            <DemoBanner expiresAt={su.demoExpiresAt} />
+          )}
+          {children}
+        </main>
       </div>
       <QuickAddFab />
     </SidebarProvider>

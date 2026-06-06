@@ -2,10 +2,14 @@
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
   const [redirecting, setRedirecting] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const demoExpired = searchParams.get('reason') === 'demo-expired'
 
   function handleGoogleSignIn() {
     setRedirecting(true)
@@ -15,6 +19,22 @@ export default function LoginPage() {
       setError('Sign-in failed. Please try again.')
     })
   }
+
+  async function handleDemoSignIn() {
+    setDemoLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/demo/session', { method: 'POST' })
+      if (!res.ok) throw new Error('Server error')
+      const { userId, demoToken } = (await res.json()) as { userId: string; demoToken: string }
+      await signIn('credentials', { userId, demoToken, callbackUrl: '/dashboard' })
+    } catch {
+      setDemoLoading(false)
+      setError('Could not start demo. Please try again.')
+    }
+  }
+
+  const busy = redirecting || demoLoading
 
   return (
     <div className="flex flex-col gap-6">
@@ -30,6 +50,16 @@ export default function LoginPage() {
           Sign in to access your financial dashboard
         </p>
       </div>
+
+      {/* Expired demo notice */}
+      {demoExpired && (
+        <p
+          className="text-sm text-center rounded-xl px-4 py-2"
+          style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}
+        >
+          Your demo session expired. Start a new one below or sign in with Google.
+        </p>
+      )}
 
       {/* Feature list */}
       <ul className="flex flex-col gap-2">
@@ -71,8 +101,8 @@ export default function LoginPage() {
       {/* Google Sign In */}
       <button
         type="button"
-        disabled={redirecting}
-        aria-disabled={redirecting}
+        disabled={busy}
+        aria-disabled={busy}
         aria-busy={redirecting}
         onClick={handleGoogleSignIn}
         className="w-full rounded-xl py-3 px-4 text-sm font-semibold transition-opacity min-h-[44px]"
@@ -84,15 +114,14 @@ export default function LoginPage() {
           background: 'var(--surface-2)',
           color: 'var(--ink)',
           border: '1.5px solid var(--border)',
-          opacity: redirecting ? 0.65 : 1,
-          cursor: redirecting ? 'not-allowed' : 'pointer',
+          opacity: busy ? 0.65 : 1,
+          cursor: busy ? 'not-allowed' : 'pointer',
         }}
       >
         {redirecting ? (
           'Redirecting…'
         ) : (
           <>
-            {/* Google "G" logo */}
             <svg
               viewBox="0 0 24 24"
               width="18"
@@ -122,6 +151,53 @@ export default function LoginPage() {
           </>
         )}
       </button>
+
+      {/* Demo sign in */}
+      <div className="flex flex-col gap-2">
+        <div
+          className="flex items-center gap-3 text-xs"
+          style={{ color: 'var(--ink-4)' }}
+        >
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          or
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          aria-disabled={busy}
+          aria-busy={demoLoading}
+          onClick={handleDemoSignIn}
+          className="w-full rounded-xl py-3 px-4 text-sm font-semibold transition-opacity min-h-[44px]"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            background: 'transparent',
+            color: 'var(--ink-2)',
+            border: '1.5px dashed var(--border)',
+            opacity: busy ? 0.65 : 1,
+            cursor: busy ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {demoLoading ? (
+            'Setting up demo…'
+          ) : (
+            <>
+              <svg viewBox="0 0 16 16" width="15" height="15" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+                <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13z" stroke="currentColor" strokeWidth="1.25" />
+                <path d="M6 6c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+                <circle cx="8" cy="11" r=".75" fill="currentColor" />
+              </svg>
+              Try Demo
+            </>
+          )}
+        </button>
+        <p className="text-center text-xs" style={{ color: 'var(--ink-4)' }}>
+          No account needed · session lasts 2 hours · data auto-deleted
+        </p>
+      </div>
 
       {/* Sign-in error */}
       {error !== null && (

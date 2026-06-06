@@ -19,7 +19,7 @@ import {
   notificationEmailsSentTable,
   userSessionsTable,
 } from '@/lib/db/schema'
-import { desc, eq, and, gte, gt, isNull, sql } from 'drizzle-orm'
+import { desc, eq, and, gte, gt, isNull, isNotNull, lt, sql } from 'drizzle-orm'
 import { encrypt, decrypt } from '@/lib/crypto'
 import type {
   Transaction,
@@ -626,7 +626,40 @@ export async function removeUser(id: string): Promise<void> {
   await db.delete(subscriptionsTable).where(eq(subscriptionsTable.userId, id))
   await db.delete(notificationReadsTable).where(eq(notificationReadsTable.userId, id))
   await db.delete(notificationEmailsSentTable).where(eq(notificationEmailsSentTable.userId, id))
+  await db.delete(userSessionsTable).where(eq(userSessionsTable.userId, id))
   await db.delete(usersTable).where(eq(usersTable.id, id))
+}
+
+export async function createDemoUser(demoExpiresAt: string): Promise<string> {
+  await ensureDb()
+  const id = crypto.randomUUID()
+  await db.insert(usersTable).values({
+    id,
+    name: 'Demo User',
+    email: `demo-${id}@demo.assetly`,
+    passwordHash: null,
+    googleId: null,
+    avatarUrl: null,
+    sessionVersion: 0,
+    createdAt: new Date().toISOString(),
+    isDemo: true,
+    demoExpiresAt,
+  })
+  return id
+}
+
+export async function cleanupExpiredDemoUsers(): Promise<void> {
+  await ensureDb()
+  const now = new Date().toISOString()
+  const expired = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(and(
+      eq(usersTable.isDemo, true),
+      isNotNull(usersTable.demoExpiresAt),
+      lt(usersTable.demoExpiresAt, now),
+    ))
+  await Promise.all(expired.map(({ id }) => removeUser(id)))
 }
 
 export async function createUser(data: {
@@ -678,6 +711,8 @@ export async function upsertGoogleUser({
     avatarUrl,
     sessionVersion: 0,
     createdAt: new Date().toISOString(),
+    isDemo: false,
+    demoExpiresAt: null,
   }
   await db.insert(usersTable).values(newUser)
   return newUser
