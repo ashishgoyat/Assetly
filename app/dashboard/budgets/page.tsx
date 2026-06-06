@@ -440,22 +440,24 @@ export default function BudgetsPage() {
         {/* Left column: Hero + Budget cards stacked */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
-            className="card-dark"
+            className="card-dark budget-hero"
             style={{ padding: 24, display: "flex", gap: 24, alignItems: "center" }}
           >
-            <DonutChart
-              size={140}
-              strokeW={18}
-              label={`${Math.round(percentageUsed)}%`}
-              sub="used"
-              dark
-              segs={budgets.map((b) => ({
-                v: Math.min(b.spentInCents, b.limitInCents),
-                c: b.color,
-                label: b.name,
-              }))}
-            />
-            <div style={{ flex: 1 }}>
+            <div className="budget-donut-wrap">
+              <DonutChart
+                size={140}
+                strokeW={18}
+                label={`${Math.round(percentageUsed)}%`}
+                sub="used"
+                dark
+                segs={budgets.map((b) => ({
+                  v: Math.min(b.spentInCents, b.limitInCents),
+                  c: b.color,
+                  label: b.name,
+                }))}
+              />
+            </div>
+            <div className="budget-hero-text" style={{ flex: 1, minWidth: 0 }}>
               <div
                 className="sec-label"
                 style={{ color: "rgba(255,255,255,0.5)" }}
@@ -466,12 +468,13 @@ export default function BudgetsPage() {
                 style={{
                   display: "flex",
                   alignItems: "baseline",
+                  flexWrap: "wrap",
                   gap: 10,
                   marginTop: 6,
                 }}
               >
                 <span
-                  className="num"
+                  className="num budget-hero-amount"
                   style={{ fontSize: 44, lineHeight: 1, fontWeight: 700, color: "#FFFFFF" }}
                 >
                   {fmt(totalSpentInCents)}

@@ -95,16 +95,20 @@ export default function BillRow({ bill: b, onPaid, onSkipped }: Props) {
         <div>
           <div style={{ fontSize: 13.5, fontWeight: 500 }}>{b.name}</div>
           <div style={{ fontSize: 11.5, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
-            {autoPay ? (
-              <>
-                <Icon name="check" size={10} color="var(--pos)" />
-                Auto-pay
-              </>
-            ) : (
-              <span style={{ color: "var(--accent-2)" }}>Needs scheduling</span>
-            )}
-            <span className="dim">·</span>
-            <span>in {b.dueInDays} {b.dueInDays === 1 ? "day" : "days"}</span>
+            <span className="bill-autopay-status">
+              {autoPay ? (
+                <>
+                  <Icon name="check" size={10} color="var(--pos)" />
+                  Auto-pay
+                </>
+              ) : (
+                <span style={{ color: "var(--accent-2)" }}>Needs scheduling</span>
+              )}
+            </span>
+            <span className="bill-due-days">
+              <span className="dim">·</span>
+              <span>in {b.dueInDays} {b.dueInDays === 1 ? "day" : "days"}</span>
+            </span>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

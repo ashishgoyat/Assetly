@@ -903,3 +903,34 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 0 warnings)
 - pnpm build: passed (26 routes)
+
+---
+
+## Session 2026-06-06 (mobile UI polish + desktop regression fixes)
+
+### What was built / fixed
+- **`app/globals.css`** — added `anim-modal-in`/`anim-modal-out` keyframes; added global desktop rules for `.tx-panel-backdrop`, `.tx-detail-panel`, `.bill-autopay-status`, `.tx-toolbar-row`, `.tx-row-table`, `.tx-table-header`; scoped 6-column tx grid to `@media (min-width: 768px) { .tx-row.tx-row-table }` to prevent cascade override on mobile; added mobile rules for transaction detail modal (`.tx-detail-grid .tx-detail-panel` specificity 0,2,0), budget hero sizing, account detail padding, and hidden columns
+- **`app/dashboard/transactions/page.tsx`** — replaced inline `gridTemplateColumns` with `tx-row-table` CSS class; added `.tx-panel-backdrop` div; removed sticky/alignSelf inline styles from `TxDetailPanel` aside; added mobile category `<select>`; split toolbar into two `tx-toolbar-row` divs
+- **`app/dashboard/budgets/page.tsx`** — wrapped donut in `budget-donut-wrap`; added `budget-hero`, `budget-hero-amount` classes; donut scaled to 72px (CSS `scale(0.514)`) on mobile to prevent horizontal overflow
+- **`app/dashboard/accounts/[id]/AccountDetailClient.tsx`** — added `acct-detail-page` (8px horizontal padding on mobile), `acct-balance-amount` (32px font on mobile), `acct-activity-row` (collapsed grid), `acct-tx-date` (hidden date on mobile)
+- **`app/components/dashboard/BillRow.tsx`** — wrapped autopay icon+text in `bill-autopay-status` span (`inline-flex; align-items: center; gap: 3px`) to fix line-break; wrapped due-days in `bill-due-days` span (hidden on mobile)
+- **`app/components/dashboard/TransactionRow.tsx`** — wrapped date/time in `tx-datetime` span (hidden on mobile)
+- **`app/components/dashboard/DashboardActivity.tsx`** — added `grid-insight-goals` class to Row 3 div (1-col on mobile)
+- **`app/components/layout/SearchDropdown.tsx`** — added `search-dropdown` class to listbox for mobile offset overrides
+- **`app/components/layout/Topbar.tsx`** — removed `⌘K` span; removed spacer; wrapped dark-mode toggle + bell in flex container with `marginLeft: auto`
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices"
+10. **Existing DB rows are still plaintext** — run `pnpm encrypt-db` once to migrate them
+
+### Last checks
+- pnpm lint: passed (0 errors, 0 warnings)
+- pnpm build: not run

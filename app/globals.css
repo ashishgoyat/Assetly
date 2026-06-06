@@ -387,6 +387,22 @@ input, textarea {
   scrollbar-width: thin;
 }
 
+/* Backdrop for mobile transaction detail modal — hidden on desktop */
+.tx-panel-backdrop { display: none; }
+
+/* Desktop sticky positioning for detail panel (replaced inline style) */
+.tx-detail-panel { position: sticky; top: 20px; align-self: flex-start; }
+
+/* Keep autopay icon + text on one line in the bills row */
+.bill-autopay-status { display: inline-flex; align-items: center; gap: 3px; }
+
+/* Toolbar row wrappers: transparent on desktop, become real flex rows on mobile */
+.tx-toolbar-row { display: contents; }
+
+/* Transaction table: 6-col layout on desktop, falls back to base .tx-row (4-col) on mobile */
+.tx-row-table { grid-template-columns: 32px 1fr 130px 130px 100px 20px; }
+.tx-table-header { display: grid; align-items: center; }
+
 /* ─── Responsive grid classes ────────────────────────────────────────────────── */
 
 .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -447,11 +463,106 @@ input, textarea {
     max-width: 100%;
   }
 
-  /* Topbar search: shrink or collapse gracefully */
+  /* Topbar search: fill available space on mobile */
   .search {
-    max-width: 180px;
-    flex-shrink: 1;
+    max-width: none !important;
   }
+
+  /* Search dropdown: span full .search pill width on mobile */
+  .search-dropdown {
+    left: -47px !important;
+    right: -12px !important;
+    width: auto !important;
+  }
+
+  /* Transactions toolbar: replace pills with a select on mobile */
+  .tx-cat-pills { display: none !important; }
+  .tx-cat-select {
+    display: block !important;
+    font-size: 13px !important;
+    padding: 5px 8px !important;
+    height: 36px;
+    min-width: 0;
+  }
+  .tx-spacer { display: none; }
+
+  /* Toolbar rows: each row stretches full width, children share space equally */
+  .tx-toolbar { gap: 8px !important; }
+  .tx-toolbar-row {
+    display: flex !important;
+    width: 100%;
+    gap: 6px;
+  }
+  .tx-toolbar-row > * { flex: 1; min-width: 0; }
+  /* Buttons inside the filter/month wrapper divs fill their parent */
+  .tx-toolbar-row > div > .btn-sm { width: 100% !important; justify-content: center !important; }
+
+  /* Transaction detail: bottom-sheet modal on mobile */
+  .tx-panel-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 199;
+    animation: anim-fade-in var(--dur-base) var(--ease-out-quart) both;
+  }
+  .tx-detail-grid { grid-template-columns: 1fr !important; }
+  /* Higher specificity (0,2,0) beats .tx-detail-grid aside (0,1,1) which forces position:static */
+  .tx-detail-grid .tx-detail-panel {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    /* CSS `translate` is a separate property from `transform`, so anim-scale-in
+       (which only animates `transform`) cannot wipe it out via fill-mode */
+    translate: -50% -50% !important;
+    width: calc(100vw - 32px) !important;
+    max-height: 85dvh !important;
+    overflow-y: auto !important;
+    z-index: 200;
+    border-radius: var(--r-lg) !important;
+    align-self: unset !important;
+    animation: anim-scale-in var(--dur-base) var(--ease-out-quart) both !important;
+  }
+  .tx-detail-grid .tx-detail-panel[data-exiting="true"] {
+    animation: anim-scale-out var(--dur-fast) var(--ease-out-quart) both !important;
+  }
+
+  /* Transactions table: no horizontal scroll on mobile */
+  .tx-table { overflow-x: visible; }
+  .tx-table-header { display: none !important; }
+  /* Hide desktop-only columns (category, account) */
+  .tx-col-desktop { display: none !important; }
+
+  /* Dashboard row — hide secondary metadata on mobile */
+  .bill-autopay-status { display: none; }
+  .bill-due-days { display: none; }
+  .tx-datetime { display: none; }
+
+  /* AI insight + goals grid: collapse to 1-col on mobile (insight stays above goals via DOM order) */
+  .grid-insight-goals { grid-template-columns: 1fr !important; }
+
+  /* Account detail page */
+  .acct-detail-page { padding-left: 8px !important; padding-right: 8px !important; }
+  .acct-balance-amount { font-size: 32px !important; }
+  .acct-activity-row { grid-template-columns: 32px 1fr auto 20px !important; }
+  .acct-tx-date { display: none !important; }
+
+  /* Budget hero card — shrink donut + amount to fit narrow viewport */
+  .budget-hero { gap: 10px !important; padding: 14px !important; }
+  .budget-donut-wrap {
+    width: 72px !important;
+    height: 72px !important;
+    overflow: hidden;
+    flex-shrink: 0 !important;
+  }
+  .budget-donut-wrap > div {
+    transform: scale(0.514);
+    transform-origin: top left;
+  }
+  .budget-hero-amount { font-size: 22px !important; }
 
   /* Tables / wide panels: allow horizontal scroll instead of overflowing the page */
   .table-scroll {
@@ -858,6 +969,10 @@ input, textarea {
 .tx-row:hover { background: var(--surface-hover); }
 /* Prevent text in the second (1fr) column from overflowing */
 .tx-row > :nth-child(2) { min-width: 0; }
+/* 6-column layout only on desktop — scoped so it never reaches mobile */
+@media (min-width: 768px) {
+  .tx-row.tx-row-table { grid-template-columns: 32px 1fr 130px 130px 100px 20px; }
+}
 
 /* ─── Merchant icon ─────────────────────────────────────────────────────────── */
 
@@ -911,6 +1026,16 @@ input, textarea {
 @keyframes anim-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+@keyframes anim-modal-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes anim-modal-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to   { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
 }
 
 @keyframes anim-slide-up {

@@ -161,7 +161,7 @@ export default function SearchDropdown({ inputRef }: SearchDropdownProps) {
           id={listboxId}
           role="listbox"
           aria-label="Search results"
-          className="anim-pop"
+          className="anim-pop search-dropdown"
           data-exiting={dropdown.isExiting ? "true" : "false"}
           style={{
             position: "absolute",

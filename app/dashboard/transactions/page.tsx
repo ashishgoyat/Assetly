@@ -344,6 +344,7 @@ export default function TransactionsPage() {
 
       {/* Toolbar */}
       <div
+        className="tx-toolbar"
         style={{
           display: "flex",
           gap: 8,
@@ -352,8 +353,8 @@ export default function TransactionsPage() {
           flexWrap: "wrap",
         }}
       >
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {/* Issue 1 fix: use var(--bg) instead of "white" so dark mode text stays visible */}
+        {/* Desktop: category pill buttons */}
+        <div className="tx-cat-pills" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button
             key="all"
             className="btn btn-sm"
@@ -385,10 +386,27 @@ export default function TransactionsPage() {
             </button>
           ))}
         </div>
-        <div style={{ flex: 1 }} />
 
-        {/* Issue 2a — Filter button with type + status panel */}
-        <div ref={filterRef} style={{ position: "relative" }}>
+        {/* Row 1: [Category select] [Filter] [Month] */}
+        <div className="tx-toolbar-row">
+          {/* Mobile: category select dropdown */}
+          <select
+            className="tx-cat-select field-input"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as FilterValue)}
+            aria-label="Category"
+            style={{ display: "none" }}
+          >
+            <option value="all">All categories</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+
+          <div className="tx-spacer" style={{ flex: 1 }} />
+
+          {/* Issue 2a — Filter button with type + status panel */}
+          <div ref={filterRef} style={{ position: "relative" }}>
           <button
             className="btn btn-sm"
             type="button"
@@ -628,17 +646,22 @@ export default function TransactionsPage() {
           )}
         </div>
 
-        {/* Issue 2c — Export CSV button */}
-        <button
-          className="btn btn-sm"
-          type="button"
-          onClick={() => exportCsv(filtered)}
-        >
-          <Icon name="download" size={13} /> Export CSV
-        </button>
-        <AddTransactionButton
-          onCreated={(tx) => setTransactions((prev) => [tx, ...prev])}
-        />
+        </div>{/* end tx-toolbar-row 1 */}
+
+        {/* Row 2: [Export CSV] [Add transaction] */}
+        <div className="tx-toolbar-row">
+          {/* Issue 2c — Export CSV button */}
+          <button
+            className="btn btn-sm"
+            type="button"
+            onClick={() => exportCsv(filtered)}
+          >
+            <Icon name="download" size={13} /> Export CSV
+          </button>
+          <AddTransactionButton
+            onCreated={(tx) => setTransactions((prev) => [tx, ...prev])}
+          />
+        </div>
       </div>
 
       {/* Table + Detail panel */}
@@ -651,7 +674,7 @@ export default function TransactionsPage() {
         }}
       >
         {/* Transactions table — wrapped for horizontal scroll on mobile */}
-        <div className="table-scroll">
+        <div className="tx-table table-scroll">
           <div className="card" style={{ padding: 8 }}>
             {filtered.length === 0 && transactions.length === 0 ? (
               /* No transactions at all */
@@ -743,9 +766,8 @@ export default function TransactionsPage() {
               <>
                 {/* Table header */}
                 <div
+                  className="tx-table-header tx-row-table"
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "32px 1fr 130px 130px 100px 20px",
                     gap: 12,
                     padding: "10px 14px",
                     fontSize: 10.5,
@@ -758,8 +780,8 @@ export default function TransactionsPage() {
                 >
                   <span />
                   <span>Merchant</span>
-                  <span>Category</span>
-                  <span>Account</span>
+                  <span className="tx-col-desktop">Category</span>
+                  <span className="tx-col-desktop">Account</span>
                   <span style={{ textAlign: "right" }}>Amount</span>
                   <span />
                 </div>
@@ -768,9 +790,8 @@ export default function TransactionsPage() {
                 {filtered.map((r) => (
                   <button
                     key={r.id}
-                    className="tx-row"
+                    className="tx-row tx-row-table"
                     style={{
-                      gridTemplateColumns: "32px 1fr 130px 130px 100px 20px",
                       background:
                         selected?.id === r.id
                           ? "var(--surface-hover)"
@@ -794,8 +815,8 @@ export default function TransactionsPage() {
                         {r.date} · {r.time}
                       </div>
                     </div>
-                    <span className="pill">{r.category}</span>
-                    <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
+                    <span className="pill tx-col-desktop">{r.category}</span>
+                    <span className="tx-col-desktop" style={{ fontSize: 12, color: "var(--ink-3)" }}>
                       {r.accountLabel}
                     </span>
                     <div
@@ -819,6 +840,15 @@ export default function TransactionsPage() {
           </div>
         </div>
         {/* /table-scroll */}
+
+        {/* Mobile backdrop — CSS hides this on desktop */}
+        {detail.shouldRender && (
+          <div
+            className="tx-panel-backdrop"
+            aria-hidden
+            onClick={() => setSelected(null)}
+          />
+        )}
 
         {/* Detail panel */}
         {detail.shouldRender && panelTx && (
@@ -941,14 +971,9 @@ function TxDetailPanel({
 
   return (
     <aside
-      className="card anim-slide-in-right"
+      className="card anim-slide-in-right tx-detail-panel"
       data-exiting={isExiting ? "true" : "false"}
-      style={{
-        padding: 22,
-        alignSelf: "flex-start",
-        position: "sticky",
-        top: 20,
-      }}
+      style={{ padding: 22 }}
       aria-label="Transaction details"
     >
       {/* Panel header */}

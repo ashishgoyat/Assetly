@@ -114,7 +114,7 @@ export default function TransactionRow({ tx: r, onExcluded }: Props) {
         <div>
           <div style={{ fontSize: 13.5, fontWeight: 500 }}>{r.merchant}</div>
           <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>
-            {category} · {r.date}, {r.time}
+            {category}<span className="tx-datetime"> · {r.date}, {r.time}</span>
           </div>
         </div>
         <div

@@ -126,6 +126,7 @@ export default function DashboardActivity({
 
       {/* Row 3: AI Insight (left) + Saving goals (right) */}
       <div
+        className="grid-insight-goals"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1.8fr",

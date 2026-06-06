@@ -141,11 +141,9 @@ export default function Topbar({ userName, userInitials, userAvatarUrl, accounts
       <div className="search" role="search">
         <Icon name="search" size={15} color="var(--ink-3)" />
         <SearchDropdown inputRef={searchInputRef} />
-        <span className="kbd" aria-label="Keyboard shortcut Command K">⌘K</span>
       </div>
 
-      <div style={{ flex: 1 }} />
-
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
       <DarkModeToggle />
 
       {/* Bell button + notification panel */}
@@ -192,6 +190,7 @@ export default function Topbar({ userName, userInitials, userAvatarUrl, accounts
             isExiting={notif.isExiting}
           />
         )}
+      </div>
       </div>
 
       {/* Toast notification */}

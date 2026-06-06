@@ -437,7 +437,7 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
   const periodMax = Math.max(...historyData);
 
   return (
-    <div style={{ padding: "8px 28px 36px", opacity: loading ? 0.6 : 1, transition: "opacity 0.15s ease" }}>
+    <div className="acct-detail-page" style={{ padding: "8px 28px 36px", opacity: loading ? 0.6 : 1, transition: "opacity 0.15s ease" }}>
       {/* Back button */}
       <Link
         href="/dashboard"
@@ -536,7 +536,7 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
               }}
             >
               <span
-                className="num"
+                className="num acct-balance-amount"
                 style={{ fontSize: 52, fontWeight: 700, lineHeight: 1 }}
               >
                 {fmtExact(a.balanceInCents)}
@@ -629,7 +629,7 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
               recentTransactions.slice(0, 6).map((r) => (
                 <div
                   key={r.id}
-                  className="tx-row"
+                  className="tx-row acct-activity-row"
                   style={{
                     gridTemplateColumns: "32px 1fr 100px auto 20px",
                   }}
@@ -644,7 +644,7 @@ export default function AccountDetailClient({ id }: AccountDetailClientProps) {
                     </div>
                   </div>
                   <div
-                    className="muted"
+                    className="muted acct-tx-date"
                     style={{
                       fontSize: 12,
                       fontFamily: "var(--f-mono)",
