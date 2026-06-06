@@ -964,3 +964,32 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 0 warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-06 (font cleanup + landing page simplification)
+
+### What was built / fixed
+- **Caveat font removed** (`app/layout.tsx`): removed `Caveat` from `next/font/google` import, deleted the `caveat` font config block, and removed `${caveat.variable}` from the `<html>` className — the handwritten font is no longer loaded at all
+- **`--f-display` token updated** (`app/globals.css` line 63): changed from `var(--font-caveat), 'Segoe Print', cursive` to `var(--font-geist-sans), 'Inter', system-ui, sans-serif` — all elements using `--f-display` (brand mark, merchant icon, `.serif` class) now render in Geist Sans
+- **Landing page — "How it works" section removed** (`app/page.tsx`): deleted the entire `steps` data array and the `<section aria-labelledby="how-heading">` block
+- **Landing page — CTA banner removed** (`app/page.tsx`): deleted the `<section aria-labelledby="cta-heading">` block (redundant second CTA)
+- **Landing page — footer simplified** (`app/page.tsx`): replaced the two-column footer grid (brand + Product/Company link lists) with a minimal single-row footer: brand mark + name on left, `© 2026 Assetly` on right
+- **Inline display font overrides removed** (`app/page.tsx`): removed `style={{ fontFamily: "var(--f-display)" }}` from hero `<h1>` and features `<h2>` — body font now applies directly
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices"
+10. **Existing DB rows are still plaintext** — run `pnpm encrypt-db` once to migrate them
+11. Demo cleanup is lazy — expired demo data stays in DB until the next `POST /api/demo/session` call purges it
+
+### Last checks
+- pnpm lint: passed (0 errors, 0 warnings)
+- pnpm build: not run

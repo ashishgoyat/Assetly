@@ -98,26 +98,6 @@ const features = [
   },
 ];
 
-// ── Steps data ────────────────────────────────────────────────────────────────
-
-const steps = [
-  {
-    number: "1",
-    title: "Sign up",
-    description: "Create your free account in 30 seconds. No credit card required.",
-  },
-  {
-    number: "2",
-    title: "Connect your data",
-    description: "Add accounts, set budgets, and create goals for what you care about.",
-  },
-  {
-    number: "3",
-    title: "Stay in control",
-    description: "Check in daily, get personalised insights, and hit your targets.",
-  },
-];
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
@@ -190,7 +170,6 @@ export default function LandingPage() {
             <h1
               id="hero-heading"
               className="mb-5 text-[clamp(2.25rem,6vw,4rem)] leading-[1.05] tracking-[-0.02em] text-[var(--ink)]"
-              style={{ fontFamily: "var(--f-display)" }}
             >
               Your money, finally in one place.
             </h1>
@@ -222,7 +201,6 @@ export default function LandingPage() {
             <h2
               id="features-heading"
               className="mb-10 text-center text-[clamp(1.5rem,3vw,2rem)] leading-tight tracking-[-0.01em] text-[var(--ink)] md:mb-12"
-              style={{ fontFamily: "var(--f-display)" }}
             >
               Everything you need to see the full picture
             </h2>
@@ -257,155 +235,22 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── How it works ──────────────────────────────────────────────────── */}
-        <section
-          aria-labelledby="how-heading"
-          className="border-y border-[var(--border)] bg-[var(--surface-2)] px-6 py-20 md:py-28"
-        >
-          <div className="mx-auto max-w-6xl">
-            <h2
-              id="how-heading"
-              className="mb-12 text-center text-[clamp(1.4rem,2.8vw,1.75rem)] leading-tight tracking-[-0.01em] text-[var(--ink)] md:mb-16"
-              style={{ fontFamily: "var(--f-display)" }}
-            >
-              Up and running in minutes
-            </h2>
-
-            <div className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
-              {steps.map(({ number, title, description }) => (
-                <div key={number} className="flex flex-col items-center text-center md:items-start md:text-left">
-                  <span
-                    className="mb-3 leading-none text-[3rem] font-normal text-[var(--accent)]"
-                    style={{ fontFamily: "var(--f-display)" }}
-                    aria-hidden="true"
-                  >
-                    {number}
-                  </span>
-                  <h3
-                    className="mb-2 text-base font-semibold text-[var(--ink)]"
-                    style={{ fontFamily: "var(--f-sans)" }}
-                  >
-                    {title}
-                  </h3>
-                  <p
-                    className="text-[13px] leading-relaxed text-[var(--ink-3)]"
-                    style={{ fontFamily: "var(--f-sans)" }}
-                  >
-                    {description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── CTA banner ────────────────────────────────────────────────────── */}
-        <section
-          aria-labelledby="cta-heading"
-          className="border-y border-[var(--accent-soft)] bg-[var(--accent-tint)] px-6 py-20 text-center md:py-24"
-        >
-          <div className="mx-auto max-w-xl">
-            <h2
-              id="cta-heading"
-              className="mb-6 text-[clamp(1.5rem,3vw,2rem)] leading-tight tracking-[-0.01em] text-[var(--ink)]"
-              style={{ fontFamily: "var(--f-display)" }}
-            >
-              Ready to take control of your finances?
-            </h2>
-            <Link href="/login" className="btn btn-accent btn-lg">
-              Get started →
-            </Link>
-          </div>
-        </section>
       </main>
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <footer className="border-t border-[var(--border)] bg-[var(--bg)] px-6 pb-8 pt-12">
-        <div className="mx-auto max-w-6xl">
-          {/* Two-column grid */}
-          <div className="mb-10 grid grid-cols-1 gap-10 sm:grid-cols-2">
-            {/* Brand column */}
-            <div>
-              <Link
-                href="/"
-                className="mb-3 flex items-center gap-2 no-underline"
-                aria-label="Assetly home"
-              >
-                <span className="brand-mark" aria-hidden="true">
-                  A
-                </span>
-                <span
-                  className="text-base font-semibold tracking-tight text-[var(--ink)]"
-                  style={{ fontFamily: "var(--f-sans)" }}
-                >
-                  Assetly
-                </span>
-              </Link>
-              <p
-                className="max-w-[220px] text-[13px] leading-relaxed text-[var(--ink-3)]"
-                style={{ fontFamily: "var(--f-sans)" }}
-              >
-                Personal finance, simplified.
-              </p>
-            </div>
-
-            {/* Link groups */}
-            <div className="grid grid-cols-2 gap-8">
-              {/* Product */}
-              <div>
-                <p
-                  className="sec-label mb-4"
-                  style={{ fontFamily: "var(--f-sans)" }}
-                >
-                  Product
-                </p>
-                <ul className="space-y-2.5">
-                  {["Dashboard", "Budgets", "Goals", "Bills"].map((item) => (
-                    <li key={item}>
-                      <Link
-                        href="/login"
-                        className="text-[13px] text-[var(--ink-3)] no-underline transition-colors hover:text-[var(--ink)]"
-                        style={{ fontFamily: "var(--f-sans)" }}
-                      >
-                        {item}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Company */}
-              <div>
-                <p
-                  className="sec-label mb-4"
-                  style={{ fontFamily: "var(--f-sans)" }}
-                >
-                  Company
-                </p>
-                <ul className="space-y-2.5">
-                  <li>
-                    <Link
-                      href="/login"
-                      className="text-[13px] text-[var(--ink-3)] no-underline transition-colors hover:text-[var(--ink)]"
-                      style={{ fontFamily: "var(--f-sans)" }}
-                    >
-                      Sign in
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="border-t border-[var(--border)] pt-6 text-center">
-            <p
-              className="text-[12px] text-[var(--ink-4)]"
-              style={{ fontFamily: "var(--f-sans)" }}
-            >
-              &copy; 2026 Assetly
-            </p>
-          </div>
+      <footer className="border-t border-[var(--border)] bg-[var(--bg)] px-6 py-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
+          <Link
+            href="/"
+            className="flex items-center gap-2 no-underline"
+            aria-label="Assetly home"
+          >
+            <span className="brand-mark" aria-hidden="true">A</span>
+            <span className="text-sm font-semibold tracking-tight text-[var(--ink)]">
+              Assetly
+            </span>
+          </Link>
+          <p className="text-[12px] text-[var(--ink-4)]">&copy; 2026 Assetly</p>
         </div>
       </footer>
     </>

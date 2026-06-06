@@ -60,7 +60,7 @@
   --r-xl: 22px;
 
   /* Type */
-  --f-display: var(--font-caveat), 'Segoe Print', cursive;
+  --f-display: var(--font-geist-sans), 'Inter', system-ui, sans-serif;
   --f-sans:    var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
   --f-mono:    var(--font-geist-mono), 'JetBrains Mono', ui-monospace, monospace;
 
