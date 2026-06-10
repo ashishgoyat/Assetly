@@ -993,3 +993,29 @@ I) Wire bill quick actions — Pay now / Schedule to real server actions
 ### Last checks
 - pnpm lint: passed (0 errors, 0 warnings)
 - pnpm build: not run
+
+---
+
+## Session 2026-06-10
+
+### What was built / fixed
+- **Committed missing demo-mode migration** (`drizzle/0005_add_demo_user_fields.sql`): the migration adding `is_demo` (boolean, default false) and `demo_expires_at` (text) columns to `users` was left untracked when the demo-mode feature landed (c0dee8f); now committed so migration history matches the schema.
+- (A README refresh was drafted this session but not applied — left for a follow-up.)
+
+### Known limitations / pending
+1. Seed transactions only cover April 17–23, 2026 — budget aggregation reads $0 outside that window
+2. `paySubscription` advances `nextDate` by a flat 30 days — not calendar-month accurate
+3. Cron email endpoint requires external scheduler — no built-in scheduler
+4. Account `monthlySummary` aggregates all-time totals, not scoped to current calendar month
+5. Auto-save frequency not automatically enforced — next trigger is manual (Sync)
+6. Exchange rate fetched once on mount — not refreshed if tab stays open for days
+7. Quick Add FAB: goal/budget pages don't auto-refresh after FAB creates new item (page reload needed)
+8. Charge percent affects income account balance only; expense surcharge not implemented
+9. Session revoke via `deleteUserSession` removes the DB row but does not invalidate the JWT — full sign-out requires "Sign out all devices"
+10. **Existing DB rows are still plaintext** — run `pnpm encrypt-db` once to migrate them
+11. Demo cleanup is lazy — expired demo data stays in DB until the next `POST /api/demo/session` call purges it
+12. README is out of date vs current stack (Postgres, encryption, demo mode, sessions) — refresh pending
+
+### Last checks
+- pnpm lint: not run (no code changes this session)
+- pnpm build: not run
